@@ -29,7 +29,7 @@ export default function Signup() {
       );
       const user = userCredential.user;
 
-      await fetch("http://localhost:5000/api/users", {
+      await fetch("https://spectacular-solace-watchscape.up.railway.app/api/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

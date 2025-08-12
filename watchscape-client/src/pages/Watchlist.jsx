@@ -9,7 +9,7 @@ export default function Watchlist({ user, onMovieChange }) {
     if (!user) return;
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/movies?userId=${user.uid}&status=watchlist`);
+      const res = await fetch(`https://spectacular-solace-watchscape.up.railway.app/api/movies?userId=${user.uid}&status=watchlist`);
       const data = await res.json();
       setMovies([...data].reverse());
     } catch (err) {
@@ -24,7 +24,7 @@ export default function Watchlist({ user, onMovieChange }) {
 
   const removeMovie = async (id) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/movies/${id}`, {
+      const res = await fetch(`https://spectacular-solace-watchscape.up.railway.app/api/movies/${id}`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -40,7 +40,7 @@ export default function Watchlist({ user, onMovieChange }) {
 
   const markAsWatched = async (movie) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/movies/${movie._id}`, {
+      const res = await fetch(`https://spectacular-solace-watchscape.up.railway.app/api/movies/${movie._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "watched" }),

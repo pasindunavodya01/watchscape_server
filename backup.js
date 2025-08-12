@@ -15,12 +15,12 @@ export default function Dashboard({ user, onLogout }) {
   useEffect(() => {
     if (!user) return;
 
-    fetch(`http://localhost:5000/api/movies?userId=${user.uid}&status=watchlist`)
+    fetch(`https://spectacular-solace-watchscape.up.railway.app/api/movies?userId=${user.uid}&status=watchlist`)
       .then(res => res.json())
       .then(data => setWatchlist(data))
       .catch(console.error);
 
-    fetch(`http://localhost:5000/api/movies?userId=${user.uid}&status=watched`)
+    fetch(`https://spectacular-solace-watchscape.up.railway.app/api/movies?userId=${user.uid}&status=watched`)
       .then(res => res.json())
       .then(data => setWatched(data))
       .catch(console.error);
@@ -31,7 +31,7 @@ export default function Dashboard({ user, onLogout }) {
     if (!query.trim()) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/movies/search?q=${encodeURIComponent(query)}`);
+      const res = await fetch(`https://spectacular-solace-watchscape.up.railway.app/api/movies/search?q=${encodeURIComponent(query)}`);
       const data = await res.json();
       setSearchResults(data);
       setActiveTab('search');
@@ -43,7 +43,7 @@ export default function Dashboard({ user, onLogout }) {
   useEffect(() => {
   if (!user) return;
 
-  fetch(`http://localhost:5000/api/users/${user.uid}`)
+  fetch(`https://spectacular-solace-watchscape.up.railway.app/api/users/${user.uid}`)
     .then(res => res.json())
     .then(data => setUserData(data))  // userData will have the name, email, etc.
     .catch(console.error);
@@ -52,7 +52,7 @@ export default function Dashboard({ user, onLogout }) {
 
   const addMovie = async (movie, status) => {
   try {
-    const res = await fetch('http://localhost:5000/api/movies', {
+    const res = await fetch('https://spectacular-solace-watchscape.up.railway.app/api/movies', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -87,7 +87,7 @@ export default function Dashboard({ user, onLogout }) {
 
 const markAsWatched = async (movie) => {
   try {
-    const res = await fetch(`http://localhost:5000/api/movies/${movie._id}`, {
+    const res = await fetch(`https://spectacular-solace-watchscape.up.railway.app/api/movies/${movie._id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'watched' }),
@@ -121,7 +121,7 @@ const markAsWatched = async (movie) => {
   if (!confirmed) return;
 
   try {
-    const res = await fetch(`http://localhost:5000/api/movies/${movieId}`, {
+    const res = await fetch(`https://spectacular-solace-watchscape.up.railway.app/api/movies/${movieId}`, {
       method: 'DELETE',
     });
 

@@ -21,7 +21,7 @@ export default function Dashboard({ user, onLogout }) {
     if (!user?.uid) return;
     try {
       const res = await fetch(
-        `http://localhost:5000/api/movies/stats?userId=${user.uid}`
+        `https://spectacular-solace-watchscape.up.railway.app/api/movies/stats?userId=${user.uid}`
       );
       const data = await res.json();
       setCounts({

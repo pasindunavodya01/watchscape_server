@@ -11,7 +11,7 @@ export default function Search({ user, onMovieChange }) {
     const fetchPopular = async () => {
       setLoading(true);
       try {
-        const res = await fetch("http://localhost:5000/api/movies/popular");
+        const res = await fetch("https://spectacular-solace-watchscape.up.railway.app/api/movies/popular");
         const data = await res.json();
         setResults(data);
         setIsSearching(false);
@@ -31,7 +31,7 @@ export default function Search({ user, onMovieChange }) {
     setIsSearching(true);
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/movies/search?q=${encodeURIComponent(query)}`);
+      const res = await fetch(`https://spectacular-solace-watchscape.up.railway.app/api/movies/search?q=${encodeURIComponent(query)}`);
       const data = await res.json();
       setResults(data);
     } catch (err) {
@@ -43,7 +43,7 @@ export default function Search({ user, onMovieChange }) {
 
   const addMovie = async (movie, status) => {
     try {
-      const res = await fetch("http://localhost:5000/api/movies", {
+      const res = await fetch("https://spectacular-solace-watchscape.up.railway.app/api/movies", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
