@@ -1,0 +1,146 @@
+import React, { useEffect, useState } from "react";
+
+export default function Watchlist({ user, onMovieChange }) {
+  const [movies, setMovies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedMovie, setSelectedMovie] = useState(null);
+
+  const fetchMovies = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`http://localhost:5000/api/movies?userId=${user.uid}&status=watchlist`);
+      const data = await res.json();
+      setMovies([...data].reverse());
+    } catch (err) {
+      console.error("Failed to fetch watchlist:", err);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchMovies();
+  }, [user]);
+
+  const removeMovie = async (id) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/movies/${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setMovies(movies.filter((m) => m._id !== id));
+        if (onMovieChange) onMovieChange();  // Notify parent about update
+      } else {
+        alert("Failed to remove movie");
+      }
+    } catch {
+      alert("Error removing movie");
+    }
+  };
+
+  const markAsWatched = async (movie) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/movies/${movie._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "watched" }),
+      });
+      if (res.ok) {
+        setMovies(movies.filter((m) => m._id !== movie._id));
+        if (onMovieChange) onMovieChange();  // Notify parent about update
+      } else {
+        alert("Failed to mark as watched");
+      }
+    } catch {
+      alert("Error updating movie");
+    }
+  };
+
+  return (
+    <div className="max-w-5xl mx-auto p-6">
+      <h2 className="text-2xl font-bold mb-4">My Watchlist</h2>
+      {loading ? (
+        <p>Loading...</p>
+      ) : movies.length === 0 ? (
+        <p>You have no movies in your watchlist.</p>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {movies.map((movie) => (
+            <div key={movie._id} className="border rounded p-2 bg-white shadow relative">
+              {movie.posterPath ? (
+                <img
+                  src={`https://image.tmdb.org/t/p/w200${movie.posterPath}`}
+                  alt={movie.title}
+                  className="mb-2 rounded"
+                />
+              ) : (
+                <div className="mb-2 h-28 bg-gray-300 flex items-center justify-center text-gray-600">
+                  No Image
+                </div>
+              )}
+
+              <button
+                onClick={() => setSelectedMovie(movie)}
+                className="absolute top-2 right-2 w-7 h-7 rounded-full bg-purple-700 text-white flex items-center justify-center font-bold text-lg hover:bg-purple-800"
+                title="View Details"
+              >
+                i
+              </button>
+
+              <h3 className="font-semibold">{movie.title}</h3>
+              <p className="text-sm text-gray-600">{movie.releaseDate || "N/A"}</p>
+
+              <div className="mt-2 flex gap-2 flex-wrap">
+                <button
+                  onClick={() => markAsWatched(movie)}
+                  className="bg-green-600 text-white px-2 py-1 rounded text-sm"
+                >
+                  Mark as Watched
+                </button>
+                <button
+                  onClick={() => removeMovie(movie._id)}
+                  className="bg-red-600 text-white px-2 py-1 rounded text-sm"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Modal for movie details */}
+      {selectedMovie && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 z-50"
+          onClick={() => setSelectedMovie(null)}
+        >
+          <div
+            className="bg-white rounded max-w-lg w-full p-6 overflow-auto max-h-[80vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-2xl font-bold mb-4">{selectedMovie.title}</h2>
+            {selectedMovie.posterPath && (
+              <img
+                src={`https://image.tmdb.org/t/p/w300${selectedMovie.posterPath}`}
+                alt={selectedMovie.title}
+                className="mb-4 rounded mx-auto"
+              />
+            )}
+            <p><strong>Release Date:</strong> {selectedMovie.releaseDate || "N/A"}</p>
+            {selectedMovie.overview && <p className="mt-4">{selectedMovie.overview}</p>}
+
+            <div className="mt-6 text-right">
+              <button
+                onClick={() => setSelectedMovie(null)}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

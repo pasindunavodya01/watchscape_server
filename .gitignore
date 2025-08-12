@@ -1,0 +1,18 @@
+# Ignore node_modules in both client and server
+watchscape-client/node_modules/
+watchscape-server/node_modules/
+
+# Ignore env files everywhere
+*.env
+
+# Build folders
+client/build/
+server/build/
+
+# Logs
+*.log
+
+# OS & Editor files
+.DS_Store
+.vscode/
+.idea/
