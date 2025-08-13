@@ -41,6 +41,11 @@ export default function Login() {
         <div className="mt-4 text-sm text-center">
           <Link to="/forgot-password" className="text-blue-500 hover:underline">Forgot Password?</Link>
         </div>
+        <div className="mt-2 text-sm text-center">
+  <Link to="/" className="text-gray-600 hover:text-blue-500 hover:underline">
+    Back to Landing Page
+  </Link>
+</div>
       </form>
     </div>
   );
