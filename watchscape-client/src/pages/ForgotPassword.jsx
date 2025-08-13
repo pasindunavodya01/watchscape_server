@@ -33,7 +33,7 @@ export default function ForgotPassword() {
           Send Reset Email
         </button>
         <p className="mt-3 text-sm text-gray-600">
-          Please check your spam/junk folders if you don't see the email.
+          Note:  you will receive an email to reset your password. Please check your spam/junk folders if you don't see the email.
         </p>
         <div className="mt-4 text-sm text-center">
           <a
