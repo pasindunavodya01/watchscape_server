@@ -6,6 +6,7 @@ import {
   BookmarkIcon,
   EyeIcon,
   UserIcon,
+  PowerIcon, // logout icon
 } from "@heroicons/react/24/outline";
 
 export default function Sidebar({
@@ -25,7 +26,7 @@ export default function Sidebar({
 
   return (
     <aside
-      className={`${className} bg-white shadow-lg border-r border-blue-100 flex flex-col h-full`}
+      className={`${className} bg-white shadow-lg border-r border-blue-100 flex flex-col`}
     >
       {/* Close button for mobile overlay */}
       {overlay && (
@@ -40,40 +41,45 @@ export default function Sidebar({
         </div>
       )}
 
-      {/* Scrollable nav + logout section */}
-      <div className="flex flex-col flex-grow overflow-y-auto">
-        {/* Navigation links */}
-        <div className="p-6 flex-1">
-          <nav className="flex flex-col space-y-2">
-            {menuItems.map(({ name, to, icon: Icon, end }) => (
-              <NavLink
-                key={name}
-                to={to}
-                end={end}
-                className={({ isActive }) =>
-                  `flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
-                    isActive
-                      ? "bg-blue-600 text-white"
-                      : "text-gray-700 hover:bg-blue-100 hover:text-blue-600"
-                  }`
-                }
-              >
-                <Icon className="h-5 w-5 mr-3" />
-                {name}
-              </NavLink>
-            ))}
-          </nav>
-        </div>
+      <div className="p-6">
+        <nav className="flex flex-col space-y-2">
+          {menuItems.map(({ name, to, icon: Icon, end }) => (
+            <NavLink
+              key={name}
+              to={to}
+              end={end}
+              className={({ isActive }) =>
+                `flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                  isActive
+                    ? "bg-blue-600 text-white"
+                    : "text-gray-700 hover:bg-blue-100 hover:text-blue-600"
+                }`
+              }
+            >
+              <Icon className="h-5 w-5 mr-3" />
+              {name}
+            </NavLink>
+          ))}
 
-        {/* Logout button pinned at bottom */}
-        <div className="p-6 border-t border-blue-100">
+          {/* Mobile-only logout button with icon */}
           <button
             onClick={onLogout}
-            className="w-full text-left px-4 py-2 rounded-lg text-red-600 hover:bg-red-50 font-semibold transition-colors duration-200"
+            className="flex items-center px-4 py-2 rounded-lg text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors duration-200 md:hidden"
           >
+            <PowerIcon className="h-5 w-5 mr-3" />
             Logout
           </button>
-        </div>
+        </nav>
+      </div>
+
+      {/* Desktop-only logout button at the bottom */}
+      <div className="mt-auto p-6 hidden md:block">
+        <button
+          onClick={onLogout}
+          className="w-full text-left px-4 py-2 rounded-lg text-red-600 hover:bg-red-50 font-semibold transition-colors duration-200"
+        >
+          Logout
+        </button>
       </div>
     </aside>
   );
