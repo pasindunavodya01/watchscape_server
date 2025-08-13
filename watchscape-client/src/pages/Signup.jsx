@@ -138,6 +138,15 @@ export default function Signup() {
         >
           Create Account
         </button>
+<div className="mt-4 text-sm text-center">
+  <a
+    href="/"
+    className="text-gray-600 hover:text-yellow-500 hover:underline"
+  >
+    Back to Landing Page
+  </a>
+</div>
+        
       </form>
     </div>
   );
