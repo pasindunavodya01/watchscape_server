@@ -1,4 +1,5 @@
 import express from "express";
+import axios from "axios";
 import Post from "../models/Post.js";
 import User from "../models/User.js";
 
@@ -13,17 +14,20 @@ router.post("/", async (req, res) => {
     const user = await User.findOne({ uid: userId });
     if (!user) return res.status(404).json({ message: "User not found" });
 
+    // Only save minimal movie info when creating a post
+    const movieData = movie
+      ? {
+          title: movie.title || "",
+          posterPath: movie.posterPath || "",
+          tmdbId: movie.tmdbId?.toString() || "",
+        }
+      : undefined;
+
     const newPost = new Post({
       userId,
       username: user.username || user.name || user.email,
       text,
-      movie: movie
-        ? {
-            title: movie.title || "",
-            posterPath: movie.posterPath || "",
-            tmdbId: movie.tmdbId?.toString() || "",
-          }
-        : undefined,
+      movie: movieData,
     });
 
     await newPost.save();
@@ -34,33 +38,46 @@ router.post("/", async (req, res) => {
   }
 });
 
-// GET ALL POSTS
+// GET ALL POSTS (fetch full movie details if tmdbId exists)
 router.get("/", async (req, res) => {
   try {
     const posts = await Post.find().sort({ createdAt: -1 }).lean();
 
-    for (const post of posts) {
-      // ensure comments is always an array
-      post.comments = post.comments || [];
-
-      for (const comment of post.comments) {
-        if (!comment.userName) {
-          const user = await User.findOne({ uid: comment.userId }).lean();
-          comment.userName = user ? user.username || user.name || user.email : comment.userId;
+    const detailedPosts = await Promise.all(
+      posts.map(async (post) => {
+        // fetch movie overview & releaseDate if tmdbId exists
+        if (post.movie && post.movie.tmdbId) {
+          try {
+            const tmdbRes = await axios.get(
+              `https://api.themoviedb.org/3/movie/${post.movie.tmdbId}`,
+              { params: { api_key: process.env.TMDB_API_KEY, language: "en-US" } }
+            );
+            post.movie.overview = tmdbRes.data.overview;
+            post.movie.releaseDate = tmdbRes.data.release_date;
+          } catch {
+            // ignore, show minimal saved info
+          }
         }
-      }
 
-      // sort comments by newest first
-      post.comments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    }
+        post.comments = post.comments || [];
+        for (const comment of post.comments) {
+          if (!comment.userName) {
+            const user = await User.findOne({ uid: comment.userId }).lean();
+            comment.userName = user ? user.username || user.name || user.email : comment.userId;
+          }
+        }
+        post.comments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-    res.json(posts);
+        return post;
+      })
+    );
+
+    res.json(detailedPosts);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 });
-
 
 // TOGGLE LIKE
 router.put("/:id/like", async (req, res) => {
@@ -74,6 +91,7 @@ router.put("/:id/like", async (req, res) => {
     } else {
       post.likes.push(userId);
     }
+
     await post.save();
     res.json({ likes: post.likes });
   } catch (err) {
@@ -102,22 +120,15 @@ router.post("/:id/comment", async (req, res) => {
     };
 
     post.comments.push(newComment);
-
-    // sort newest first
     post.comments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
     await post.save();
 
-    res.json({ comments: post.comments }); // frontend will receive userName
+    res.json({ comments: post.comments });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 });
-
-
-
-
 
 // SHARE POST
 router.post("/:id/share", async (req, res) => {

@@ -338,18 +338,36 @@ function PostCard({ post, currentUid, onToggleLike, onAddComment, onToggleFollow
       </div>
 
       {/* Movie cover */}
-      {post.movie?.posterPath && (
-        <div className="relative w-64 mx-auto rounded overflow-hidden mb-2">
-          <img src={`https://image.tmdb.org/t/p/w500${post.movie.posterPath}`} alt={post.movie.title} className="w-64 h-auto object-cover" />
-          <button
-            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-purple-700 text-white flex items-center justify-center font-bold hover:bg-purple-800"
-            title="View Movie Details"
-            onClick={() => setSelectedPostMovie(post.movie)}
-          >
-            i
-          </button>
-        </div>
-      )}
+
+{post.movie && (
+  <div className="relative w-64 mx-auto rounded overflow-hidden mb-2">
+    {post.movie.posterPath ? (
+      <img
+        src={`https://image.tmdb.org/t/p/w500${post.movie.posterPath}`}
+        alt={post.movie.title}
+        className="w-64 h-auto object-cover"
+      />
+    ) : (
+      <div className="w-64 h-80 flex items-center justify-center bg-gray-100 text-gray-500">
+        No Image
+      </div>
+    )}
+    <button
+      className="absolute top-2 right-2 w-7 h-7 rounded-full bg-purple-700 text-white flex items-center justify-center font-bold hover:bg-purple-800"
+      title="View Movie Details"
+      onClick={() =>
+        setSelectedPostMovie({
+          title: post.movie.title,
+          posterPath: post.movie.posterPath,
+          releaseDate: post.movie.releaseDate,
+          overview: post.movie.overview,
+        })
+      }
+    >
+      i
+    </button>
+  </div>
+)}
 
       {/* Text */}
       <div className="mb-3 whitespace-pre-wrap">{post.text}</div>
