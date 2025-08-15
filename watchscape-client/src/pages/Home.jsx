@@ -318,7 +318,7 @@ function PostCard({ post, currentUid, onToggleLike, onAddComment, onToggleFollow
           <Link to={`/profile/${post.userId}`} className="text-blue-600 hover:underline font-semibold">
             {post.userName || post.username || post.userId}
           </Link>
-          {post.userId !== currentUid && <button className="text-xs px-2 py-1 rounded bg-blue-600 text-white" onClick={onToggleFollow}>+ Follow</button>}
+          
         </div>
         <div className="text-xs text-gray-500">{new Date(post.createdAt).toLocaleString()}</div>
       </div>
