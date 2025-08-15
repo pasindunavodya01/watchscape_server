@@ -9,7 +9,7 @@ export default function Watched({ user, onMovieChange }) {
     if (!user) return;
     setLoading(true);
     try {
-      const res = await fetch(`https://spectacular-solace-watchscape.up.railway.app/api/movies?userId=${user.uid}&status=watched`);
+      const res = await fetch(`https://patient-determination-production.up.railway.app/api/movies?userId=${user.uid}&status=watched`);
       const data = await res.json();
       setMovies([...data].reverse());
     } catch (err) {
@@ -24,7 +24,7 @@ export default function Watched({ user, onMovieChange }) {
 
   const removeMovie = async (id) => {
     try {
-      const res = await fetch(`https://spectacular-solace-watchscape.up.railway.app/api/movies/${id}`, {
+      const res = await fetch(`https://patient-determination-production.up.railway.app/api/movies/${id}`, {
         method: "DELETE",
       });
       if (res.ok) {

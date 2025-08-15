@@ -8,7 +8,7 @@ export default function Profile({ user }) {
 
   const fetchProfile = async () => {
     try {
-      const res = await fetch(`https://spectacular-solace-watchscape.up.railway.app/api/users/${userId}/profile?viewerUid=${user.uid}`);
+      const res = await fetch(`https://patient-determination-production.up.railway.app/api/users/${userId}/profile?viewerUid=${user.uid}`);
       if (!res.ok) throw new Error("Failed to fetch profile");
       const data = await res.json();
       setProfile(data);
@@ -19,7 +19,7 @@ export default function Profile({ user }) {
   };
 
   const toggleFollow = async () => {
-    await fetch(`https://spectacular-solace-watchscape.up.railway.app/api/users/${userId}/follow`, {
+    await fetch(`https://patient-determination-production.up.railway.app/api/users/${userId}/follow`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ followerUid: user.uid }),

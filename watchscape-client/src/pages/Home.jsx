@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { HeartIcon as HeartOutline } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartSolid } from "@heroicons/react/24/solid";
 
-const API = "https://spectacular-solace-watchscape.up.railway.app";
+const API = "https://patient-determination-production.up.railway.app";
 
 export default function Home({ user }) {
   const [posts, setPosts] = useState([]);
