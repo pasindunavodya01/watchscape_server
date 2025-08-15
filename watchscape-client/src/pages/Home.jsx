@@ -167,7 +167,13 @@ export default function Home({ user }) {
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-6">
+    <div
+      className="max-w-5xl mx-auto p-6 overflow-x-hidden"
+      style={{
+        touchAction: "pan-y", // allows vertical scroll only
+        overscrollBehaviorX: "none", // disables horizontal overscroll
+      }}
+    >
       {/* Top row */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
         <h1 className="text-2xl font-bold">Feed</h1>
@@ -318,7 +324,6 @@ function PostCard({ post, currentUid, onToggleLike, onAddComment, onToggleFollow
           <Link to={`/profile/${post.userId}`} className="text-blue-600 hover:underline font-semibold">
             {post.userName || post.username || post.userId}
           </Link>
-          
         </div>
         <div className="text-xs text-gray-500">{new Date(post.createdAt).toLocaleString()}</div>
       </div>
