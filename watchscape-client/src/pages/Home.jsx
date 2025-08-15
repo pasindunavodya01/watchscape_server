@@ -1,4 +1,3 @@
-// pages/Home.jsx
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { HeartIcon as HeartOutline } from "@heroicons/react/24/outline";
@@ -8,6 +7,7 @@ const API = "https://spectacular-solace-watchscape.up.railway.app";
 
 export default function Home({ user }) {
   const [posts, setPosts] = useState([]);
+  const [postsLoading, setPostsLoading] = useState(false);
 
   // user search
   const [userQuery, setUserQuery] = useState("");
@@ -28,12 +28,15 @@ export default function Home({ user }) {
 
   // fetch posts
   const fetchPosts = async () => {
+    setPostsLoading(true); // <-- start loading
     try {
       const res = await fetch(`${API}/api/posts`);
       const data = await res.json();
       setPosts(data);
     } catch (err) {
       console.error("Failed to fetch posts:", err);
+    } finally {
+      setPostsLoading(false); // <-- stop loading
     }
   };
 
@@ -167,13 +170,8 @@ export default function Home({ user }) {
   };
 
   return (
-    <div
-      className="max-w-5xl mx-auto p-6 overflow-x-hidden"
-      style={{
-        touchAction: "pan-y", // allows vertical scroll only
-        overscrollBehaviorX: "none", // disables horizontal overscroll
-      }}
-    >
+    <div className="max-w-5xl mx-auto p-6 overflow-x-hidden">
+      {/* Top row & composer... (keep unchanged) */}
       {/* Top row */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
         <h1 className="text-2xl font-bold">Feed</h1>
@@ -287,23 +285,34 @@ export default function Home({ user }) {
         </div>
       )}
 
-      {/* FEED */}
-      <div className="space-y-4">
-        {posts.map((p) => (
-          <PostCard
-            key={p._id}
-            post={p}
-            currentUid={user.uid}
-            onToggleLike={() => toggleLike(p._id)}
-            onAddComment={(txt, clear) => addComment(p._id, txt, clear)}
-            onToggleFollow={() => toggleFollow(p.userId)}
-            onShare={() => sharePost(p._id)}
-          />
-        ))}
+      {/* FEED with Loading Spinner */}
+      <div className="space-y-4 mt-4">
+        {postsLoading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="w-12 h-12 border-4 border-purple-700 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : posts.length === 0 ? (
+          <div className="text-center text-gray-500 py-10">No posts yet</div>
+        ) : (
+          posts.map((p) => (
+            <PostCard
+              key={p._id}
+              post={p}
+              currentUid={user.uid}
+              onToggleLike={() => toggleLike(p._id)}
+              onAddComment={(txt, clear) => addComment(p._id, txt, clear)}
+              onToggleFollow={() => toggleFollow(p.userId)}
+              onShare={() => sharePost(p._id)}
+            />
+          ))
+        )}
       </div>
     </div>
   );
 }
+
+
+
 
 // POST CARD
 function PostCard({ post, currentUid, onToggleLike, onAddComment, onToggleFollow, onShare }) {
