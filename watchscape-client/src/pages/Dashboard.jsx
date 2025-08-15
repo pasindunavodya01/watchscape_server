@@ -99,6 +99,7 @@ export default function Dashboard({ user, onLogout }) {
               element={<Watched user={user} onMovieChange={refreshCounts} />}
             />
             <Route path="profile/:userId" element={<Profile user={user} />} />
+
           </Routes>
           <Outlet />
         </main>
