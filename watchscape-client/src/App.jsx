@@ -9,6 +9,7 @@ import Signup from './pages/Signup';
 import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
+import MyProfile from './pages/MyProfile';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -43,24 +44,22 @@ export default function App() {
         {!user && <Route path="/signup" element={<Signup />} />}
         {!user && <Route path="/forgot-password" element={<ForgotPassword />} />}
 
-        {/* Protected dashboard with nested routes */}
+        {/* Protected dashboard */}
         <Route
           path="/dashboard/*"
-          element={
-            user ? (
-              <Dashboard user={user} onLogout={handleLogout} />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
+          element={user ? <Dashboard user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />}
         />
 
         {/* Standalone profile page */}
         <Route
           path="/profile/:userId"
-          element={
-            user ? <Profile user={user} /> : <Navigate to="/login" replace />
-          }
+          element={user ? <Profile user={user} /> : <Navigate to="/login" replace />}
+        />
+
+        {/* MyProfile (secure route) */}
+        <Route
+          path="/my-profile"
+          element={user ? <MyProfile user={user} /> : <Navigate to="/login" replace />}
         />
 
         {/* Redirect logged-in users away from login/signup */}

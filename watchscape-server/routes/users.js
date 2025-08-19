@@ -139,4 +139,32 @@ router.delete("/:uid/pin-film/:tmdbId", async (req, res) => {
   }
 });
 
+// Get list of following
+router.get("/:uid/following", async (req, res) => {
+  try {
+    const user = await User.findOne({ uid: req.params.uid });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const followingUsers = await User.find({ uid: { $in: user.following } }).select("uid name email");
+    res.json(followingUsers);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Get list of followers
+router.get("/:uid/followers", async (req, res) => {
+  try {
+    const user = await User.findOne({ uid: req.params.uid });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const followerUsers = await User.find({ uid: { $in: user.followers } }).select("uid name email");
+    res.json(followerUsers);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 export default router;

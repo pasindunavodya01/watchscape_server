@@ -10,6 +10,8 @@ import Search from "./Search";
 import Watchlist from "./Watchlist";
 import Watched from "./Watched";
 import Profile from "./Profile";
+import MyProfile from "./MyProfile";
+
 
 export default function Dashboard({ user, onLogout }) {
   const [counts, setCounts] = useState({ watchlist: 0, watched: 0 });
@@ -98,7 +100,11 @@ export default function Dashboard({ user, onLogout }) {
               path="watched"
               element={<Watched user={user} onMovieChange={refreshCounts} />}
             />
-            <Route path="profile/:userId" element={<Profile user={user} />} />
+            {/* My Profile (current user) */}
+  <Route path="my-profile" element={<MyProfile user={user} />} />
+
+  {/* Other users' profiles */}
+  <Route path="profile/:userId" element={<Profile user={user} />} />
 
           </Routes>
           <Outlet />

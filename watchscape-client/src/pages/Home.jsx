@@ -192,7 +192,7 @@ export default function Home({ user }) {
               {userResults.map((u) => (
                 <Link
                   key={u.uid}
-                  to={`/profile/${u.uid}`}
+                  to={`/dashboard/profile/${u.uid}`}
                   className="block px-3 py-2 hover:bg-gray-100"
                   onClick={() => setShowUserResults(false)}
                 >
@@ -330,7 +330,7 @@ function PostCard({ post, currentUid, onToggleLike, onAddComment, onToggleFollow
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <Link to={`/profile/${post.userId}`} className="text-blue-600 hover:underline font-semibold">
+          <Link to={`/dashboard/profile/${post.userId}`} className="text-blue-600 hover:underline font-semibold">
             {post.userName || post.username || post.userId}
           </Link>
         </div>
@@ -386,7 +386,7 @@ function PostCard({ post, currentUid, onToggleLike, onAddComment, onToggleFollow
       {latestComment && !showComments && (
         <>
           <div className="mt-2 text-sm">
-            <Link to={`/profile/${latestComment.userId}`} className="font-medium text-blue-600 hover:underline">
+            <Link to={`/dashboard/profile/${latestComment.userId}`} className="font-medium text-blue-600 hover:underline">
               {latestComment.userName}
             </Link>
             : {latestComment.text}
@@ -405,7 +405,7 @@ function PostCard({ post, currentUid, onToggleLike, onAddComment, onToggleFollow
           <div className="space-y-2 mb-3">
             {commentsSorted.map((c, idx) => (
               <div key={idx} className="text-sm">
-                <Link to={`/profile/${c.userId}`} className="font-medium text-blue-600 hover:underline">
+                <Link to={`/dashboard/profile/${c.userId}`} className="font-medium text-blue-600 hover:underline">
                   {c.userName}
                 </Link>
                 : {c.text}

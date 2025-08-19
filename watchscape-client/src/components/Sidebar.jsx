@@ -9,25 +9,18 @@ import {
   PowerIcon, // logout icon
 } from "@heroicons/react/24/outline";
 
-export default function Sidebar({
-  user,
-  onLogout,
-  className = "",
-  overlay = false,
-  onClose,
-}) {
+export default function Sidebar({ user, onLogout, className = "", overlay = false, onClose }) {
   const menuItems = [
     { name: "Home", to: "/dashboard", icon: HomeIcon, end: true },
     { name: "Search", to: "/dashboard/search", icon: MagnifyingGlassIcon },
     { name: "Watchlist", to: "/dashboard/watchlist", icon: BookmarkIcon },
     { name: "Watched", to: "/dashboard/watched", icon: EyeIcon },
-    { name: "Profile", to: `/dashboard/profile/${user.uid}`, icon: UserIcon },
+    // Use the dedicated route for your own profile
+    { name: "Profile", to: `/dashboard/my-profile`, icon: UserIcon },
   ];
 
   return (
-    <aside
-      className={`${className} bg-white shadow-lg border-r border-blue-100 flex flex-col`}
-    >
+    <aside className={`${className} bg-white shadow-lg border-r border-blue-100 flex flex-col`}>
       {/* Close button for mobile overlay */}
       {overlay && (
         <div className="flex justify-end p-2 border-b border-blue-100">
@@ -61,7 +54,7 @@ export default function Sidebar({
             </NavLink>
           ))}
 
-          {/* Mobile-only logout button with icon */}
+          {/* Mobile-only logout button */}
           <button
             onClick={onLogout}
             className="flex items-center px-4 py-2 rounded-lg text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors duration-200 md:hidden"
@@ -72,7 +65,7 @@ export default function Sidebar({
         </nav>
       </div>
 
-      {/* Desktop-only logout button at the bottom */}
+      {/* Desktop-only logout button */}
       <div className="mt-auto p-6 hidden md:block">
         <button
           onClick={onLogout}
