@@ -41,9 +41,10 @@ export default function Search({ user, onMovieChange }) {
     setLoading(false);
   };
 
+  // FIXED: Changed to use the movie-activity endpoint
   const addMovie = async (movie, status) => {
     try {
-      const res = await fetch("https://patient-determination-production.up.railway.app/api/movies", {
+      const res = await fetch("https://patient-determination-production.up.railway.app/api/posts/movie-activity", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -51,13 +52,14 @@ export default function Search({ user, onMovieChange }) {
           title: movie.title,
           posterPath: movie.poster_path,
           releaseDate: movie.release_date,
+          overview: movie.overview || '',
           userId: user.uid,
           status,
         }),
       });
       if (res.ok) {
         alert(`Movie added to your ${status}!`);
-        if (onMovieChange) onMovieChange();  // <== Notify parent here
+        if (onMovieChange) onMovieChange();
       } else {
         const errData = await res.json();
         alert(errData.message || "Failed to add movie");
@@ -124,21 +126,20 @@ export default function Search({ user, onMovieChange }) {
             <h3 className="font-semibold">{movie.title}</h3>
             <p className="text-sm text-gray-600">{movie.release_date || "N/A"}</p>
 
-  <div className="mt-2 flex flex-wrap gap-3 w-full">
-  <button
-    onClick={() => addMovie(movie, "watchlist")}
-    className="flex-1 bg-purple-700 text-white px-3 py-1 rounded text-sm text-center"
-  >
-    Add to Watchlist
-  </button>
-  <button
-    onClick={() => addMovie(movie, "watched")}
-    className="flex-1 bg-green-600 text-white px-3 py-1 rounded text-sm text-center"
-  >
-    Mark as Watched
-  </button>
-</div>
-
+            <div className="mt-2 flex flex-wrap gap-3 w-full">
+              <button
+                onClick={() => addMovie(movie, "watchlist")}
+                className="flex-1 bg-purple-700 text-white px-3 py-1 rounded text-sm text-center"
+              >
+                Add to Watchlist
+              </button>
+              <button
+                onClick={() => addMovie(movie, "watched")}
+                className="flex-1 bg-green-600 text-white px-3 py-1 rounded text-sm text-center"
+              >
+                Mark as Watched
+              </button>
+            </div>
           </div>
         ))}
       </div>

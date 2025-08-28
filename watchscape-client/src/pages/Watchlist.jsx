@@ -29,7 +29,7 @@ export default function Watchlist({ user, onMovieChange }) {
       });
       if (res.ok) {
         setMovies(movies.filter((m) => m._id !== id));
-        if (onMovieChange) onMovieChange();  // Notify parent about update
+        if (onMovieChange) onMovieChange();
       } else {
         alert("Failed to remove movie");
       }
@@ -38,20 +38,41 @@ export default function Watchlist({ user, onMovieChange }) {
     }
   };
 
+  // FIXED: Changed to use movie-activity endpoint to create activity post
   const markAsWatched = async (movie) => {
     try {
-      const res = await fetch(`https://patient-determination-production.up.railway.app/api/movies/${movie._id}`, {
-        method: "PUT",
+      // Call the movie-activity endpoint to create an activity post
+      const res = await fetch("https://patient-determination-production.up.railway.app/api/posts/movie-activity", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "watched" }),
+        body: JSON.stringify({
+          tmdbId: movie.tmdbId,
+          title: movie.title,
+          posterPath: movie.posterPath,
+          releaseDate: movie.releaseDate,
+          overview: movie.overview || '',
+          userId: user.uid,
+          status: "watched",
+        }),
       });
+      
       if (res.ok) {
+        // Remove the old watchlist entry
+        await fetch(`https://patient-determination-production.up.railway.app/api/movies/${movie._id}`, {
+          method: "DELETE",
+        });
+        
+        // Update local state
         setMovies(movies.filter((m) => m._id !== movie._id));
-        if (onMovieChange) onMovieChange();  // Notify parent about update
+        if (onMovieChange) onMovieChange();
+        
+        alert("Movie marked as watched!");
       } else {
-        alert("Failed to mark as watched");
+        const errData = await res.json();
+        alert(errData.message || "Failed to mark as watched");
       }
-    } catch {
+    } catch (error) {
+      console.error("Error marking as watched:", error);
       alert("Error updating movie");
     }
   };

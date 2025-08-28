@@ -7,6 +7,7 @@ const PinSchema = new mongoose.Schema({
   userUid: String,
   tmdbId: String,
   title: String,
+  posterPath: String, // Added posterPath field
 });
 const Pin = mongoose.models.Pin || mongoose.model("Pin", PinSchema);
 
@@ -104,8 +105,20 @@ router.get("/:uid/profile", async (req, res) => {
       followersCount: user.followers.length,
       followingCount: user.following.length,
       followedByViewer: viewerUid ? user.followers.includes(viewerUid) : false,
-      pinnedFilms: pins.map(p => ({ tmdbId: p.tmdbId, title: p.title })),
-      posts: posts.map(p => ({ _id: p._id, text: p.text, share: p.share, createdAt: p.createdAt })),
+      pinnedFilms: pins.map(p => ({ 
+        tmdbId: p.tmdbId, 
+        title: p.title, 
+        posterPath: p.posterPath || '' // Include posterPath
+      })),
+      posts: posts.map(p => ({ 
+        _id: p._id, 
+        text: p.text, 
+        share: p.share, 
+        createdAt: p.createdAt,
+        type: p.type,
+        movie: p.movie,
+        movieActivity: p.movieActivity
+      })),
     });
   } catch (err) {
     console.error(err);
@@ -113,28 +126,55 @@ router.get("/:uid/profile", async (req, res) => {
   }
 });
 
-// PIN / UNPIN FILMS
+// PIN / UNPIN FILMS - Fixed to handle posterPath
 router.patch("/:uid/pin-film", async (req, res) => {
   try {
-    const { tmdbId, title } = req.body;
-    if (!tmdbId || !title) return res.status(400).json({ message: "tmdbId and title required" });
-    await Pin.updateOne(
-      { userUid: req.params.uid, tmdbId },
-      { $set: { userUid: req.params.uid, tmdbId, title } },
-      { upsert: true }
-    );
-    res.json({ ok: true });
+    const { tmdbId, title, posterPath } = req.body;
+    if (!tmdbId || !title) {
+      return res.status(400).json({ message: "tmdbId and title required" });
+    }
+
+    // Check if already pinned
+    const existing = await Pin.findOne({ userUid: req.params.uid, tmdbId });
+    if (existing) {
+      return res.status(400).json({ message: "Movie already pinned" });
+    }
+
+    // Check pin limit (optional - limit to 6 pins)
+    const pinCount = await Pin.countDocuments({ userUid: req.params.uid });
+    if (pinCount >= 6) {
+      return res.status(400).json({ message: "Maximum 6 films can be pinned" });
+    }
+
+    await Pin.create({
+      userUid: req.params.uid,
+      tmdbId: tmdbId.toString(),
+      title,
+      posterPath: posterPath || ''
+    });
+
+    res.json({ message: "Movie pinned successfully" });
   } catch (err) {
-    console.error(err);
+    console.error("Pin film error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
+
+// Unpin film
 router.delete("/:uid/pin-film/:tmdbId", async (req, res) => {
   try {
-    await Pin.deleteOne({ userUid: req.params.uid, tmdbId: req.params.tmdbId });
-    res.json({ ok: true });
+    const result = await Pin.deleteOne({ 
+      userUid: req.params.uid, 
+      tmdbId: req.params.tmdbId 
+    });
+    
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ message: "Pinned movie not found" });
+    }
+    
+    res.json({ message: "Movie unpinned successfully" });
   } catch (err) {
-    console.error(err);
+    console.error("Unpin film error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });

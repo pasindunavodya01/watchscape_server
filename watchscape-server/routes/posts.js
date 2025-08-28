@@ -2,10 +2,11 @@ import express from "express";
 import axios from "axios";
 import Post from "../models/Post.js";
 import User from "../models/User.js";
+import Movie from "../models/Movie.js";
 
 const router = express.Router();
 
-// CREATE POST
+// CREATE POST (for regular text posts)
 router.post("/", async (req, res) => {
   try {
     const { userId, text, movie } = req.body;
@@ -38,6 +39,52 @@ router.post("/", async (req, res) => {
   }
 });
 
+// CREATE MOVIE ACTIVITY POST (for watchlist/watched actions)
+router.post("/movie-activity", async (req, res) => {
+  try {
+    const { tmdbId, title, posterPath, releaseDate, userId, status, overview } = req.body;
+    if (!tmdbId || !userId || !status) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    // Check if movie already exists in this status for this user
+    const existing = await Movie.findOne({ tmdbId, userId, status });
+    if (existing) {
+      return res.status(400).json({ message: 'Movie already in this list' });
+    }
+
+    // Save the movie to the database
+    const movie = new Movie({ tmdbId, title, posterPath, releaseDate, userId, status });
+    const savedMovie = await movie.save();
+    
+    // Create an activity post
+    const user = await User.findOne({ uid: userId });
+    if (user) {
+      const activityPost = new Post({
+        userId,
+        username: user.username || user.name || user.email,
+        type: 'movie_activity',
+        movieActivity: {
+          action: status, // This should match the status being passed
+          movie: {
+            tmdbId: tmdbId.toString(),
+            title,
+            posterPath,
+            releaseDate,
+            overview: overview || "" // Use the overview passed or empty string
+          }
+        }
+      });
+      await activityPost.save();
+    }
+    
+    res.status(201).json(savedMovie);
+  } catch (err) {
+    console.error('Movie activity error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // GET ALL POSTS (fetch full movie details if tmdbId exists)
 router.get("/", async (req, res) => {
   try {
@@ -45,25 +92,61 @@ router.get("/", async (req, res) => {
 
     const detailedPosts = await Promise.all(
       posts.map(async (post) => {
-        // fetch movie overview & releaseDate if tmdbId exists
+        // Add userName to the post level if missing
+        if (!post.userName && post.username) {
+          post.userName = post.username;
+        }
+        
+        // For movie activity posts, fetch movie details if needed
+        if (post.type === 'movie_activity' && post.movieActivity && post.movieActivity.movie.tmdbId) {
+          try {
+            const tmdbRes = await axios.get(
+              `https://api.themoviedb.org/3/movie/${post.movieActivity.movie.tmdbId}`,
+              { params: { api_key: process.env.TMDB_API_KEY, language: "en-US" } }
+            );
+            // Only update if overview is missing
+            if (!post.movieActivity.movie.overview) {
+              post.movieActivity.movie.overview = tmdbRes.data.overview;
+            }
+            if (!post.movieActivity.movie.releaseDate) {
+              post.movieActivity.movie.releaseDate = tmdbRes.data.release_date;
+            }
+          } catch (error) {
+            console.log('Error fetching TMDB data for activity post:', error.message);
+            // ignore, show minimal saved info
+          }
+        }
+        
+        // For regular movie posts, fetch movie details if needed
         if (post.movie && post.movie.tmdbId) {
           try {
             const tmdbRes = await axios.get(
               `https://api.themoviedb.org/3/movie/${post.movie.tmdbId}`,
               { params: { api_key: process.env.TMDB_API_KEY, language: "en-US" } }
             );
-            post.movie.overview = tmdbRes.data.overview;
-            post.movie.releaseDate = tmdbRes.data.release_date;
-          } catch {
+            if (!post.movie.overview) {
+              post.movie.overview = tmdbRes.data.overview;
+            }
+            if (!post.movie.releaseDate) {
+              post.movie.releaseDate = tmdbRes.data.release_date;
+            }
+          } catch (error) {
+            console.log('Error fetching TMDB data for movie post:', error.message);
             // ignore, show minimal saved info
           }
         }
 
+        // Ensure comments array exists and populate userName for comments
         post.comments = post.comments || [];
         for (const comment of post.comments) {
           if (!comment.userName) {
-            const user = await User.findOne({ uid: comment.userId }).lean();
-            comment.userName = user ? user.username || user.name || user.email : comment.userId;
+            try {
+              const user = await User.findOne({ uid: comment.userId }).lean();
+              comment.userName = user ? user.username || user.name || user.email : comment.userId;
+            } catch (error) {
+              console.log('Error fetching user for comment:', error.message);
+              comment.userName = comment.userId;
+            }
           }
         }
         post.comments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -74,7 +157,7 @@ router.get("/", async (req, res) => {
 
     res.json(detailedPosts);
   } catch (err) {
-    console.error(err);
+    console.error('Get posts error:', err);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -145,6 +228,8 @@ router.post("/:id/share", async (req, res) => {
       username: user.username || user.name || user.email,
       text: originalPost.text,
       movie: originalPost.movie,
+      type: originalPost.type,
+      movieActivity: originalPost.movieActivity,
       createdAt: new Date(),
     });
 
