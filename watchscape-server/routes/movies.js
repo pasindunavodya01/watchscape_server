@@ -1,66 +1,37 @@
-// Updated routes/posts.js with notification integration
+// routes/movies.js
 import express from "express";
 import axios from "axios";
-import Post from "../models/Post.js";
-import User from "../models/User.js";
 import Movie from "../models/Movie.js";
-import { createNotification } from "./notifications.js";
 
 const router = express.Router();
 
-// CREATE POST (for regular text posts)
-router.post("/", async (req, res) => {
+// TMDb movie search
+router.get("/search", async (req, res) => {
   try {
-    const { userId, text, movie } = req.body;
-    if (!userId || !text) return res.status(400).json({ message: "Missing fields" });
+    const query = req.query.q;
+    if (!query) return res.status(400).json({ message: 'Query missing' });
 
-    const user = await User.findOne({ uid: userId });
-    if (!user) return res.status(404).json({ message: "User not found" });
-
-    const movieData = movie
-      ? {
-          title: movie.title || "",
-          posterPath: movie.posterPath || "",
-          tmdbId: movie.tmdbId?.toString() || "",
-        }
-      : undefined;
-
-    const newPost = new Post({
-      userId,
-      username: user.username || user.name || user.email,
-      text,
-      movie: movieData,
+    const response = await axios.get('https://api.themoviedb.org/3/search/movie', {
+      params: {
+        api_key: process.env.TMDB_API_KEY,
+        query,
+        language: 'en-US',
+        page: 1,
+        include_adult: false,
+      },
     });
 
-    await newPost.save();
-
-    // NOTIFICATION: Notify all followers about new post
-    if (user.followers && user.followers.length > 0) {
-      const postPreview = text.length > 50 ? text.substring(0, 50) + "..." : text;
-      const movieText = movie ? ` about ${movie.title}` : "";
-      
-      for (const followerUid of user.followers) {
-        await createNotification({
-          recipientUid: followerUid,
-          senderUid: userId,
-          type: "post",
-          message: `posted: "${postPreview}"${movieText}`,
-          postId: newPost._id.toString()
-        });
-      }
-    }
-
-    res.status(201).json(newPost);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
+    res.json(response.data.results);
+  } catch (error) {
+    console.error('TMDb search error:', error.message);
+    res.status(500).json({ message: 'Failed to fetch movies' });
   }
 });
 
-// CREATE MOVIE ACTIVITY POST (for watchlist/watched actions)
-router.post("/movie-activity", async (req, res) => {
+// Add movie
+router.post("/", async (req, res) => {
   try {
-    const { tmdbId, title, posterPath, releaseDate, userId, status, overview } = req.body;
+    const { tmdbId, title, posterPath, releaseDate, userId, status } = req.body;
     if (!tmdbId || !userId || !status) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
@@ -72,229 +43,137 @@ router.post("/movie-activity", async (req, res) => {
 
     const movie = new Movie({ tmdbId, title, posterPath, releaseDate, userId, status });
     const savedMovie = await movie.save();
-    
-    const user = await User.findOne({ uid: userId });
-    if (user) {
-      const activityPost = new Post({
-        userId,
-        username: user.username || user.name || user.email,
-        type: 'movie_activity',
-        movieActivity: {
-          action: status,
-          movie: {
-            tmdbId: tmdbId.toString(),
-            title,
-            posterPath,
-            releaseDate,
-            overview: overview || ""
-          }
-        }
-      });
-      await activityPost.save();
-
-      // NOTIFICATION: Notify all followers about movie activity
-      if (user.followers && user.followers.length > 0) {
-        const actionText = status === 'watchlist' ? 'added to watchlist' : 'watched';
-        
-        for (const followerUid of user.followers) {
-          await createNotification({
-            recipientUid: followerUid,
-            senderUid: userId,
-            type: "movie_activity",
-            message: `${actionText} "${title}"`,
-            postId: activityPost._id.toString(),
-            movieTitle: title,
-            movieAction: status
-          });
-        }
-      }
-    }
-    
     res.status(201).json(savedMovie);
   } catch (err) {
-    console.error('Movie activity error:', err);
+    console.error(err);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// GET ALL POSTS (no changes needed)
+// Get movies with details
 router.get("/", async (req, res) => {
   try {
-    const posts = await Post.find().sort({ createdAt: -1 }).lean();
-
-    const detailedPosts = await Promise.all(
-      posts.map(async (post) => {
-        if (!post.userName && post.username) {
-          post.userName = post.username;
-        }
-        
-        if (post.type === 'movie_activity' && post.movieActivity && post.movieActivity.movie.tmdbId) {
-          try {
-            const tmdbRes = await axios.get(
-              `https://api.themoviedb.org/3/movie/${post.movieActivity.movie.tmdbId}`,
-              { params: { api_key: process.env.TMDB_API_KEY, language: "en-US" } }
-            );
-            if (!post.movieActivity.movie.overview) {
-              post.movieActivity.movie.overview = tmdbRes.data.overview;
-            }
-            if (!post.movieActivity.movie.releaseDate) {
-              post.movieActivity.movie.releaseDate = tmdbRes.data.release_date;
-            }
-          } catch (error) {
-            console.log('Error fetching TMDB data for activity post:', error.message);
-          }
-        }
-        
-        if (post.movie && post.movie.tmdbId) {
-          try {
-            const tmdbRes = await axios.get(
-              `https://api.themoviedb.org/3/movie/${post.movie.tmdbId}`,
-              { params: { api_key: process.env.TMDB_API_KEY, language: "en-US" } }
-            );
-            if (!post.movie.overview) {
-              post.movie.overview = tmdbRes.data.overview;
-            }
-            if (!post.movie.releaseDate) {
-              post.movie.releaseDate = tmdbRes.data.release_date;
-            }
-          } catch (error) {
-            console.log('Error fetching TMDB data for movie post:', error.message);
-          }
-        }
-
-        post.comments = post.comments || [];
-        for (const comment of post.comments) {
-          if (!comment.userName) {
-            try {
-              const user = await User.findOne({ uid: comment.userId }).lean();
-              comment.userName = user ? user.username || user.name || user.email : comment.userId;
-            } catch (error) {
-              console.log('Error fetching user for comment:', error.message);
-              comment.userName = comment.userId;
-            }
-          }
-        }
-        post.comments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-        return post;
-      })
-    );
-
-    res.json(detailedPosts);
-  } catch (err) {
-    console.error('Get posts error:', err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-// TOGGLE LIKE
-router.put("/:id/like", async (req, res) => {
-  try {
-    const { userId } = req.body;
-    const post = await Post.findById(req.params.id);
-    if (!post) return res.status(404).json({ message: "Post not found" });
-
-    const wasLiked = post.likes.includes(userId);
-    
-    if (wasLiked) {
-      post.likes = post.likes.filter((id) => id !== userId);
-    } else {
-      post.likes.push(userId);
-      
-      // NOTIFICATION: Notify post author about new like
-      await createNotification({
-        recipientUid: post.userId,
-        senderUid: userId,
-        type: "like",
-        message: `liked your post`,
-        postId: post._id.toString()
-      });
+    const { userId, status } = req.query;
+    if (!userId || !status) {
+      return res.status(400).json({ message: 'Missing parameters' });
     }
 
-    await post.save();
-    res.json({ likes: post.likes });
+    const movies = await Movie.find({ userId, status });
+    const detailedMovies = await Promise.all(
+      movies.map(async (m) => {
+        try {
+          const tmdbRes = await axios.get(`https://api.themoviedb.org/3/movie/${m.tmdbId}`, {
+            params: { api_key: process.env.TMDB_API_KEY, language: 'en-US' }
+          });
+          return { 
+            _id: m._id,
+            userId: m.userId,
+            status: m.status,
+            tmdbId: m.tmdbId,
+            title: tmdbRes.data.title,
+            posterPath: tmdbRes.data.poster_path,
+            releaseDate: tmdbRes.data.release_date,
+            overview: tmdbRes.data.overview,
+            tmdbDetails: tmdbRes.data,
+          };
+        } catch {
+          return m.toObject();
+        }
+      })
+    );
+    res.json(detailedMovies);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
-// ADD COMMENT
-router.post("/:id/comment", async (req, res) => {
+// Delete movie
+router.delete("/:id", async (req, res) => {
   try {
-    const { userId, text } = req.body;
-    if (!text) return res.status(400).json({ message: "Comment cannot be empty" });
-
-    const post = await Post.findById(req.params.id);
-    if (!post) return res.status(404).json({ message: "Post not found" });
-
-    const user = await User.findOne({ uid: userId });
-    if (!user) return res.status(404).json({ message: "User not found" });
-
-    const newComment = {
-      userId,
-      userName: user.username || user.name || user.email || userId,
-      text,
-      createdAt: new Date(),
-    };
-
-    post.comments.push(newComment);
-    post.comments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    await post.save();
-
-    // NOTIFICATION: Notify post author about new comment
-    const commentPreview = text.length > 50 ? text.substring(0, 50) + "..." : text;
-    await createNotification({
-      recipientUid: post.userId,
-      senderUid: userId,
-      type: "comment",
-      message: `commented: "${commentPreview}"`,
-      postId: post._id.toString()
-    });
-
-    res.json({ comments: post.comments });
+    await Movie.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Movie removed' });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
-// SHARE POST
-router.post("/:id/share", async (req, res) => {
+// Update movie status
+router.put("/:id", async (req, res) => {
   try {
-    const { userId } = req.body;
-    const originalPost = await Post.findById(req.params.id);
-    if (!originalPost) return res.status(404).json({ message: "Post not found" });
-
-    const user = await User.findOne({ uid: userId });
-    if (!user) return res.status(404).json({ message: "User not found" });
-
-    const sharedPost = new Post({
-      userId,
-      username: user.username || user.name || user.email,
-      text: originalPost.text,
-      movie: originalPost.movie,
-      type: originalPost.type,
-      movieActivity: originalPost.movieActivity,
-      createdAt: new Date(),
-    });
-
-    await sharedPost.save();
-
-    // NOTIFICATION: Notify original post author about share
-    await createNotification({
-      recipientUid: originalPost.userId,
-      senderUid: userId,
-      type: "share",
-      message: `shared your post`,
-      postId: originalPost._id.toString()
-    });
-
-    res.status(201).json(sharedPost);
+    const updated = await Movie.findByIdAndUpdate(
+      req.params.id,
+      { status: req.body.status },
+      { new: true }
+    );
+    res.json(updated);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: 'Error updating movie' });
   }
 });
 
 export default router;
+
+// Get popular movies
+router.get("/popular", async (req, res) => {
+  try {
+    const response = await axios.get("https://api.themoviedb.org/3/movie/popular", {
+      params: {
+        api_key: process.env.TMDB_API_KEY,
+        language: "en-US",
+        page: 1,
+      },
+    });
+    res.json(response.data.results);
+  } catch (error) {
+    console.error("TMDb popular error:", error.message);
+    res.status(500).json({ message: "Failed to fetch popular movies" });
+  }
+});
+
+router.get("/stats", async (req, res) => {
+  try {
+    const userId = req.query.userId;
+    if (!userId) {
+      console.error("Missing userId in query");
+      return res.status(400).json({ message: "Missing userId" });
+    }
+
+    console.log(`Stats request for userId: ${userId}`);
+
+    // Double-check type and format of userId
+    console.log("Type of userId:", typeof userId);
+    console.log("userId length:", userId.length);
+
+    // Find some example movies for this user (any status)
+    const exampleMovies = await Movie.find({ userId }).limit(5);
+    console.log(`Example movies found for userId=${userId}: ${exampleMovies.length}`);
+    exampleMovies.forEach((movie, idx) => {
+      console.log(`Example movie #${idx + 1}: tmdbId=${movie.tmdbId}, status=${movie.status}, updatedAt=${movie.updatedAt}`);
+    });
+
+    // Get total watchlist count
+    const watchlistCount = await Movie.countDocuments({ userId, status: "watchlist" });
+    console.log("Watchlist count:", watchlistCount);
+
+    // Calculate date 30 days ago
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    console.log("30 days ago:", thirtyDaysAgo);
+
+    // Get watched count in last 30 days (based on updatedAt)
+    const watchedRecentCount = await Movie.countDocuments({
+      userId,
+      status: "watched",
+      updatedAt: { $gte: thirtyDaysAgo },
+    });
+    console.log("Watched recent count:", watchedRecentCount);
+
+    res.json({ watchlistCount, watchedRecentCount });
+  } catch (err) {
+    console.error("Error in /stats:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
