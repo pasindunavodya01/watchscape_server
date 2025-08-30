@@ -11,6 +11,7 @@ import Watchlist from "./Watchlist";
 import Watched from "./Watched";
 import Profile from "./Profile";
 import MyProfile from "./MyProfile";
+import Notifications from "./Notifications";
 
 
 export default function Dashboard({ user, onLogout }) {
@@ -91,6 +92,10 @@ export default function Dashboard({ user, onLogout }) {
             <Route
               path="search"
               element={<Search user={user} onMovieChange={refreshCounts} />}
+            />
+            <Route
+              path="notifications"
+              element={<Notifications user={user} />}
             />
             <Route
               path="watchlist"

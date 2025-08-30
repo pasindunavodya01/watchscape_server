@@ -23,5 +23,10 @@ app.use("/api/users", userRoutes);
 app.use("/api/movies", movieRoutes);
 app.use("/api/posts", postRoutes);
 
+import notificationRoutes from "./routes/notifications.js";
+
+// Add this with your other route declarations
+app.use("/api/notifications", notificationRoutes);
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

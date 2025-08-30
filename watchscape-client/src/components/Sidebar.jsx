@@ -6,12 +6,14 @@ import {
   BookmarkIcon,
   EyeIcon,
   UserIcon,
-  PowerIcon, // logout icon
+  PowerIcon,
+  BellIcon // logout icon
 } from "@heroicons/react/24/outline";
 
 export default function Sidebar({ user, onLogout, className = "", overlay = false, onClose }) {
   const menuItems = [
     { name: "Home", to: "/dashboard", icon: HomeIcon, end: true },
+    { name: "Notifications", to: "/dashboard/notifications", icon: BellIcon },
     { name: "Search", to: "/dashboard/search", icon: MagnifyingGlassIcon },
     { name: "Watchlist", to: "/dashboard/watchlist", icon: BookmarkIcon },
     { name: "Watched", to: "/dashboard/watched", icon: EyeIcon },
@@ -33,6 +35,9 @@ export default function Sidebar({ user, onLogout, className = "", overlay = fals
           </button>
         </div>
       )}
+      
+
+
 
       <div className="p-6">
         <nav className="flex flex-col space-y-2">

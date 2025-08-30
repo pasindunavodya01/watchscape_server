@@ -1,19 +1,21 @@
+// Updated routes/users.js with follow notifications
 import express from "express";
 import User from "../models/User.js";
 import Post from "../models/Post.js";
 import mongoose from "mongoose";
+import { createNotification } from "./notifications.js";
 
 const PinSchema = new mongoose.Schema({
   userUid: String,
   tmdbId: String,
   title: String,
-  posterPath: String, // Added posterPath field
+  posterPath: String,
 });
 const Pin = mongoose.models.Pin || mongoose.model("Pin", PinSchema);
 
 const router = express.Router();
 
-// REGISTER / SAVE USER
+// REGISTER / SAVE USER (no changes)
 router.post("/", async (req, res) => {
   try {
     const { uid, email, name, country, age } = req.body;
@@ -28,7 +30,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-// GET USER BY UID
+// GET USER BY UID (no changes)
 router.get("/:uid", async (req, res) => {
   try {
     const { uid } = req.params;
@@ -41,7 +43,7 @@ router.get("/:uid", async (req, res) => {
   }
 });
 
-// SEARCH USERS
+// SEARCH USERS (no changes)
 router.get("/", async (req, res) => {
   try {
     const q = (req.query.q || "").trim();
@@ -57,7 +59,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// FOLLOW TOGGLE
+// FOLLOW TOGGLE - Updated with notifications
 router.post("/:uid/follow", async (req, res) => {
   try {
     const targetUid = req.params.uid;
@@ -77,6 +79,14 @@ router.post("/:uid/follow", async (req, res) => {
     } else {
       follower.following.push(targetUid);
       target.followers.push(followerUid);
+      
+      // NOTIFICATION: Notify target user about new follower
+      await createNotification({
+        recipientUid: targetUid,
+        senderUid: followerUid,
+        type: "follow",
+        message: `started following you`
+      });
     }
 
     await follower.save();
@@ -88,7 +98,7 @@ router.post("/:uid/follow", async (req, res) => {
   }
 });
 
-// GET PROFILE
+// GET PROFILE (no changes)
 router.get("/:uid/profile", async (req, res) => {
   try {
     const { uid } = req.params;
@@ -108,7 +118,7 @@ router.get("/:uid/profile", async (req, res) => {
       pinnedFilms: pins.map(p => ({ 
         tmdbId: p.tmdbId, 
         title: p.title, 
-        posterPath: p.posterPath || '' // Include posterPath
+        posterPath: p.posterPath || ''
       })),
       posts: posts.map(p => ({ 
         _id: p._id, 
@@ -126,7 +136,7 @@ router.get("/:uid/profile", async (req, res) => {
   }
 });
 
-// PIN / UNPIN FILMS - Fixed to handle posterPath
+// PIN / UNPIN FILMS (no changes)
 router.patch("/:uid/pin-film", async (req, res) => {
   try {
     const { tmdbId, title, posterPath } = req.body;
@@ -134,13 +144,11 @@ router.patch("/:uid/pin-film", async (req, res) => {
       return res.status(400).json({ message: "tmdbId and title required" });
     }
 
-    // Check if already pinned
     const existing = await Pin.findOne({ userUid: req.params.uid, tmdbId });
     if (existing) {
       return res.status(400).json({ message: "Movie already pinned" });
     }
 
-    // Check pin limit (optional - limit to 6 pins)
     const pinCount = await Pin.countDocuments({ userUid: req.params.uid });
     if (pinCount >= 6) {
       return res.status(400).json({ message: "Maximum 6 films can be pinned" });
@@ -160,7 +168,7 @@ router.patch("/:uid/pin-film", async (req, res) => {
   }
 });
 
-// Unpin film
+// Unpin film (no changes)
 router.delete("/:uid/pin-film/:tmdbId", async (req, res) => {
   try {
     const result = await Pin.deleteOne({ 
@@ -179,7 +187,7 @@ router.delete("/:uid/pin-film/:tmdbId", async (req, res) => {
   }
 });
 
-// Get list of following
+// Get list of following (no changes)
 router.get("/:uid/following", async (req, res) => {
   try {
     const user = await User.findOne({ uid: req.params.uid });
@@ -193,7 +201,7 @@ router.get("/:uid/following", async (req, res) => {
   }
 });
 
-// Get list of followers
+// Get list of followers (no changes)
 router.get("/:uid/followers", async (req, res) => {
   try {
     const user = await User.findOne({ uid: req.params.uid });

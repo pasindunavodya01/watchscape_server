@@ -3,10 +3,11 @@ import axios from "axios";
 import Post from "../models/Post.js";
 import User from "../models/User.js";
 import Movie from "../models/Movie.js";
+import { createNotification } from "./notifications.js";
 
 const router = express.Router();
 
-// CREATE POST (for regular text posts)
+// CREATE POST (regular text)
 router.post("/", async (req, res) => {
   try {
     const { userId, text, movie } = req.body;
@@ -15,7 +16,6 @@ router.post("/", async (req, res) => {
     const user = await User.findOne({ uid: userId });
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // Only save minimal movie info when creating a post
     const movieData = movie
       ? {
           title: movie.title || "",
@@ -39,25 +39,18 @@ router.post("/", async (req, res) => {
   }
 });
 
-// CREATE MOVIE ACTIVITY POST (for watchlist/watched actions)
+// CREATE MOVIE ACTIVITY POST
 router.post("/movie-activity", async (req, res) => {
   try {
     const { tmdbId, title, posterPath, releaseDate, userId, status, overview } = req.body;
-    if (!tmdbId || !userId || !status) {
-      return res.status(400).json({ message: 'Missing required fields' });
-    }
+    if (!tmdbId || !userId || !status) return res.status(400).json({ message: 'Missing required fields' });
 
-    // Check if movie already exists in this status for this user
     const existing = await Movie.findOne({ tmdbId, userId, status });
-    if (existing) {
-      return res.status(400).json({ message: 'Movie already in this list' });
-    }
+    if (existing) return res.status(400).json({ message: 'Movie already in this list' });
 
-    // Save the movie to the database
     const movie = new Movie({ tmdbId, title, posterPath, releaseDate, userId, status });
     const savedMovie = await movie.save();
-    
-    // Create an activity post
+
     const user = await User.findOne({ uid: userId });
     if (user) {
       const activityPost = new Post({
@@ -65,19 +58,19 @@ router.post("/movie-activity", async (req, res) => {
         username: user.username || user.name || user.email,
         type: 'movie_activity',
         movieActivity: {
-          action: status, // This should match the status being passed
+          action: status,
           movie: {
             tmdbId: tmdbId.toString(),
             title,
             posterPath,
             releaseDate,
-            overview: overview || "" // Use the overview passed or empty string
+            overview: overview || ""
           }
         }
       });
       await activityPost.save();
     }
-    
+
     res.status(201).json(savedMovie);
   } catch (err) {
     console.error('Movie activity error:', err);
@@ -85,58 +78,41 @@ router.post("/movie-activity", async (req, res) => {
   }
 });
 
-// GET ALL POSTS (fetch full movie details if tmdbId exists)
+// GET ALL POSTS
 router.get("/", async (req, res) => {
   try {
     const posts = await Post.find().sort({ createdAt: -1 }).lean();
 
     const detailedPosts = await Promise.all(
       posts.map(async (post) => {
-        // Add userName to the post level if missing
-        if (!post.userName && post.username) {
-          post.userName = post.username;
-        }
-        
-        // For movie activity posts, fetch movie details if needed
-        if (post.type === 'movie_activity' && post.movieActivity && post.movieActivity.movie.tmdbId) {
+        if (!post.userName && post.username) post.userName = post.username;
+
+        if (post.type === 'movie_activity' && post.movieActivity?.movie.tmdbId) {
           try {
             const tmdbRes = await axios.get(
               `https://api.themoviedb.org/3/movie/${post.movieActivity.movie.tmdbId}`,
               { params: { api_key: process.env.TMDB_API_KEY, language: "en-US" } }
             );
-            // Only update if overview is missing
-            if (!post.movieActivity.movie.overview) {
-              post.movieActivity.movie.overview = tmdbRes.data.overview;
-            }
-            if (!post.movieActivity.movie.releaseDate) {
-              post.movieActivity.movie.releaseDate = tmdbRes.data.release_date;
-            }
+            if (!post.movieActivity.movie.overview) post.movieActivity.movie.overview = tmdbRes.data.overview;
+            if (!post.movieActivity.movie.releaseDate) post.movieActivity.movie.releaseDate = tmdbRes.data.release_date;
           } catch (error) {
-            console.log('Error fetching TMDB data for activity post:', error.message);
-            // ignore, show minimal saved info
+            console.log('TMDB fetch error for activity post:', error.message);
           }
         }
-        
-        // For regular movie posts, fetch movie details if needed
-        if (post.movie && post.movie.tmdbId) {
+
+        if (post.movie?.tmdbId) {
           try {
             const tmdbRes = await axios.get(
               `https://api.themoviedb.org/3/movie/${post.movie.tmdbId}`,
               { params: { api_key: process.env.TMDB_API_KEY, language: "en-US" } }
             );
-            if (!post.movie.overview) {
-              post.movie.overview = tmdbRes.data.overview;
-            }
-            if (!post.movie.releaseDate) {
-              post.movie.releaseDate = tmdbRes.data.release_date;
-            }
+            if (!post.movie.overview) post.movie.overview = tmdbRes.data.overview;
+            if (!post.movie.releaseDate) post.movie.releaseDate = tmdbRes.data.release_date;
           } catch (error) {
-            console.log('Error fetching TMDB data for movie post:', error.message);
-            // ignore, show minimal saved info
+            console.log('TMDB fetch error for movie post:', error.message);
           }
         }
 
-        // Ensure comments array exists and populate userName for comments
         post.comments = post.comments || [];
         for (const comment of post.comments) {
           if (!comment.userName) {
@@ -144,13 +120,11 @@ router.get("/", async (req, res) => {
               const user = await User.findOne({ uid: comment.userId }).lean();
               comment.userName = user ? user.username || user.name || user.email : comment.userId;
             } catch (error) {
-              console.log('Error fetching user for comment:', error.message);
               comment.userName = comment.userId;
             }
           }
         }
         post.comments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
         return post;
       })
     );
@@ -162,28 +136,38 @@ router.get("/", async (req, res) => {
   }
 });
 
-// TOGGLE LIKE
+// TOGGLE LIKE WITH NOTIFICATION
 router.put("/:id/like", async (req, res) => {
   try {
     const { userId } = req.body;
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).json({ message: "Post not found" });
 
+    let liked = false;
     if (post.likes.includes(userId)) {
       post.likes = post.likes.filter((id) => id !== userId);
     } else {
       post.likes.push(userId);
+      liked = true;
+
+      await createNotification({
+        recipientUid: post.userId,
+        senderUid: userId,
+        type: "like",
+        message: "liked your post",
+        postId: post._id.toString()
+      });
     }
 
     await post.save();
-    res.json({ likes: post.likes });
+    res.json({ likes: post.likes, liked });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 });
 
-// ADD COMMENT
+// ADD COMMENT WITH NOTIFICATION
 router.post("/:id/comment", async (req, res) => {
   try {
     const { userId, text } = req.body;
@@ -206,6 +190,14 @@ router.post("/:id/comment", async (req, res) => {
     post.comments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     await post.save();
 
+    await createNotification({
+      recipientUid: post.userId,
+      senderUid: userId,
+      type: "comment",
+      message: "commented on your post",
+      postId: post._id.toString()
+    });
+
     res.json({ comments: post.comments });
   } catch (err) {
     console.error(err);
@@ -213,7 +205,7 @@ router.post("/:id/comment", async (req, res) => {
   }
 });
 
-// SHARE POST
+// SHARE POST WITH NOTIFICATION
 router.post("/:id/share", async (req, res) => {
   try {
     const { userId } = req.body;
@@ -234,6 +226,15 @@ router.post("/:id/share", async (req, res) => {
     });
 
     await sharedPost.save();
+
+    await createNotification({
+      recipientUid: originalPost.userId,
+      senderUid: userId,
+      type: "share",
+      message: "shared your post",
+      postId: originalPost._id.toString()
+    });
+
     res.status(201).json(sharedPost);
   } catch (err) {
     console.error(err);

@@ -1,12 +1,11 @@
 import React from "react";
-import {
-  Bars3Icon,
-  EllipsisVerticalIcon,
-} from "@heroicons/react/24/outline";
+import { Bars3Icon, EllipsisVerticalIcon } from "@heroicons/react/24/outline";
+import NotificationBadge from "./NotificationBadge";
 
 export default function Navbar({ user, onToggleSidebar, onToggleRightbar }) {
   return (
     <header className="fixed top-0 left-0 w-full h-16 bg-blue-600 shadow px-4 flex justify-between items-center z-50">
+      {/* Left Section */}
       <div className="flex items-center space-x-4">
         {/* Hamburger - Mobile only */}
         <button
@@ -20,11 +19,15 @@ export default function Navbar({ user, onToggleSidebar, onToggleRightbar }) {
         <h1 className="text-xl font-bold text-white">WatchScape</h1>
       </div>
 
+      {/* Right Section */}
       <div className="flex items-center space-x-3">
         {/* User name - hidden on very small screens */}
         <span className="font-medium text-white hidden sm:inline">
           {user?.name || user?.email}
         </span>
+
+        {/* Notification Bell */}
+        <NotificationBadge user={user} />
 
         {/* Avatar */}
         <img
