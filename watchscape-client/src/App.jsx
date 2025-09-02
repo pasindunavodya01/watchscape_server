@@ -11,7 +11,7 @@ import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import MyProfile from './pages/MyProfile';
 import Notifications from './pages/Notifications';
-
+import PostDetail from './pages/PostDetail';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -52,20 +52,25 @@ export default function App() {
           element={user ? <Dashboard user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />}
         />
 
+        {/* Post detail route (needed for previews to work) */}
+        <Route
+          path="/dashboard/posts/:postId"
+          element={user ? <PostDetail user={user} /> : <Navigate to="/login" replace />}
+        />
+
         {/* Standalone profile page */}
         <Route
           path="/profile/:userId"
           element={user ? <Profile user={user} /> : <Navigate to="/login" replace />}
         />
 
-
-
-      <Route
+        {/* Notifications page */}
+        <Route
           path="/notifications"
           element={user ? <Notifications user={user} /> : <Navigate to="/login" replace />}
         />
 
-        {/* MyProfile (secure route) */}
+        {/* My Profile (secure route) */}
         <Route
           path="/my-profile"
           element={user ? <MyProfile user={user} /> : <Navigate to="/login" replace />}

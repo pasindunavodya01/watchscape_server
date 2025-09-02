@@ -242,4 +242,28 @@ router.post("/:id/share", async (req, res) => {
   }
 });
 
+
+// GET SINGLE POST BY ID
+router.get("/:id", async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id).lean();
+    if (!post) return res.status(404).json({ message: "Post not found" });
+
+    // Add userName for comments if missing
+    post.comments = post.comments || [];
+    for (const comment of post.comments) {
+      if (!comment.userName) {
+        const user = await User.findOne({ uid: comment.userId }).lean();
+        comment.userName = user ? user.username || user.name || user.email : comment.userId;
+      }
+    }
+
+    res.json(post);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
 export default router;

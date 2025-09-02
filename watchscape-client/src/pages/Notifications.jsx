@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { 
   BellIcon, 
   HeartIcon, 
@@ -7,7 +7,9 @@ import {
   ShareIcon, 
   UserPlusIcon,
   DocumentTextIcon,
-  FilmIcon 
+  FilmIcon,
+  EyeIcon,
+  UserIcon
 } from "@heroicons/react/24/outline";
 import {
   HeartIcon as HeartSolid,
@@ -20,7 +22,51 @@ import {
 
 const API = "https://patient-determination-production.up.railway.app";
 
+// Post Preview Card Component
+const PostPreviewCard = ({ post, onView }) => {
+  if (!post) return null;
+
+  return (
+    <div className="mt-3 p-3 border rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+      <div className="flex items-start justify-between">
+        <div className="flex-1 min-w-0">
+          {/* Post content preview */}
+          <p className="text-sm text-gray-700 line-clamp-2 mb-2">
+            {post.text || (post.movieActivity ? 
+              `${post.movieActivity.action} "${post.movieActivity.movie?.title || 'Unknown Movie'}"` : 
+              'No content'
+            )}
+          </p>
+          
+          {/* Movie info if present */}
+          {(post.movie || post.movieActivity?.movie) && (
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <FilmIcon className="w-4 h-4" />
+              <span>{post.movie?.title || post.movieActivity?.movie?.title}</span>
+            </div>
+          )}
+          
+          {/* Post stats */}
+          <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+            <span>👍 {post.likes?.length || 0}</span>
+            <span>💬 {post.comments?.length || 0}</span>
+          </div>
+        </div>
+        
+        <button
+          onClick={() => onView(post._id)}
+          className="ml-3 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 flex items-center gap-1"
+        >
+          <EyeIcon className="w-3 h-3" />
+          View Post
+        </button>
+      </div>
+    </div>
+  );
+};
+
 export default function Notifications({ user }) {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -65,15 +111,23 @@ export default function Notifications({ user }) {
   }, [user]);
 
   const markAsRead = async (notificationId) => {
-    await fetch(`${API}/api/notifications/${notificationId}/read`, { method: "PATCH" });
-    setNotifications(prev => prev.map(n => n._id === notificationId ? { ...n, isRead: true } : n));
-    setUnreadCount(prev => Math.max(0, prev - 1));
+    try {
+      await fetch(`${API}/api/notifications/${notificationId}/read`, { method: "PATCH" });
+      setNotifications(prev => prev.map(n => n._id === notificationId ? { ...n, isRead: true } : n));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error("Failed to mark as read:", err);
+    }
   };
 
   const markAllAsRead = async () => {
-    await fetch(`${API}/api/notifications/${user.uid}/read-all`, { method: "PATCH" });
-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-    setUnreadCount(0);
+    try {
+      await fetch(`${API}/api/notifications/${user.uid}/read-all`, { method: "PATCH" });
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+    } catch (err) {
+      console.error("Failed to mark all as read:", err);
+    }
   };
 
   const loadMore = () => {
@@ -84,8 +138,19 @@ export default function Notifications({ user }) {
     }
   };
 
-  // ... Keep your JSX/UI code the same
+  const handleViewPost = (postId, notificationId) => {
+    if (notificationId) {
+      markAsRead(notificationId);
+    }
+    navigate(`/dashboard/posts/${postId}`);
+  };
 
+  const handleViewProfile = (senderUid, notificationId) => {
+    if (notificationId) {
+      markAsRead(notificationId);
+    }
+    navigate(`/dashboard/profile/${senderUid}`);
+  };
 
   const getNotificationIcon = (type, isRead) => {
     const iconClass = `w-5 h-5 ${isRead ? 'text-gray-400' : 'text-blue-600'}`;
@@ -183,73 +248,68 @@ export default function Notifications({ user }) {
             <div
               key={notification._id}
               className={`
-                border-l-4 bg-white rounded-r-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer
+                border-l-4 bg-white rounded-r-lg p-4 shadow-sm hover:shadow-md transition-shadow
                 ${getNotificationColor(notification.type)}
                 ${!notification.isRead ? 'bg-blue-50' : 'bg-white'}
               `}
-              onClick={() => {
-                if (!notification.isRead) {
-                  markAsRead(notification._id);
-                }
-              }}
             >
               <div className="flex items-start gap-3">
-                {/* Notification Icon */}
+                {/* Icon */}
                 <div className="mt-1">
                   {getNotificationIcon(notification.type, notification.isRead)}
                 </div>
-                
-                {/* Notification Content */}
+
+                {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1">
                       <p className={`text-sm ${!notification.isRead ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
-                        <Link 
+                        <Link
                           to={`/dashboard/profile/${notification.senderUid}`}
-                          className="text-blue-600 hover:underline font-medium"
+                          className="text-blue-600 font-medium hover:underline"
+                          onClick={() => markAsRead(notification._id)}
                         >
                           {notification.senderName}
                         </Link>
-                        {' '}
-                        {notification.message}
-                        {notification.movieTitle && (
-                          <span className="text-purple-600 font-medium">
-                            {' '}{notification.movieTitle}
-                          </span>
-                        )}
+                        {' '}{notification.message}
                       </p>
                       
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-gray-500">
-                          {formatTimeAgo(notification.createdAt)}
-                        </span>
-                        
-                        {!notification.isRead && (
-                          <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
+                        <span className="text-xs text-gray-500">{formatTimeAgo(notification.createdAt)}</span>
+                        {!notification.isRead && <span className="w-2 h-2 bg-blue-600 rounded-full"></span>}
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex justify-end mt-3">
+                        {/* View Profile Button - only for follow notifications */}
+                        {notification.type === 'follow' && (
+                          <button
+                            onClick={() => handleViewProfile(notification.senderUid, notification._id)}
+                            className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs rounded flex items-center gap-1"
+                          >
+                            <UserIcon className="w-3 h-3" />
+                            View Profile
+                          </button>
+                        )}
+
+                        {/* View Post Button - only for post interaction notifications (like, comment, share) */}
+                        {(['like', 'comment', 'share'].includes(notification.type)) && notification.postId && (
+                          <button
+                            onClick={() => handleViewPost(notification.postId, notification._id)}
+                            className="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs rounded flex items-center gap-1"
+                          >
+                            <EyeIcon className="w-3 h-3" />
+                            View Post
+                          </button>
                         )}
                       </div>
-                    </div>
-                    
-                    {/* Action buttons */}
-                    <div className="flex gap-1">
-                      {notification.postId && (
-                        <Link
-                          to={`/dashboard`} // You might want to create a specific post view route
-                          className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-600"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          View Post
-                        </Link>
-                      )}
-                      
-                      {notification.type === 'follow' && (
-                        <Link
-                          to={`/dashboard/profile/${notification.senderUid}`}
-                          className="text-xs px-2 py-1 bg-purple-100 hover:bg-purple-200 rounded text-purple-700"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          View Profile
-                        </Link>
+
+                      {/* Show post preview if available */}
+                      {notification.post && (
+                        <PostPreviewCard
+                          post={notification.post}
+                          onView={(postId) => handleViewPost(postId, notification._id)}
+                        />
                       )}
                     </div>
                   </div>
@@ -257,7 +317,7 @@ export default function Notifications({ user }) {
               </div>
             </div>
           ))}
-          
+
           {/* Load More Button */}
           {hasMore && (
             <div className="text-center py-4">

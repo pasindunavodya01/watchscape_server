@@ -1,6 +1,19 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { Link } from "react-router-dom";
-import { HeartIcon as HeartOutline } from "@heroicons/react/24/outline";
+import { 
+  HeartIcon as HeartOutline,
+  ChatBubbleLeftIcon,
+  ShareIcon,
+  MagnifyingGlassIcon,
+  FilmIcon,
+  UserIcon,
+  PlusIcon,
+  XMarkIcon,
+  UserPlusIcon,
+  PhotoIcon,
+  PencilSquareIcon,
+  EllipsisHorizontalIcon
+} from "@heroicons/react/24/outline";
 import { HeartIcon as HeartSolid } from "@heroicons/react/24/solid";
 
 const API = "https://patient-determination-production.up.railway.app";
@@ -28,7 +41,7 @@ export default function Home({ user }) {
 
   // fetch posts
   const fetchPosts = async () => {
-    setPostsLoading(true); // <-- start loading
+    setPostsLoading(true);
     try {
       const res = await fetch(`${API}/api/posts`);
       const data = await res.json();
@@ -36,7 +49,7 @@ export default function Home({ user }) {
     } catch (err) {
       console.error("Failed to fetch posts:", err);
     } finally {
-      setPostsLoading(false); // <-- stop loading
+      setPostsLoading(false);
     }
   };
 
@@ -170,128 +183,210 @@ export default function Home({ user }) {
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-6 overflow-x-hidden">
-      {/* Top row */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-        <h1 className="text-2xl font-bold">Feed</h1>
-        <div className="relative w-full md:w-96" ref={userSearchRef}>
-          <input
-            className="w-full border rounded px-3 py-2"
-            placeholder="Search users by name or email…"
-            value={userQuery}
-            onChange={(e) => setUserQuery(e.target.value)}
-            onFocus={() => setShowUserResults(true)}
-          />
-          {showUserResults && userQuery && (
-            <div className="absolute z-10 bg-white border rounded mt-1 w-full max-h-64 overflow-auto shadow">
-              {userSearching && <div className="px-3 py-2 text-sm text-gray-500">Searching…</div>}
-              {!userSearching && userResults.length === 0 && (
-                <div className="px-3 py-2 text-sm text-gray-500">No users found</div>
-              )}
-              {userResults.map((u) => (
-                <Link
-                  key={u.uid}
-                  to={`/dashboard/profile/${u.uid}`}
-                  className="block px-3 py-2 hover:bg-gray-100"
-                  onClick={() => setShowUserResults(false)}
-                >
-                  <div className="font-medium">{u.name || u.username || "Unknown"}</div>
-                </Link>
-              ))}
+    <div className="max-w-4xl mx-auto p-4 space-y-6">
+      {/* Header */}
+      <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <h1 className="text-2xl font-bold text-gray-900">Feed</h1>
+          <div className="relative w-full md:w-96" ref={userSearchRef}>
+            <div className="relative">
+              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
+                placeholder="Search users by name or email..."
+                value={userQuery}
+                onChange={(e) => setUserQuery(e.target.value)}
+                onFocus={() => setShowUserResults(true)}
+              />
             </div>
-          )}
+            {showUserResults && userQuery && (
+              <div className="absolute z-10 bg-white border border-gray-200 rounded-lg mt-1 w-full max-h-64 overflow-auto shadow-lg">
+                {userSearching && (
+                  <div className="flex items-center gap-2 px-4 py-3 text-sm text-gray-500">
+                    <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                    Searching...
+                  </div>
+                )}
+                {!userSearching && userResults.length === 0 && (
+                  <div className="px-4 py-3 text-sm text-gray-500">No users found</div>
+                )}
+                {userResults.map((u) => (
+                  <Link
+                    key={u.uid}
+                    to={`/dashboard/profile/${u.uid}`}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+                    onClick={() => setShowUserResults(false)}
+                  >
+                    <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                      <UserIcon className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="font-medium text-gray-900">{u.name || u.username || "Unknown"}</div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Composer */}
-      {!composerOpen ? (
-        <div className="border bg-white rounded p-3 cursor-text" onClick={() => setComposerOpen(true)}>
-          <div className="text-gray-500">Write something or attach a movie…</div>
-        </div>
-      ) : (
-        <div className="border bg-white rounded p-4 mb-6">
-          <textarea
-            className="w-full border rounded p-2"
-            rows={3}
-            placeholder="What's on your mind?"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-          />
-          <div className="mt-3">
-            <div className="flex gap-2">
-              <input
-                className="flex-1 border rounded px-3 py-2"
-                placeholder="Search a movie…"
-                value={movieQuery}
-                onChange={(e) => setMovieQuery(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), searchMovies())}
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        {!composerOpen ? (
+          <div 
+            className="p-6 cursor-text hover:bg-gray-50 transition-colors"
+            onClick={() => setComposerOpen(true)}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                <UserIcon className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1 py-3 px-4 bg-gray-100 rounded-full text-gray-500">
+                Write something or attach a movie...
+              </div>
+              <PencilSquareIcon className="w-6 h-6 text-purple-600" />
+            </div>
+          </div>
+        ) : (
+          <div className="p-6">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                <UserIcon className="w-5 h-5 text-white" />
+              </div>
+              <textarea
+                className="flex-1 border border-gray-300 rounded-lg p-4 resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                rows={3}
+                placeholder="What's on your mind?"
+                value={text}
+                onChange={(e) => setText(e.target.value)}
               />
-              <button
-                onClick={searchMovies}
-                className="px-4 py-2 bg-purple-700 text-white rounded"
-                disabled={movieLoading}
-              >
-                {movieLoading ? "Searching…" : "Find"}
-              </button>
             </div>
 
-            {movieResults.length > 0 && (
-              <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {movieResults.map((m) => (
-                  <button
-                    key={m.id}
-                    className="text-left border rounded overflow-hidden hover:shadow"
-                    onClick={() => {
-                      setSelectedMovie({ id: m.id, title: m.title, poster_path: m.poster_path || "" });
-                      setMovieResults([]); setMovieQuery(m.title);
-                    }}
-                  >
-                    {m.poster_path ? (
-                      <img src={`https://image.tmdb.org/t/p/w200${m.poster_path}`} alt={m.title} className="w-full" />
-                    ) : (
-                      <div className="h-32 flex items-center justify-center bg-gray-100 text-gray-500">No Image</div>
-                    )}
-                    <div className="p-2 text-sm font-medium">{m.title}</div>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {selectedMovie && (
-              <div className="mt-3 flex items-center gap-3">
-                {postMoviePreviewUrl ? (
-                  <img src={postMoviePreviewUrl} alt={selectedMovie.title} className="w-16 h-24 object-cover rounded" />
-                ) : (
-                  <div className="w-16 h-24 bg-gray-100 rounded flex items-center justify-center text-xs text-gray-500">No Image</div>
-                )}
-                <div className="flex-1">
-                  <div className="font-semibold">{selectedMovie.title}</div>
-                  <button className="text-red-600 text-sm mt-1" onClick={() => setSelectedMovie(null)}>Remove</button>
+            {/* Movie Search */}
+            <div className="mb-4">
+              <div className="flex gap-3 mb-3">
+                <div className="flex-1 relative">
+                  <FilmIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                    placeholder="Search a movie..."
+                    value={movieQuery}
+                    onChange={(e) => setMovieQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), searchMovies())}
+                  />
                 </div>
+                <button
+                  onClick={searchMovies}
+                  className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 font-medium"
+                  disabled={movieLoading}
+                >
+                  {movieLoading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <MagnifyingGlassIcon className="w-4 h-4" />
+                  )}
+                  {movieLoading ? "Searching..." : "Find"}
+                </button>
               </div>
-            )}
-          </div>
 
-          <div className="mt-4 flex gap-2 justify-end">
-            <button
-              className="px-4 py-2 rounded border"
-              onClick={() => { setComposerOpen(false); setText(""); setSelectedMovie(null); setMovieResults([]); setMovieQuery(""); }}
-            >
-              Cancel
-            </button>
-            <button className="px-4 py-2 rounded bg-purple-700 text-white" onClick={createPost}>Post</button>
-          </div>
-        </div>
-      )}
+              {movieResults.length > 0 && (
+                <div className="border-t border-gray-200 pt-4">
+                  <p className="text-sm text-gray-600 mb-3">Search Results:</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {movieResults.map((m) => (
+                      <button
+                        key={m.id}
+                        className="group text-left border border-gray-200 rounded-lg overflow-hidden hover:shadow-md hover:border-purple-300 transition-all"
+                        onClick={() => {
+                          setSelectedMovie({ id: m.id, title: m.title, poster_path: m.poster_path || "" });
+                          setMovieResults([]); setMovieQuery(m.title);
+                        }}
+                      >
+                        {m.poster_path ? (
+                          <img 
+                            src={`https://image.tmdb.org/t/p/w200${m.poster_path}`} 
+                            alt={m.title} 
+                            className="w-full aspect-[2/3] object-cover" 
+                          />
+                        ) : (
+                          <div className="w-full aspect-[2/3] flex items-center justify-center bg-gray-100 text-gray-400">
+                            <FilmIcon className="w-8 h-8" />
+                          </div>
+                        )}
+                        <div className="p-2">
+                          <div className="text-sm font-medium text-gray-900 line-clamp-2">{m.title}</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-      {/* FEED with Loading Spinner */}
-      <div className="space-y-4 mt-4">
+              {selectedMovie && (
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    {postMoviePreviewUrl ? (
+                      <img 
+                        src={postMoviePreviewUrl} 
+                        alt={selectedMovie.title} 
+                        className="w-16 h-24 object-cover rounded-lg shadow-sm" 
+                      />
+                    ) : (
+                      <div className="w-16 h-24 bg-gray-200 rounded-lg flex items-center justify-center">
+                        <FilmIcon className="w-6 h-6 text-gray-400" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-gray-900">{selectedMovie.title}</div>
+                      <button 
+                        className="flex items-center gap-1 text-sm text-red-600 hover:text-red-700 mt-2 transition-colors" 
+                        onClick={() => setSelectedMovie(null)}
+                      >
+                        <XMarkIcon className="w-4 h-4" />
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                className="px-6 py-3 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+                onClick={() => { 
+                  setComposerOpen(false); 
+                  setText(""); 
+                  setSelectedMovie(null); 
+                  setMovieResults([]); 
+                  setMovieQuery(""); 
+                }}
+              >
+                Cancel
+              </button>
+              <button 
+                className="px-6 py-3 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed" 
+                onClick={createPost}
+                disabled={!text.trim()}
+              >
+                Post
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Feed */}
+      <div className="space-y-6">
         {postsLoading ? (
           <div className="flex justify-center items-center py-20">
-            <div className="w-12 h-12 border-4 border-purple-700 border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : posts.length === 0 ? (
-          <div className="text-center text-gray-500 py-10">No posts yet</div>
+          <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+            <ChatBubbleLeftIcon className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+            <p className="text-lg font-medium text-gray-500">No posts yet</p>
+            <p className="text-gray-400 mt-1">Start sharing your movie thoughts!</p>
+          </div>
         ) : (
           posts.map((p) => (
             p.type === 'movie_activity' ? (
@@ -334,33 +429,58 @@ function PostCard({ post, currentUid, onToggleLike, onAddComment, onToggleFollow
   const latestComment = commentsSorted[0];
 
   return (
-    <div className="border bg-white rounded p-3 relative">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200">
       {/* Header */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <Link to={`/dashboard/profile/${post.userId}`} className="text-blue-600 hover:underline font-semibold">
-            {post.userName || post.username || post.userId}
-          </Link>
+      <div className="p-4 pb-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+              <UserIcon className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <Link 
+                to={`/dashboard/profile/${post.userId}`} 
+                className="font-semibold text-gray-900 hover:text-purple-600 transition-colors"
+              >
+                {post.userName || post.username || post.userId}
+              </Link>
+              <p className="text-sm text-gray-500">
+                {new Date(post.createdAt).toLocaleDateString()} • {new Date(post.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+              </p>
+            </div>
+          </div>
+          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <EllipsisHorizontalIcon className="w-5 h-5 text-gray-400" />
+          </button>
         </div>
-        <div className="text-xs text-gray-500">{new Date(post.createdAt).toLocaleString()}</div>
       </div>
+
+      {/* Text */}
+      {post.text && (
+        <div className="px-4 pb-4">
+          <p className="text-gray-800 whitespace-pre-wrap leading-relaxed">{post.text}</p>
+        </div>
+      )}
 
       {/* Movie cover */}
       {post.movie && (
-        <div className="relative w-64 mx-auto rounded overflow-hidden mb-2">
+        <div className="relative bg-gray-50">
           {post.movie.posterPath ? (
-            <img
-              src={`https://image.tmdb.org/t/p/w500${post.movie.posterPath}`}
-              alt={post.movie.title}
-              className="w-64 h-auto object-cover"
-            />
+          <div className="flex justify-center">
+  <img
+    src={`https://image.tmdb.org/t/p/original${post.movie.posterPath}`}
+    alt={post.movie.title}
+    className="w-64 sm:w-96 h-auto object-contain"
+  />
+</div>
+
           ) : (
-            <div className="w-64 h-80 flex items-center justify-center bg-gray-100 text-gray-500">
-              No Image
+            <div className="w-full h-48 flex items-center justify-center bg-gray-100 text-gray-400">
+              <FilmIcon className="w-16 h-16" />
             </div>
           )}
           <button
-            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-purple-700 text-white flex items-center justify-center font-bold hover:bg-purple-800"
+            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black bg-opacity-60 text-white flex items-center justify-center hover:bg-opacity-80 transition-all"
             title="View Movie Details"
             onClick={() =>
               setSelectedPostMovie({
@@ -371,65 +491,119 @@ function PostCard({ post, currentUid, onToggleLike, onAddComment, onToggleFollow
               })
             }
           >
-            i
+            <PhotoIcon className="w-4 h-4" />
           </button>
         </div>
       )}
 
-      {/* Text */}
-      <div className="mb-3 whitespace-pre-wrap">{post.text}</div>
-
       {/* Actions */}
-      <div className="flex items-center gap-4 text-sm">
-        <button className="flex items-center gap-1" onClick={onToggleLike}>
-          {liked ? <HeartSolid className="w-5 h-5 text-blue-600" /> : <HeartOutline className="w-5 h-5 text-gray-500" />}
-          <span>({post.likes?.length || 0})</span>
-        </button>
-        <button className="hover:underline" onClick={() => setShowComments(s => !s)}>Comment ({post.comments?.length || 0})</button>
-        <button className="hover:underline" onClick={onShare}>Share</button>
+      <div className="p-4 border-t border-gray-100">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <button 
+              className="flex items-center gap-2 text-gray-600 hover:text-red-500 transition-colors group" 
+              onClick={onToggleLike}
+            >
+              {liked ? 
+                <HeartSolid className="w-5 h-5 text-red-500" /> : 
+                <HeartOutline className="w-5 h-5 group-hover:text-red-500" />
+              }
+              <span className="text-sm font-medium">{post.likes?.length || 0}</span>
+            </button>
+            <button 
+              className="flex items-center gap-2 text-gray-600 hover:text-purple-600 transition-colors"
+              onClick={() => setShowComments(s => !s)}
+            >
+              <ChatBubbleLeftIcon className="w-5 h-5" />
+              <span className="text-sm font-medium">{post.comments?.length || 0}</span>
+            </button>
+            <button 
+              className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
+              onClick={onShare}
+            >
+              <ShareIcon className="w-5 h-5" />
+              <span className="text-sm font-medium">Share</span>
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Latest comment */}
+      {/* Latest comment preview */}
       {latestComment && !showComments && (
-        <>
-          <div className="mt-2 text-sm">
-            <Link to={`/dashboard/profile/${latestComment.userId}`} className="font-medium text-blue-600 hover:underline">
-              {latestComment.userName}
-            </Link>
-            : {latestComment.text}
+        <div className="px-4 pb-4 border-t border-gray-100">
+          <div className="mt-3">
+            <p className="text-sm text-gray-800">
+              <Link 
+                to={`/dashboard/profile/${latestComment.userId}`} 
+                className="font-semibold text-purple-600 hover:text-purple-700"
+              >
+                {latestComment.userName}
+              </Link>
+              {" "}{latestComment.text}
+            </p>
+            {comments.length > 1 && (
+              <button 
+                className="text-sm text-gray-500 hover:text-purple-600 mt-1 transition-colors" 
+                onClick={() => setShowComments(true)}
+              >
+                View all {comments.length} comments
+              </button>
+            )}
           </div>
-          {comments.length > 1 && (
-            <button className="text-xs text-blue-600 hover:underline mt-1" onClick={() => setShowComments(true)}>
-              View all {comments.length} comments
-            </button>
-          )}
-        </>
+        </div>
       )}
 
       {/* Full comments section */}
       {showComments && (
-        <div className="mt-3 border-t pt-3">
-          <div className="space-y-2 mb-3">
-            {commentsSorted.map((c, idx) => (
-              <div key={idx} className="text-sm">
-                <Link to={`/dashboard/profile/${c.userId}`} className="font-medium text-blue-600 hover:underline">
-                  {c.userName}
-                </Link>
-                : {c.text}
-                <span className="text-xs text-gray-500 ml-2">{new Date(c.createdAt).toLocaleString()}</span>
-              </div>
-            ))}
+        <div className="border-t border-gray-100">
+          <div className="px-4 py-4 max-h-64 overflow-y-auto">
+            <div className="space-y-3">
+              {commentsSorted.map((c, idx) => (
+                <div key={idx} className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <UserIcon className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm">
+                      <Link 
+                        to={`/dashboard/profile/${c.userId}`} 
+                        className="font-semibold text-purple-600 hover:text-purple-700"
+                      >
+                        {c.userName}
+                      </Link>
+                      {" "}{c.text}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {new Date(c.createdAt).toLocaleDateString()} • {new Date(c.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div className="flex gap-2">
-            <input
-              className="flex-1 border rounded px-3 py-2 text-sm"
-              placeholder="Write a comment…"
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && onAddComment(commentText, () => setCommentText(""))}
-            />
-            <button className="px-3 py-2 rounded bg-purple-700 text-white text-sm" onClick={() => onAddComment(commentText, () => setCommentText(""))}>Post</button>
+          <div className="px-4 pb-4 border-t border-gray-100">
+            <div className="flex gap-3 mt-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <UserIcon className="w-4 h-4 text-white" />
+              </div>
+              <div className="flex-1 flex gap-2">
+                <input
+                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                  placeholder="Write a comment..."
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && onAddComment(commentText, () => setCommentText(""))}
+                />
+                <button 
+                  className="px-4 py-2 rounded-lg bg-purple-600 text-white text-sm hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed" 
+                  onClick={() => onAddComment(commentText, () => setCommentText(""))}
+                  disabled={!commentText.trim()}
+                >
+                  Post
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -437,14 +611,31 @@ function PostCard({ post, currentUid, onToggleLike, onAddComment, onToggleFollow
       {/* Movie modal */}
       {selectedPostMovie && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 z-50" onClick={() => setSelectedPostMovie(null)}>
-          <div className="bg-white rounded max-w-lg w-full p-6 overflow-auto max-h-[80vh]" onClick={e => e.stopPropagation()}>
-            <h2 className="text-2xl font-bold mb-4">{selectedPostMovie.title}</h2>
-            {selectedPostMovie.posterPath && <img src={`https://image.tmdb.org/t/p/w300${selectedPostMovie.posterPath}`} alt={selectedPostMovie.title} className="mb-4 rounded mx-auto" />}
-            {selectedPostMovie.releaseDate && <p className="mb-2"><strong>Release Date:</strong> {selectedPostMovie.releaseDate}</p>}
-            {selectedPostMovie.overview && <p className="text-gray-700">{selectedPostMovie.overview}</p>}
-            <div className="mt-6 text-right">
-              <button className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded" onClick={() => setSelectedPostMovie(null)}>Close</button>
+          <div className="bg-white rounded-xl max-w-lg w-full p-6 overflow-auto max-h-[80vh] shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">{selectedPostMovie.title}</h2>
+              <button 
+                onClick={() => setSelectedPostMovie(null)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
             </div>
+            {selectedPostMovie.posterPath && (
+              <img 
+                src={`https://image.tmdb.org/t/p/w300${selectedPostMovie.posterPath}`} 
+                alt={selectedPostMovie.title} 
+                className="mb-4 rounded-lg mx-auto shadow-md" 
+              />
+            )}
+            {selectedPostMovie.releaseDate && (
+              <p className="mb-3 text-gray-700">
+                <span className="font-semibold">Release Date:</span> {selectedPostMovie.releaseDate}
+              </p>
+            )}
+            {selectedPostMovie.overview && (
+              <p className="text-gray-700 leading-relaxed">{selectedPostMovie.overview}</p>
+            )}
           </div>
         </div>
       )}
@@ -466,99 +657,180 @@ function MovieActivityCard({ post, currentUid, onToggleLike, onAddComment, onTog
   const actionText = post.movieActivity.action === 'watchlist' 
     ? 'added to their watchlist' 
     : 'watched';
+  
+  const actionIcon = post.movieActivity.action === 'watchlist' 
+    ? <PlusIcon className="w-4 h-4" />
+    : <FilmIcon className="w-4 h-4" />;
 
   return (
-    <div className="border bg-white rounded p-3 relative">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200">
       {/* Header */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <Link to={`/dashboard/profile/${post.userId}`} className="text-blue-600 hover:underline font-semibold">
-            {post.userName || post.username || post.userId}
-          </Link>
-          <span className="text-gray-600">{actionText}</span>
-        </div>
-        <div className="text-xs text-gray-500">{new Date(post.createdAt).toLocaleString()}</div>
-      </div>
-
-      {/* Movie info */}
-      {post.movieActivity.movie && (
-        <div className="flex gap-3 mb-3">
-          {post.movieActivity.movie.posterPath ? (
-            <img
-              src={`https://image.tmdb.org/t/p/w200${post.movieActivity.movie.posterPath}`}
-              alt={post.movieActivity.movie.title}
-              className="w-16 h-24 object-cover rounded"
-            />
-          ) : (
-            <div className="w-16 h-24 flex items-center justify-center bg-gray-100 text-gray-500 text-xs rounded">
-              No Image
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+              <UserIcon className="w-5 h-5 text-white" />
             </div>
-          )}
-          <div className="flex-1">
-            <h3 className="font-semibold">{post.movieActivity.movie.title}</h3>
-            {post.movieActivity.movie.releaseDate && (
-              <p className="text-sm text-gray-600">
-                {new Date(post.movieActivity.movie.releaseDate).getFullYear()}
+            <div>
+              <div className="flex items-center gap-2">
+                <Link 
+                  to={`/dashboard/profile/${post.userId}`} 
+                  className="font-semibold text-gray-900 hover:text-purple-600 transition-colors"
+                >
+                  {post.userName || post.username || post.userId}
+                </Link>
+                <div className="flex items-center gap-1 text-sm text-gray-600">
+                  {actionIcon}
+                  <span>{actionText}</span>
+                </div>
+              </div>
+              <p className="text-sm text-gray-500">
+                {new Date(post.createdAt).toLocaleDateString()} • {new Date(post.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
               </p>
-            )}
-            {post.movieActivity.movie.overview && (
-              <p className="text-sm mt-1 line-clamp-3">{post.movieActivity.movie.overview}</p>
-            )}
+            </div>
           </div>
+          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <EllipsisHorizontalIcon className="w-5 h-5 text-gray-400" />
+          </button>
         </div>
-      )}
+
+        {/* Movie info */}
+        {post.movieActivity.movie && (
+          <div className="flex gap-4 p-4 bg-gray-50 rounded-lg">
+            {post.movieActivity.movie.posterPath ? (
+              <img
+                src={`https://image.tmdb.org/t/p/w200${post.movieActivity.movie.posterPath}`}
+                alt={post.movieActivity.movie.title}
+                className="w-20 h-30 object-cover rounded-lg shadow-sm flex-shrink-0"
+              />
+            ) : (
+              <div className="w-20 h-30 flex items-center justify-center bg-gray-200 text-gray-400 rounded-lg flex-shrink-0">
+                <FilmIcon className="w-8 h-8" />
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-gray-900 text-lg">{post.movieActivity.movie.title}</h3>
+              {post.movieActivity.movie.releaseDate && (
+                <p className="text-sm text-gray-600 mt-1">
+                  {new Date(post.movieActivity.movie.releaseDate).getFullYear()}
+                </p>
+              )}
+              {post.movieActivity.movie.overview && (
+                <p className="text-sm text-gray-700 mt-2 line-clamp-3 leading-relaxed">{post.movieActivity.movie.overview}</p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-4 text-sm">
-        <button className="flex items-center gap-1" onClick={onToggleLike}>
-          {liked ? <HeartSolid className="w-5 h-5 text-blue-600" /> : <HeartOutline className="w-5 h-5 text-gray-500" />}
-          <span>({post.likes?.length || 0})</span>
-        </button>
-        <button className="hover:underline" onClick={() => setShowComments(s => !s)}>Comment ({post.comments?.length || 0})</button>
-        <button className="hover:underline" onClick={onShare}>Share</button>
+      <div className="p-4 border-t border-gray-100">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <button 
+              className="flex items-center gap-2 text-gray-600 hover:text-red-500 transition-colors group" 
+              onClick={onToggleLike}
+            >
+              {liked ? 
+                <HeartSolid className="w-5 h-5 text-red-500" /> : 
+                <HeartOutline className="w-5 h-5 group-hover:text-red-500" />
+              }
+              <span className="text-sm font-medium">{post.likes?.length || 0}</span>
+            </button>
+            <button 
+              className="flex items-center gap-2 text-gray-600 hover:text-purple-600 transition-colors"
+              onClick={() => setShowComments(s => !s)}
+            >
+              <ChatBubbleLeftIcon className="w-5 h-5" />
+              <span className="text-sm font-medium">{post.comments?.length || 0}</span>
+            </button>
+            <button 
+              className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
+              onClick={onShare}
+            >
+              <ShareIcon className="w-5 h-5" />
+              <span className="text-sm font-medium">Share</span>
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Latest comment */}
+      {/* Latest comment preview */}
       {latestComment && !showComments && (
-        <>
-          <div className="mt-2 text-sm">
-            <Link to={`/dashboard/profile/${latestComment.userId}`} className="font-medium text-blue-600 hover:underline">
-              {latestComment.userName}
-            </Link>
-            : {latestComment.text}
+        <div className="px-4 pb-4 border-t border-gray-100">
+          <div className="mt-3">
+            <p className="text-sm text-gray-800">
+              <Link 
+                to={`/dashboard/profile/${latestComment.userId}`} 
+                className="font-semibold text-purple-600 hover:text-purple-700"
+              >
+                {latestComment.userName}
+              </Link>
+              {" "}{latestComment.text}
+            </p>
+            {comments.length > 1 && (
+              <button 
+                className="text-sm text-gray-500 hover:text-purple-600 mt-1 transition-colors" 
+                onClick={() => setShowComments(true)}
+              >
+                View all {comments.length} comments
+              </button>
+            )}
           </div>
-          {comments.length > 1 && (
-            <button className="text-xs text-blue-600 hover:underline mt-1" onClick={() => setShowComments(true)}>
-              View all {comments.length} comments
-            </button>
-          )}
-        </>
+        </div>
       )}
 
       {/* Full comments section */}
       {showComments && (
-        <div className="mt-3 border-t pt-3">
-          <div className="space-y-2 mb-3">
-            {commentsSorted.map((c, idx) => (
-              <div key={idx} className="text-sm">
-                <Link to={`/dashboard/profile/${c.userId}`} className="font-medium text-blue-600 hover:underline">
-                  {c.userName}
-                </Link>
-                : {c.text}
-                <span className="text-xs text-gray-500 ml-2">{new Date(c.createdAt).toLocaleString()}</span>
-              </div>
-            ))}
+        <div className="border-t border-gray-100">
+          <div className="px-4 py-4 max-h-64 overflow-y-auto">
+            <div className="space-y-3">
+              {commentsSorted.map((c, idx) => (
+                <div key={idx} className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <UserIcon className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm">
+                      <Link 
+                        to={`/dashboard/profile/${c.userId}`} 
+                        className="font-semibold text-purple-600 hover:text-purple-700"
+                      >
+                        {c.userName}
+                      </Link>
+                      {" "}{c.text}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {new Date(c.createdAt).toLocaleDateString()} • {new Date(c.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div className="flex gap-2">
-            <input
-              className="flex-1 border rounded px-3 py-2 text-sm"
-              placeholder="Write a comment…"
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && onAddComment(commentText, () => setCommentText(''))}
-            />
-            <button className="px-3 py-2 rounded bg-purple-700 text-white text-sm" onClick={() => onAddComment(commentText, () => setCommentText(''))}>Post</button>
+          <div className="px-4 pb-4 border-t border-gray-100">
+            <div className="flex gap-3 mt-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <UserIcon className="w-4 h-4 text-white" />
+              </div>
+              <div className="flex-1 flex gap-2">
+                <input
+                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                  placeholder="Write a comment..."
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && onAddComment(commentText, () => setCommentText(''))}
+                />
+                <button 
+                  className="px-4 py-2 rounded-lg bg-purple-600 text-white text-sm hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed" 
+                  onClick={() => onAddComment(commentText, () => setCommentText(''))}
+                  disabled={!commentText.trim()}
+                >
+                  Post
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -566,14 +838,31 @@ function MovieActivityCard({ post, currentUid, onToggleLike, onAddComment, onTog
       {/* Movie modal */}
       {selectedPostMovie && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 z-50" onClick={() => setSelectedPostMovie(null)}>
-          <div className="bg-white rounded max-w-lg w-full p-6 overflow-auto max-h-[80vh]" onClick={e => e.stopPropagation()}>
-            <h2 className="text-2xl font-bold mb-4">{selectedPostMovie.title}</h2>
-            {selectedPostMovie.posterPath && <img src={`https://image.tmdb.org/t/p/w300${selectedPostMovie.posterPath}`} alt={selectedPostMovie.title} className="mb-4 rounded mx-auto" />}
-            {selectedPostMovie.releaseDate && <p className="mb-2"><strong>Release Date:</strong> {selectedPostMovie.releaseDate}</p>}
-            {selectedPostMovie.overview && <p className="text-gray-700">{selectedPostMovie.overview}</p>}
-            <div className="mt-6 text-right">
-              <button className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded" onClick={() => setSelectedPostMovie(null)}>Close</button>
+          <div className="bg-white rounded-xl max-w-lg w-full p-6 overflow-auto max-h-[80vh] shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">{selectedPostMovie.title}</h2>
+              <button 
+                onClick={() => setSelectedPostMovie(null)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
             </div>
+            {selectedPostMovie.posterPath && (
+              <img 
+                src={`https://image.tmdb.org/t/p/w100${selectedPostMovie.posterPath}`} 
+                alt={selectedPostMovie.title} 
+                className="mb-4 rounded-lg mx-auto shadow-md" 
+              />
+            )}
+            {selectedPostMovie.releaseDate && (
+              <p className="mb-3 text-gray-700">
+                <span className="font-semibold">Release Date:</span> {selectedPostMovie.releaseDate}
+              </p>
+            )}
+            {selectedPostMovie.overview && (
+              <p className="text-gray-700 leading-relaxed">{selectedPostMovie.overview}</p>
+            )}
           </div>
         </div>
       )}
