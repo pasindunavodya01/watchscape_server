@@ -348,15 +348,13 @@ export default function Profile({ user }) {
   {profile?.pinnedFilms?.length ? (
     <div className="relative">
       <div className="overflow-x-auto scrollbar-hide">
-        <div className="flex gap-4 pb-2" style={{ width: 'max-content' }}>
+        <div className="flex gap-4 pb-2 pr-10" style={{ width: 'max-content' }}>
           {profile.pinnedFilms.slice(0, 8).map((film) => renderMovieCard(film, "small"))}
         </div>
       </div>
 
-      {/* Gradient + arrow scroll hint */}
-      <div className="absolute top-0 right-0 h-full w-12 flex items-center justify-center pointer-events-none bg-gradient-to-l from-white to-transparent">
-        <span className="text-gray-400 text-xl font-bold">&gt;</span>
-      </div>
+      {/* Gradient scroll hint */}
+      <div className="absolute top-0 right-0 h-full w-12 pointer-events-none bg-gradient-to-l from-white to-transparent" />
     </div>
   ) : (
     <div className="text-center py-8 text-gray-500">
@@ -365,6 +363,7 @@ export default function Profile({ user }) {
     </div>
   )}
 </div>
+
 
 
 
