@@ -12,7 +12,9 @@ import {
   UserPlusIcon,
   PhotoIcon,
   PencilSquareIcon,
-  EllipsisHorizontalIcon
+  EllipsisHorizontalIcon,
+  CalendarIcon,
+  StarIcon
 } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartSolid } from "@heroicons/react/24/solid";
 
@@ -610,32 +612,121 @@ function PostCard({ post, currentUid, onToggleLike, onAddComment, onToggleFollow
 
       {/* Movie modal */}
       {selectedPostMovie && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 z-50" onClick={() => setSelectedPostMovie(null)}>
-          <div className="bg-white rounded-xl max-w-lg w-full p-6 overflow-auto max-h-[80vh] shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">{selectedPostMovie.title}</h2>
-              <button 
+        <div
+          className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center p-4 z-50"
+          onClick={() => setSelectedPostMovie(null)}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header / backdrop */}
+            <div className="relative">
+              {(selectedPostMovie.backdrop_path || selectedPostMovie.backdropPath) ? (
+                <div className="relative h-48">
+                  <img
+                    src={`https://image.tmdb.org/t/p/w780${selectedPostMovie.backdrop_path || selectedPostMovie.backdropPath}`}
+                    alt={selectedPostMovie.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                </div>
+              ) : (
+                <div className="h-48 bg-gradient-to-br from-purple-600 to-blue-600"></div>
+              )}
+
+              <button
                 onClick={() => setSelectedPostMovie(null)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="absolute top-4 right-4 w-10 h-10 bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all"
               >
                 <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
-            {selectedPostMovie.posterPath && (
-              <img 
-                src={`https://image.tmdb.org/t/p/w300${selectedPostMovie.posterPath}`} 
-                alt={selectedPostMovie.title} 
-                className="mb-4 rounded-lg mx-auto shadow-md" 
-              />
-            )}
-            {selectedPostMovie.releaseDate && (
-              <p className="mb-3 text-gray-700">
-                <span className="font-semibold">Release Date:</span> {selectedPostMovie.releaseDate}
-              </p>
-            )}
-            {selectedPostMovie.overview && (
-              <p className="text-gray-700 leading-relaxed">{selectedPostMovie.overview}</p>
-            )}
+
+            {/* Content */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-12rem)]">
+              <div className="flex gap-6 mb-6">
+                {/* Poster */}
+                {(selectedPostMovie.posterPath || selectedPostMovie.poster_path) ? (
+                  <img
+                    src={`https://image.tmdb.org/t/p/w300${selectedPostMovie.posterPath || selectedPostMovie.poster_path}`}
+                    alt={selectedPostMovie.title}
+                    className="w-32 h-48 object-cover rounded-xl shadow-lg flex-shrink-0"
+                  />
+                ) : (
+                  <div className="w-32 h-48 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <FilmIcon className="w-12 h-12 text-gray-400" />
+                  </div>
+                )}
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">{selectedPostMovie.title}</h2>
+
+                  <div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
+                    {(selectedPostMovie.releaseDate || selectedPostMovie.release_date) && (
+                      <span className="flex items-center gap-1">
+                        <CalendarIcon className="w-4 h-4" />
+                        {new Date(selectedPostMovie.releaseDate || selectedPostMovie.release_date).toLocaleDateString()}
+                      </span>
+                    )}
+
+                    {((selectedPostMovie.voteAverage ?? selectedPostMovie.vote_average) !== undefined) && (
+                      <span className="flex items-center gap-1">
+                        <StarIcon className="w-4 h-4 text-yellow-500" />
+                        {typeof (selectedPostMovie.voteAverage ?? selectedPostMovie.vote_average) === "number"
+                          ? (selectedPostMovie.voteAverage ?? selectedPostMovie.vote_average).toFixed(1)
+                          : (selectedPostMovie.voteAverage ?? selectedPostMovie.vote_average)
+                        }/10
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Overview */}
+              {selectedPostMovie.overview && (
+                <div className="mb-6">
+                  <h3 className="font-semibold text-gray-900 mb-2">Overview</h3>
+                  <p className="text-gray-700 leading-relaxed">{selectedPostMovie.overview}</p>
+                </div>
+              )}
+
+              {/* Additional details */}
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                {selectedPostMovie.genres && selectedPostMovie.genres.length > 0 && (
+                  <div>
+                    <span className="font-semibold text-gray-900">Genres:</span>
+                    <p className="text-gray-600 mt-1">
+                      {Array.isArray(selectedPostMovie.genres)
+                        ? selectedPostMovie.genres.map(g => (typeof g === "object" ? g.name : g)).join(", ")
+                        : selectedPostMovie.genres}
+                    </p>
+                  </div>
+                )}
+
+                {((selectedPostMovie.voteCount ?? selectedPostMovie.vote_count) > 0) && (
+                  <div>
+                    <span className="font-semibold text-gray-900">Votes:</span>
+                    <p className="text-gray-600 mt-1">{(selectedPostMovie.voteCount ?? selectedPostMovie.vote_count).toLocaleString()}</p>
+                  </div>
+                )}
+
+                {selectedPostMovie.popularity && (
+                  <div>
+                    <span className="font-semibold text-gray-900">Popularity:</span>
+                    <p className="text-gray-600 mt-1">{Math.round(selectedPostMovie.popularity)}</p>
+                  </div>
+                )}
+
+                {(selectedPostMovie.originalLanguage || selectedPostMovie.original_language) && (
+                  <div>
+                    <span className="font-semibold text-gray-900">Language:</span>
+                    <p className="text-gray-600 mt-1">{(selectedPostMovie.originalLanguage || selectedPostMovie.original_language).toString().toUpperCase()}</p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -837,32 +928,121 @@ function MovieActivityCard({ post, currentUid, onToggleLike, onAddComment, onTog
 
       {/* Movie modal */}
       {selectedPostMovie && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 z-50" onClick={() => setSelectedPostMovie(null)}>
-          <div className="bg-white rounded-xl max-w-lg w-full p-6 overflow-auto max-h-[80vh] shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">{selectedPostMovie.title}</h2>
-              <button 
+        <div
+          className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center p-4 z-50"
+          onClick={() => setSelectedPostMovie(null)}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header / backdrop */}
+            <div className="relative">
+              {(selectedPostMovie.backdrop_path || selectedPostMovie.backdropPath) ? (
+                <div className="relative h-48">
+                  <img
+                    src={`https://image.tmdb.org/t/p/w780${selectedPostMovie.backdrop_path || selectedPostMovie.backdropPath}`}
+                    alt={selectedPostMovie.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                </div>
+              ) : (
+                <div className="h-48 bg-gradient-to-br from-purple-600 to-blue-600"></div>
+              )}
+
+              <button
                 onClick={() => setSelectedPostMovie(null)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="absolute top-4 right-4 w-10 h-10 bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all"
               >
                 <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
-            {selectedPostMovie.posterPath && (
-              <img 
-                src={`https://image.tmdb.org/t/p/w100${selectedPostMovie.posterPath}`} 
-                alt={selectedPostMovie.title} 
-                className="mb-4 rounded-lg mx-auto shadow-md" 
-              />
-            )}
-            {selectedPostMovie.releaseDate && (
-              <p className="mb-3 text-gray-700">
-                <span className="font-semibold">Release Date:</span> {selectedPostMovie.releaseDate}
-              </p>
-            )}
-            {selectedPostMovie.overview && (
-              <p className="text-gray-700 leading-relaxed">{selectedPostMovie.overview}</p>
-            )}
+
+            {/* Content */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-12rem)]">
+              <div className="flex gap-6 mb-6">
+                {/* Poster */}
+                {(selectedPostMovie.posterPath || selectedPostMovie.poster_path) ? (
+                  <img
+                    src={`https://image.tmdb.org/t/p/w300${selectedPostMovie.posterPath || selectedPostMovie.poster_path}`}
+                    alt={selectedPostMovie.title}
+                    className="w-32 h-48 object-cover rounded-xl shadow-lg flex-shrink-0"
+                  />
+                ) : (
+                  <div className="w-32 h-48 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <FilmIcon className="w-12 h-12 text-gray-400" />
+                  </div>
+                )}
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">{selectedPostMovie.title}</h2>
+
+                  <div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
+                    {(selectedPostMovie.releaseDate || selectedPostMovie.release_date) && (
+                      <span className="flex items-center gap-1">
+                        <CalendarIcon className="w-4 h-4" />
+                        {new Date(selectedPostMovie.releaseDate || selectedPostMovie.release_date).toLocaleDateString()}
+                      </span>
+                    )}
+
+                    {((selectedPostMovie.voteAverage ?? selectedPostMovie.vote_average) !== undefined) && (
+                      <span className="flex items-center gap-1">
+                        <StarIcon className="w-4 h-4 text-yellow-500" />
+                        {typeof (selectedPostMovie.voteAverage ?? selectedPostMovie.vote_average) === "number"
+                          ? (selectedPostMovie.voteAverage ?? selectedPostMovie.vote_average).toFixed(1)
+                          : (selectedPostMovie.voteAverage ?? selectedPostMovie.vote_average)
+                        }/10
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Overview */}
+              {selectedPostMovie.overview && (
+                <div className="mb-6">
+                  <h3 className="font-semibold text-gray-900 mb-2">Overview</h3>
+                  <p className="text-gray-700 leading-relaxed">{selectedPostMovie.overview}</p>
+                </div>
+              )}
+
+              {/* Additional details */}
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                {selectedPostMovie.genres && selectedPostMovie.genres.length > 0 && (
+                  <div>
+                    <span className="font-semibold text-gray-900">Genres:</span>
+                    <p className="text-gray-600 mt-1">
+                      {Array.isArray(selectedPostMovie.genres)
+                        ? selectedPostMovie.genres.map(g => (typeof g === "object" ? g.name : g)).join(", ")
+                        : selectedPostMovie.genres}
+                    </p>
+                  </div>
+                )}
+
+                {((selectedPostMovie.voteCount ?? selectedPostMovie.vote_count) > 0) && (
+                  <div>
+                    <span className="font-semibold text-gray-900">Votes:</span>
+                    <p className="text-gray-600 mt-1">{(selectedPostMovie.voteCount ?? selectedPostMovie.vote_count).toLocaleString()}</p>
+                  </div>
+                )}
+
+                {selectedPostMovie.popularity && (
+                  <div>
+                    <span className="font-semibold text-gray-900">Popularity:</span>
+                    <p className="text-gray-600 mt-1">{Math.round(selectedPostMovie.popularity)}</p>
+                  </div>
+                )}
+
+                {(selectedPostMovie.originalLanguage || selectedPostMovie.original_language) && (
+                  <div>
+                    <span className="font-semibold text-gray-900">Language:</span>
+                    <p className="text-gray-600 mt-1">{(selectedPostMovie.originalLanguage || selectedPostMovie.original_language).toString().toUpperCase()}</p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}

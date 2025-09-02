@@ -29,11 +29,12 @@ export default function Navbar({ user, onToggleSidebar, onToggleRightbar }) {
         {/* Notification Bell */}
         <NotificationBadge user={user} />
 
+       
         {/* Avatar */}
         <img
           src={`https://i.pravatar.cc/40?u=${user?.uid}`}
           alt="User Avatar"
-          className="w-10 h-10 rounded-full border-2 border-purple-700"
+          className="hidden sm:block w-10 h-10 rounded-full border-2 border-purple-700"
         />
 
         {/* Three dots - Mobile only */}
