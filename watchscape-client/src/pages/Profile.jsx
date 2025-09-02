@@ -338,26 +338,35 @@ export default function Profile({ user }) {
         </div>
       </div>
 
-      {/* Pinned Films */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <FilmIcon className="w-6 h-6 text-purple-600" />
-          Pinned Films
-        </h2>
-        
-        {profile?.pinnedFilms?.length ? (
-          <div className="overflow-x-auto">
-            <div className="flex gap-4 pb-2" style={{ width: 'max-content' }}>
-              {profile.pinnedFilms.slice(0, 8).map((film) => renderMovieCard(film, "small"))}
-            </div>
-          </div>
-        ) : (
-          <div className="text-center py-8 text-gray-500">
-            <FilmIcon className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-            <p>No pinned films yet</p>
-          </div>
-        )}
+{/* Pinned Films */}
+<div className="bg-white rounded-xl shadow-sm p-6 relative">
+  <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+    <FilmIcon className="w-6 h-6 text-purple-600" />
+    Pinned Films
+  </h2>
+
+  {profile?.pinnedFilms?.length ? (
+    <div className="relative">
+      <div className="overflow-x-auto scrollbar-hide">
+        <div className="flex gap-4 pb-2" style={{ width: 'max-content' }}>
+          {profile.pinnedFilms.slice(0, 8).map((film) => renderMovieCard(film, "small"))}
+        </div>
       </div>
+
+      {/* Gradient + arrow scroll hint */}
+      <div className="absolute top-0 right-0 h-full w-12 flex items-center justify-center pointer-events-none bg-gradient-to-l from-white to-transparent">
+        <span className="text-gray-400 text-xl font-bold">&gt;</span>
+      </div>
+    </div>
+  ) : (
+    <div className="text-center py-8 text-gray-500">
+      <FilmIcon className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+      <p>No pinned films yet</p>
+    </div>
+  )}
+</div>
+
+
 
       {/* Movie Collections */}
       <div className="grid md:grid-cols-2 gap-6">
