@@ -261,32 +261,32 @@ export default function Home({ user }) {
               />
             </div>
 
-            {/* Movie Search */}
-            <div className="mb-4">
-              <div className="flex gap-3 mb-3">
-                <div className="flex-1 relative">
-                  <FilmIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
-                    placeholder="Search a movie..."
-                    value={movieQuery}
-                    onChange={(e) => setMovieQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), searchMovies())}
-                  />
-                </div>
-                <button
-                  onClick={searchMovies}
-                  className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 font-medium"
-                  disabled={movieLoading}
-                >
-                  {movieLoading ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  ) : (
-                    <MagnifyingGlassIcon className="w-4 h-4" />
-                  )}
-                  {movieLoading ? "Searching..." : "Find"}
-                </button>
-              </div>
+           {/* Movie Search */}
+<div className="mb-4">
+  <div className="flex gap-3 mb-3">
+    <div className="flex-1 relative">
+      <input
+        className="w-full px-4 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+        placeholder="Search a movie..."
+        value={movieQuery}
+        onChange={(e) => setMovieQuery(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), searchMovies())}
+      />
+    </div>
+    <button
+      onClick={searchMovies}
+      className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 font-medium"
+      disabled={movieLoading}
+    >
+      {movieLoading ? (
+        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+      ) : (
+        <MagnifyingGlassIcon className="w-4 h-4" />
+      )}
+      {movieLoading ? "Searching..." : "Find"}
+    </button>
+  </div>
+
 
               {movieResults.length > 0 && (
                 <div className="border-t border-gray-200 pt-4">
