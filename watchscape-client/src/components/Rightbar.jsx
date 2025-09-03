@@ -6,7 +6,7 @@ import {
   UserPlusIcon,
 } from "@heroicons/react/24/outline";
 
-const API = "http://localhost:5000"; // replace with your backend API
+const API = "https://patient-determination-production.up.railway.app"; // replace with your backend API
 
 export default function Rightbar({
   counts = { watchlist: 0, watched: 0 },

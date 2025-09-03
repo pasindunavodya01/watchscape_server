@@ -79,40 +79,53 @@ router.post("/movie-activity", async (req, res) => {
 });
 
 // GET ALL POSTS
+// GET ALL POSTS WITH FULL MOVIE DETAILS
 router.get("/", async (req, res) => {
   try {
     const posts = await Post.find().sort({ createdAt: -1 }).lean();
 
     const detailedPosts = await Promise.all(
       posts.map(async (post) => {
+        // Ensure username is set
         if (!post.userName && post.username) post.userName = post.username;
 
-        if (post.type === 'movie_activity' && post.movieActivity?.movie.tmdbId) {
+        // Function to fetch TMDB details
+        const enrichMovie = async (movieObj) => {
+          if (!movieObj?.tmdbId) return movieObj;
+
           try {
             const tmdbRes = await axios.get(
-              `https://api.themoviedb.org/3/movie/${post.movieActivity.movie.tmdbId}`,
+              `https://api.themoviedb.org/3/movie/${movieObj.tmdbId}`,
               { params: { api_key: process.env.TMDB_API_KEY, language: "en-US" } }
             );
-            if (!post.movieActivity.movie.overview) post.movieActivity.movie.overview = tmdbRes.data.overview;
-            if (!post.movieActivity.movie.releaseDate) post.movieActivity.movie.releaseDate = tmdbRes.data.release_date;
-          } catch (error) {
-            console.log('TMDB fetch error for activity post:', error.message);
+
+            return {
+              ...movieObj,
+              posterPath: tmdbRes.data.poster_path,
+              backdropPath: tmdbRes.data.backdrop_path,
+              overview: movieObj.overview || tmdbRes.data.overview,
+              releaseDate: movieObj.releaseDate || tmdbRes.data.release_date,
+              genre_ids: tmdbRes.data.genres?.map(g => g.id) || [],
+              vote_average: tmdbRes.data.vote_average,
+              tmdbDetails: tmdbRes.data,
+            };
+          } catch (err) {
+            console.log("TMDB fetch error:", err.message);
+            return movieObj;
           }
+        };
+
+        // Enrich regular movie posts
+        if (post.movie) {
+          post.movie = await enrichMovie(post.movie);
         }
 
-        if (post.movie?.tmdbId) {
-          try {
-            const tmdbRes = await axios.get(
-              `https://api.themoviedb.org/3/movie/${post.movie.tmdbId}`,
-              { params: { api_key: process.env.TMDB_API_KEY, language: "en-US" } }
-            );
-            if (!post.movie.overview) post.movie.overview = tmdbRes.data.overview;
-            if (!post.movie.releaseDate) post.movie.releaseDate = tmdbRes.data.release_date;
-          } catch (error) {
-            console.log('TMDB fetch error for movie post:', error.message);
-          }
+        // Enrich movie activity posts
+        if (post.type === 'movie_activity' && post.movieActivity?.movie) {
+          post.movieActivity.movie = await enrichMovie(post.movieActivity.movie);
         }
 
+        // Enrich comments with username if missing
         post.comments = post.comments || [];
         for (const comment of post.comments) {
           if (!comment.userName) {
@@ -124,17 +137,21 @@ router.get("/", async (req, res) => {
             }
           }
         }
+
+        // Sort comments by newest first
         post.comments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
         return post;
       })
     );
 
     res.json(detailedPosts);
   } catch (err) {
-    console.error('Get posts error:', err);
+    console.error("Get posts error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 // TOGGLE LIKE WITH NOTIFICATION
 router.put("/:id/like", async (req, res) => {

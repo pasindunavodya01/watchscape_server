@@ -50,7 +50,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-// Get movies with details
+// Get movies with details (FIXED VERSION)
 router.get("/", async (req, res) => {
   try {
     const { userId, status } = req.query;
@@ -72,12 +72,20 @@ router.get("/", async (req, res) => {
             tmdbId: m.tmdbId,
             title: tmdbRes.data.title,
             posterPath: tmdbRes.data.poster_path,
+            backdropPath: tmdbRes.data.backdrop_path,  // ADD THIS
             releaseDate: tmdbRes.data.release_date,
             overview: tmdbRes.data.overview,
+            genre_ids: tmdbRes.data.genres?.map(g => g.id) || [],  // ADD THIS
+            vote_average: tmdbRes.data.vote_average,  // BONUS: Add rating
             tmdbDetails: tmdbRes.data,
           };
         } catch {
-          return m.toObject();
+          return {
+            ...m.toObject(),
+            backdropPath: null,  // Fallback for failed requests
+            genre_ids: [],
+            vote_average: 0
+          };
         }
       })
     );

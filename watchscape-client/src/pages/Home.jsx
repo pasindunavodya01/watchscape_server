@@ -14,9 +14,32 @@ import {
   PencilSquareIcon,
   EllipsisHorizontalIcon,
   CalendarIcon,
-  StarIcon
+  StarIcon,
+  InformationCircleIcon
 } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartSolid } from "@heroicons/react/24/solid";
+
+// Genre mapping for TMDB
+const genreMap = {
+  28: "Action",
+  12: "Adventure",
+  16: "Animation",
+  35: "Comedy",
+  80: "Crime",
+  18: "Drama",
+  10751: "Family",
+  14: "Fantasy",
+  36: "History",
+  27: "Horror",
+  10402: "Music",
+  9648: "Mystery",
+  10749: "Romance",
+  878: "Sci-Fi",
+  10770: "TV Movie",
+  53: "Thriller",
+  10752: "War",
+  37: "Western",
+};
 
 const API = "https://patient-determination-production.up.railway.app";
 
@@ -484,16 +507,20 @@ function PostCard({ post, currentUid, onToggleLike, onAddComment, onToggleFollow
           <button
             className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black bg-opacity-60 text-white flex items-center justify-center hover:bg-opacity-80 transition-all"
             title="View Movie Details"
-            onClick={() =>
-              setSelectedPostMovie({
-                title: post.movie.title,
-                posterPath: post.movie.posterPath,
-                releaseDate: post.movie.releaseDate,
-                overview: post.movie.overview,
-              })
-            }
+    onClick={() =>
+  setSelectedPostMovie({
+    title: post.movie.title,
+    posterPath: post.movie.posterPath,
+    releaseDate: post.movie.releaseDate,
+    overview: post.movie.overview,
+    backdropPath: post.movie.backdropPath,
+    genre_ids: post.movie.genre_ids,
+    vote_average: post.movie.vote_average,
+  })
+}
+
           >
-            <PhotoIcon className="w-4 h-4" />
+            <InformationCircleIcon className="w-4 h-4" />
           </button>
         </div>
       )}
@@ -610,7 +637,7 @@ function PostCard({ post, currentUid, onToggleLike, onAddComment, onToggleFollow
         </div>
       )}
 
-      {/* Movie modal */}
+      {/* Enhanced Movie Modal */}
       {selectedPostMovie && (
         <div
           className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center p-4 z-50"
@@ -620,10 +647,10 @@ function PostCard({ post, currentUid, onToggleLike, onAddComment, onToggleFollow
             className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header / backdrop */}
+            {/* Header */}
             <div className="relative">
               {(selectedPostMovie.backdrop_path || selectedPostMovie.backdropPath) ? (
-                <div className="relative h-48">
+                <div className="relative h-48 bg-gradient-to-t from-black/60 to-transparent">
                   <img
                     src={`https://image.tmdb.org/t/p/w780${selectedPostMovie.backdrop_path || selectedPostMovie.backdropPath}`}
                     alt={selectedPostMovie.title}
@@ -634,7 +661,7 @@ function PostCard({ post, currentUid, onToggleLike, onAddComment, onToggleFollow
               ) : (
                 <div className="h-48 bg-gradient-to-br from-purple-600 to-blue-600"></div>
               )}
-
+              
               <button
                 onClick={() => setSelectedPostMovie(null)}
                 className="absolute top-4 right-4 w-10 h-10 bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all"
@@ -659,72 +686,19 @@ function PostCard({ post, currentUid, onToggleLike, onAddComment, onToggleFollow
                   </div>
                 )}
 
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">{selectedPostMovie.title}</h2>
-
-                  <div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
-                    {(selectedPostMovie.releaseDate || selectedPostMovie.release_date) && (
-                      <span className="flex items-center gap-1">
-                        <CalendarIcon className="w-4 h-4" />
-                        {new Date(selectedPostMovie.releaseDate || selectedPostMovie.release_date).toLocaleDateString()}
-                      </span>
-                    )}
-
-                    {((selectedPostMovie.voteAverage ?? selectedPostMovie.vote_average) !== undefined) && (
-                      <span className="flex items-center gap-1">
-                        <StarIcon className="w-4 h-4 text-yellow-500" />
-                        {typeof (selectedPostMovie.voteAverage ?? selectedPostMovie.vote_average) === "number"
-                          ? (selectedPostMovie.voteAverage ?? selectedPostMovie.vote_average).toFixed(1)
-                          : (selectedPostMovie.voteAverage ?? selectedPostMovie.vote_average)
-                        }/10
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Overview */}
-              {selectedPostMovie.overview && (
-                <div className="mb-6">
-                  <h3 className="font-semibold text-gray-900 mb-2">Overview</h3>
-                  <p className="text-gray-700 leading-relaxed">{selectedPostMovie.overview}</p>
-                </div>
-              )}
-
-              {/* Additional details */}
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                {selectedPostMovie.genres && selectedPostMovie.genres.length > 0 && (
-                  <div>
-                    <span className="font-semibold text-gray-900">Genres:</span>
-                    <p className="text-gray-600 mt-1">
-                      {Array.isArray(selectedPostMovie.genres)
-                        ? selectedPostMovie.genres.map(g => (typeof g === "object" ? g.name : g)).join(", ")
-                        : selectedPostMovie.genres}
+                {/* Movie Info */}
+                <div className="flex-1">
+                  <h3 className="text-2xl font-bold mb-2">{selectedPostMovie.title}</h3>
+                  <p className="text-gray-600 mb-2">
+                    {selectedPostMovie.releaseDate ? new Date(selectedPostMovie.releaseDate).toDateString() : "N/A"}
+                  </p>
+                  {selectedPostMovie.genre_ids && selectedPostMovie.genre_ids.length > 0 && (
+                    <p className="text-gray-600 mb-2">
+                      Genres: {selectedPostMovie.genre_ids.map(id => genreMap[id]).join(", ") || "N/A"}
                     </p>
-                  </div>
-                )}
-
-                {((selectedPostMovie.voteCount ?? selectedPostMovie.vote_count) > 0) && (
-                  <div>
-                    <span className="font-semibold text-gray-900">Votes:</span>
-                    <p className="text-gray-600 mt-1">{(selectedPostMovie.voteCount ?? selectedPostMovie.vote_count).toLocaleString()}</p>
-                  </div>
-                )}
-
-                {selectedPostMovie.popularity && (
-                  <div>
-                    <span className="font-semibold text-gray-900">Popularity:</span>
-                    <p className="text-gray-600 mt-1">{Math.round(selectedPostMovie.popularity)}</p>
-                  </div>
-                )}
-
-                {(selectedPostMovie.originalLanguage || selectedPostMovie.original_language) && (
-                  <div>
-                    <span className="font-semibold text-gray-900">Language:</span>
-                    <p className="text-gray-600 mt-1">{(selectedPostMovie.originalLanguage || selectedPostMovie.original_language).toString().toUpperCase()}</p>
-                  </div>
-                )}
+                  )}
+                  <p className="text-gray-700">{selectedPostMovie.overview || "No description available."}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -787,7 +761,7 @@ function MovieActivityCard({ post, currentUid, onToggleLike, onAddComment, onTog
 
         {/* Movie info */}
         {post.movieActivity.movie && (
-          <div className="flex gap-4 p-4 bg-gray-50 rounded-lg">
+          <div className="relative flex gap-4 p-4 bg-gray-50 rounded-lg">
             {post.movieActivity.movie.posterPath ? (
               <img
                 src={`https://image.tmdb.org/t/p/w200${post.movieActivity.movie.posterPath}`}
@@ -799,6 +773,26 @@ function MovieActivityCard({ post, currentUid, onToggleLike, onAddComment, onTog
                 <FilmIcon className="w-8 h-8" />
               </div>
             )}
+            
+            {/* Info Button - Added to Movie Activity Card */}
+            <button
+              className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black bg-opacity-60 text-white flex items-center justify-center hover:bg-opacity-80 transition-all"
+              title="View Movie Details"
+              onClick={() =>
+                setSelectedPostMovie({
+                  title: post.movieActivity.movie.title,
+                  posterPath: post.movieActivity.movie.posterPath,
+                  releaseDate: post.movieActivity.movie.releaseDate,
+                  overview: post.movieActivity.movie.overview,
+                  backdropPath: post.movieActivity.movie.backdropPath,
+                  genre_ids: post.movieActivity.movie.genre_ids,
+                  vote_average: post.movieActivity.movie.vote_average,
+                })
+              }
+            >
+              <InformationCircleIcon className="w-4 h-4" />
+            </button>
+            
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-gray-900 text-lg">{post.movieActivity.movie.title}</h3>
               {post.movieActivity.movie.releaseDate && (
@@ -926,7 +920,7 @@ function MovieActivityCard({ post, currentUid, onToggleLike, onAddComment, onTog
         </div>
       )}
 
-      {/* Movie modal */}
+      {/* Enhanced Movie Modal for Movie Activity Card */}
       {selectedPostMovie && (
         <div
           className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center p-4 z-50"
@@ -936,10 +930,10 @@ function MovieActivityCard({ post, currentUid, onToggleLike, onAddComment, onTog
             className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header / backdrop */}
+            {/* Header */}
             <div className="relative">
               {(selectedPostMovie.backdrop_path || selectedPostMovie.backdropPath) ? (
-                <div className="relative h-48">
+                <div className="relative h-48 bg-gradient-to-t from-black/60 to-transparent">
                   <img
                     src={`https://image.tmdb.org/t/p/w780${selectedPostMovie.backdrop_path || selectedPostMovie.backdropPath}`}
                     alt={selectedPostMovie.title}
@@ -950,7 +944,7 @@ function MovieActivityCard({ post, currentUid, onToggleLike, onAddComment, onTog
               ) : (
                 <div className="h-48 bg-gradient-to-br from-purple-600 to-blue-600"></div>
               )}
-
+              
               <button
                 onClick={() => setSelectedPostMovie(null)}
                 className="absolute top-4 right-4 w-10 h-10 bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all"
@@ -975,72 +969,25 @@ function MovieActivityCard({ post, currentUid, onToggleLike, onAddComment, onTog
                   </div>
                 )}
 
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">{selectedPostMovie.title}</h2>
-
-                  <div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
-                    {(selectedPostMovie.releaseDate || selectedPostMovie.release_date) && (
-                      <span className="flex items-center gap-1">
-                        <CalendarIcon className="w-4 h-4" />
-                        {new Date(selectedPostMovie.releaseDate || selectedPostMovie.release_date).toLocaleDateString()}
-                      </span>
-                    )}
-
-                    {((selectedPostMovie.voteAverage ?? selectedPostMovie.vote_average) !== undefined) && (
-                      <span className="flex items-center gap-1">
-                        <StarIcon className="w-4 h-4 text-yellow-500" />
-                        {typeof (selectedPostMovie.voteAverage ?? selectedPostMovie.vote_average) === "number"
-                          ? (selectedPostMovie.voteAverage ?? selectedPostMovie.vote_average).toFixed(1)
-                          : (selectedPostMovie.voteAverage ?? selectedPostMovie.vote_average)
-                        }/10
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Overview */}
-              {selectedPostMovie.overview && (
-                <div className="mb-6">
-                  <h3 className="font-semibold text-gray-900 mb-2">Overview</h3>
-                  <p className="text-gray-700 leading-relaxed">{selectedPostMovie.overview}</p>
-                </div>
-              )}
-
-              {/* Additional details */}
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                {selectedPostMovie.genres && selectedPostMovie.genres.length > 0 && (
-                  <div>
-                    <span className="font-semibold text-gray-900">Genres:</span>
-                    <p className="text-gray-600 mt-1">
-                      {Array.isArray(selectedPostMovie.genres)
-                        ? selectedPostMovie.genres.map(g => (typeof g === "object" ? g.name : g)).join(", ")
-                        : selectedPostMovie.genres}
+                {/* Movie Info */}
+                <div className="flex-1">
+                  <h3 className="text-2xl font-bold mb-2">{selectedPostMovie.title}</h3>
+                  <p className="text-gray-600 mb-2">
+                    {selectedPostMovie.releaseDate ? new Date(selectedPostMovie.releaseDate).toDateString() : "N/A"}
+                  </p>
+                  {selectedPostMovie.genre_ids && selectedPostMovie.genre_ids.length > 0 && (
+                    <p className="text-gray-600 mb-2">
+                      Genres: {selectedPostMovie.genre_ids.map(id => genreMap[id]).join(", ") || "N/A"}
                     </p>
-                  </div>
-                )}
-
-                {((selectedPostMovie.voteCount ?? selectedPostMovie.vote_count) > 0) && (
-                  <div>
-                    <span className="font-semibold text-gray-900">Votes:</span>
-                    <p className="text-gray-600 mt-1">{(selectedPostMovie.voteCount ?? selectedPostMovie.vote_count).toLocaleString()}</p>
-                  </div>
-                )}
-
-                {selectedPostMovie.popularity && (
-                  <div>
-                    <span className="font-semibold text-gray-900">Popularity:</span>
-                    <p className="text-gray-600 mt-1">{Math.round(selectedPostMovie.popularity)}</p>
-                  </div>
-                )}
-
-                {(selectedPostMovie.originalLanguage || selectedPostMovie.original_language) && (
-                  <div>
-                    <span className="font-semibold text-gray-900">Language:</span>
-                    <p className="text-gray-600 mt-1">{(selectedPostMovie.originalLanguage || selectedPostMovie.original_language).toString().toUpperCase()}</p>
-                  </div>
-                )}
+                  )}
+                  {selectedPostMovie.vote_average && (
+                    <p className="text-gray-600 mb-2 flex items-center gap-1">
+                      <StarIcon className="w-4 h-4 text-yellow-500" />
+                      {selectedPostMovie.vote_average.toFixed(1)}/10
+                    </p>
+                  )}
+                  <p className="text-gray-700">{selectedPostMovie.overview || "No description available."}</p>
+                </div>
               </div>
             </div>
           </div>
