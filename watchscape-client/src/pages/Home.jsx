@@ -636,72 +636,82 @@ function PostCard({ post, currentUid, onToggleLike, onAddComment, onToggleFollow
       )}
 
       {/* Enhanced Movie Modal */}
-      {selectedPostMovie && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center p-4 z-50"
+{selectedPostMovie && (
+  <div
+    className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center p-2 sm:p-4 z-50"
+    onClick={() => setSelectedPostMovie(null)}
+  >
+    <div
+      className="bg-white rounded-xl sm:rounded-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden shadow-2xl mx-2 sm:mx-0"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Header */}
+      <div className="relative">
+        {(selectedPostMovie.backdrop_path || selectedPostMovie.backdropPath) ? (
+          <div className="relative h-32 sm:h-48 bg-gradient-to-t from-black/60 to-transparent">
+            <img
+              src={`https://image.tmdb.org/t/p/w780${selectedPostMovie.backdrop_path || selectedPostMovie.backdropPath}`}
+              alt={selectedPostMovie.title}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+          </div>
+        ) : (
+          <div className="h-32 sm:h-48 bg-gradient-to-br from-purple-600 to-blue-600"></div>
+        )}
+        
+        <button
           onClick={() => setSelectedPostMovie(null)}
+          className="absolute top-2 right-2 sm:top-4 sm:right-4 w-8 h-8 sm:w-10 sm:h-10 bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all"
         >
-          <div
-            className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="relative">
-              {(selectedPostMovie.backdrop_path || selectedPostMovie.backdropPath) ? (
-                <div className="relative h-48 bg-gradient-to-t from-black/60 to-transparent">
-                  <img
-                    src={`https://image.tmdb.org/t/p/w780${selectedPostMovie.backdrop_path || selectedPostMovie.backdropPath}`}
-                    alt={selectedPostMovie.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                </div>
-              ) : (
-                <div className="h-48 bg-gradient-to-br from-purple-600 to-blue-600"></div>
-              )}
-              
-              <button
-                onClick={() => setSelectedPostMovie(null)}
-                className="absolute top-4 right-4 w-10 h-10 bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all"
-              >
-                <XMarkIcon className="w-5 h-5" />
-              </button>
-            </div>
+          <XMarkIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+        </button>
+      </div>
 
-            {/* Content */}
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-12rem)]">
-              <div className="flex gap-6 mb-6">
-                {/* Poster */}
-                {(selectedPostMovie.posterPath || selectedPostMovie.poster_path) ? (
-                  <img
-                    src={`https://image.tmdb.org/t/p/w300${selectedPostMovie.posterPath || selectedPostMovie.poster_path}`}
-                    alt={selectedPostMovie.title}
-                    className="w-32 h-48 object-cover rounded-xl shadow-lg flex-shrink-0"
-                  />
-                ) : (
-                  <div className="w-32 h-48 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <FilmIcon className="w-12 h-12 text-gray-400" />
-                  </div>
-                )}
-
-                {/* Movie Info */}
-                <div className="flex-1">
-                  <h3 className="text-2xl font-bold mb-2">{selectedPostMovie.title}</h3>
-                  <p className="text-gray-600 mb-2">
-                    {selectedPostMovie.releaseDate ? new Date(selectedPostMovie.releaseDate).toDateString() : "N/A"}
-                  </p>
-                  {selectedPostMovie.genre_ids && selectedPostMovie.genre_ids.length > 0 && (
-                    <p className="text-gray-600 mb-2">
-                      Genres: {selectedPostMovie.genre_ids.map(id => genreMap[id]).join(", ") || "N/A"}
-                    </p>
-                  )}
-                  <p className="text-gray-700">{selectedPostMovie.overview || "No description available."}</p>
-                </div>
-              </div>
+      {/* Content */}
+      <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(95vh-8rem)] sm:max-h-[calc(90vh-12rem)]">
+        <div className="flex gap-4 sm:gap-6 mb-4 sm:mb-6">
+          {/* Poster */}
+          {(selectedPostMovie.posterPath || selectedPostMovie.poster_path) ? (
+            <img
+              src={`https://image.tmdb.org/t/p/w300${selectedPostMovie.posterPath || selectedPostMovie.poster_path}`}
+              alt={selectedPostMovie.title}
+              className="w-24 h-36 sm:w-32 sm:h-48 object-cover rounded-lg sm:rounded-xl shadow-lg flex-shrink-0"
+            />
+          ) : (
+            <div className="w-24 h-36 sm:w-32 sm:h-48 bg-gray-200 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
+              <FilmIcon className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400" />
             </div>
+          )}
+
+          {/* Movie Info */}
+          <div className="flex-1">
+            <h3 className="text-xl sm:text-2xl font-bold mb-2 leading-tight">{selectedPostMovie.title}</h3>
+            <p className="text-gray-600 mb-2 text-sm sm:text-base">
+              {selectedPostMovie.releaseDate ? new Date(selectedPostMovie.releaseDate).toDateString() : "N/A"}
+            </p>
+            {selectedPostMovie.genre_ids && selectedPostMovie.genre_ids.length > 0 && (
+              <p className="text-gray-600 mb-2 text-sm sm:text-base">
+                Genres: {selectedPostMovie.genre_ids.map(id => genreMap[id]).join(", ") || "N/A"}
+              </p>
+            )}
+            {/* Description - Desktop only (hidden on mobile) */}
+            <p className="hidden sm:block text-gray-700 text-sm sm:text-base leading-relaxed">
+              {selectedPostMovie.overview || "No description available."}
+            </p>
           </div>
         </div>
-      )}
+
+        {/* Description - Mobile only (hidden on desktop) */}
+        <div className="block sm:hidden">
+          <p className="text-gray-700 text-sm leading-relaxed">
+            {selectedPostMovie.overview || "No description available."}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }
@@ -918,77 +928,87 @@ function MovieActivityCard({ post, currentUid, onToggleLike, onAddComment, onTog
 
       {/* Enhanced Movie Modal for Movie Activity Card */}
       {selectedPostMovie && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center p-4 z-50"
+  <div
+    className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center p-2 sm:p-4 z-50"
+    onClick={() => setSelectedPostMovie(null)}
+  >
+    <div
+      className="bg-white rounded-xl sm:rounded-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden shadow-2xl mx-2 sm:mx-0"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Header */}
+      <div className="relative">
+        {(selectedPostMovie.backdrop_path || selectedPostMovie.backdropPath) ? (
+          <div className="relative h-32 sm:h-48 bg-gradient-to-t from-black/60 to-transparent">
+            <img
+              src={`https://image.tmdb.org/t/p/w780${selectedPostMovie.backdrop_path || selectedPostMovie.backdropPath}`}
+              alt={selectedPostMovie.title}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+          </div>
+        ) : (
+          <div className="h-32 sm:h-48 bg-gradient-to-br from-purple-600 to-blue-600"></div>
+        )}
+        
+        <button
           onClick={() => setSelectedPostMovie(null)}
+          className="absolute top-2 right-2 sm:top-4 sm:right-4 w-8 h-8 sm:w-10 sm:h-10 bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all"
         >
-          <div
-            className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="relative">
-              {(selectedPostMovie.backdrop_path || selectedPostMovie.backdropPath) ? (
-                <div className="relative h-48 bg-gradient-to-t from-black/60 to-transparent">
-                  <img
-                    src={`https://image.tmdb.org/t/p/w780${selectedPostMovie.backdrop_path || selectedPostMovie.backdropPath}`}
-                    alt={selectedPostMovie.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                </div>
-              ) : (
-                <div className="h-48 bg-gradient-to-br from-purple-600 to-blue-600"></div>
-              )}
-              
-              <button
-                onClick={() => setSelectedPostMovie(null)}
-                className="absolute top-4 right-4 w-10 h-10 bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all"
-              >
-                <XMarkIcon className="w-5 h-5" />
-              </button>
-            </div>
+          <XMarkIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+        </button>
+      </div>
 
-            {/* Content */}
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-12rem)]">
-              <div className="flex gap-6 mb-6">
-                {/* Poster */}
-                {(selectedPostMovie.posterPath || selectedPostMovie.poster_path) ? (
-                  <img
-                    src={`https://image.tmdb.org/t/p/w300${selectedPostMovie.posterPath || selectedPostMovie.poster_path}`}
-                    alt={selectedPostMovie.title}
-                    className="w-32 h-48 object-cover rounded-xl shadow-lg flex-shrink-0"
-                  />
-                ) : (
-                  <div className="w-32 h-48 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <FilmIcon className="w-12 h-12 text-gray-400" />
-                  </div>
-                )}
-
-                {/* Movie Info */}
-                <div className="flex-1">
-                  <h3 className="text-2xl font-bold mb-2">{selectedPostMovie.title}</h3>
-                  <p className="text-gray-600 mb-2">
-                    {selectedPostMovie.releaseDate ? new Date(selectedPostMovie.releaseDate).toDateString() : "N/A"}
-                  </p>
-                  {selectedPostMovie.genre_ids && selectedPostMovie.genre_ids.length > 0 && (
-                    <p className="text-gray-600 mb-2">
-                      Genres: {selectedPostMovie.genre_ids.map(id => genreMap[id]).join(", ") || "N/A"}
-                    </p>
-                  )}
-                  {selectedPostMovie.vote_average && (
-                    <p className="text-gray-600 mb-2 flex items-center gap-1">
-                      <StarIcon className="w-4 h-4 text-yellow-500" />
-                      {selectedPostMovie.vote_average.toFixed(1)}/10
-                    </p>
-                  )}
-                  <p className="text-gray-700">{selectedPostMovie.overview || "No description available."}</p>
-                </div>
-              </div>
+      {/* Content */}
+      <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(95vh-8rem)] sm:max-h-[calc(90vh-12rem)]">
+        <div className="flex gap-4 sm:gap-6 mb-4 sm:mb-6">
+          {/* Poster */}
+          {(selectedPostMovie.posterPath || selectedPostMovie.poster_path) ? (
+            <img
+              src={`https://image.tmdb.org/t/p/w300${selectedPostMovie.posterPath || selectedPostMovie.poster_path}`}
+              alt={selectedPostMovie.title}
+              className="w-24 h-36 sm:w-32 sm:h-48 object-cover rounded-lg sm:rounded-xl shadow-lg flex-shrink-0"
+            />
+          ) : (
+            <div className="w-24 h-36 sm:w-32 sm:h-48 bg-gray-200 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
+              <FilmIcon className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400" />
             </div>
+          )}
+
+          {/* Movie Info */}
+          <div className="flex-1">
+            <h3 className="text-xl sm:text-2xl font-bold mb-2 leading-tight">{selectedPostMovie.title}</h3>
+            <p className="text-gray-600 mb-2 text-sm sm:text-base">
+              {selectedPostMovie.releaseDate ? new Date(selectedPostMovie.releaseDate).toDateString() : "N/A"}
+            </p>
+            {selectedPostMovie.genre_ids && selectedPostMovie.genre_ids.length > 0 && (
+              <p className="text-gray-600 mb-2 text-sm sm:text-base">
+                Genres: {selectedPostMovie.genre_ids.map(id => genreMap[id]).join(", ") || "N/A"}
+              </p>
+            )}
+            {selectedPostMovie.vote_average && (
+              <p className="text-gray-600 mb-2 flex items-center gap-1 text-sm sm:text-base">
+                <StarIcon className="w-4 h-4 text-yellow-500" />
+                {selectedPostMovie.vote_average.toFixed(1)}/10
+              </p>
+            )}
+            {/* Description - Desktop only (hidden on mobile) */}
+            <p className="hidden sm:block text-gray-700 text-sm sm:text-base leading-relaxed">
+              {selectedPostMovie.overview || "No description available."}
+            </p>
           </div>
         </div>
-      )}
+
+        {/* Description - Mobile only (hidden on desktop) */}
+        <div className="block sm:hidden">
+          <p className="text-gray-700 text-sm leading-relaxed">
+            {selectedPostMovie.overview || "No description available."}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }

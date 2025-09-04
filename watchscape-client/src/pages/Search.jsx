@@ -291,90 +291,117 @@ export default function Search({ user, onMovieChange }) {
       )}
 
       {/* Movie Details Modal */}
-      {selectedMovie && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center p-4 z-50"
+{/* Movie Details Modal */}
+{selectedMovie && (
+  <div
+    className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center p-2 sm:p-4 z-50"
+    onClick={() => setSelectedMovie(null)}
+  >
+    <div
+      className="bg-white rounded-xl sm:rounded-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden shadow-2xl mx-2 sm:mx-0"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Modal Header */}
+      <div className="relative">
+        {selectedMovie.backdrop_path ? (
+          <div className="relative h-32 sm:h-48 bg-gradient-to-t from-black/60 to-transparent">
+            <img
+              src={`https://image.tmdb.org/t/p/w780${selectedMovie.backdrop_path}`}
+              alt={selectedMovie.title}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+          </div>
+        ) : (
+          <div className="h-32 sm:h-48 bg-gradient-to-br from-purple-600 to-blue-600"></div>
+        )}
+        
+        <button
           onClick={() => setSelectedMovie(null)}
+          className="absolute top-2 right-2 sm:top-4 sm:right-4 w-8 h-8 sm:w-10 sm:h-10 bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all"
         >
-          <div
-            className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="relative">
-              {selectedMovie.backdrop_path ? (
-                <div className="relative h-48 bg-gradient-to-t from-black/60 to-transparent">
-                  <img
-                    src={`https://image.tmdb.org/t/p/w780${selectedMovie.backdrop_path}`}
-                    alt={selectedMovie.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                </div>
-              ) : (
-                <div className="h-48 bg-gradient-to-br from-purple-600 to-blue-600"></div>
-              )}
-              
-              <button
-                onClick={() => setSelectedMovie(null)}
-                className="absolute top-4 right-4 w-10 h-10 bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Modal Content */}
+      <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(95vh-8rem)] sm:max-h-[calc(90vh-12rem)]">
+        <div className="flex gap-4 sm:gap-6 mb-4 sm:mb-6">
+          {/* Poster */}
+          {selectedMovie.poster_path ? (
+            <img
+              src={`https://image.tmdb.org/t/p/w300${selectedMovie.poster_path}`}
+              alt={selectedMovie.title}
+              className="w-24 h-36 sm:w-32 sm:h-48 object-cover rounded-lg sm:rounded-xl shadow-lg flex-shrink-0"
+            />
+          ) : (
+            <div className="w-24 h-36 sm:w-32 sm:h-48 bg-gray-200 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
+              <svg className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M7 4V2C7 1.45 7.45 1 8 1H16C16.55 1 17 1.45 17 2V4H20C20.55 4 21 4.45 21 5S20.55 6 20 6H19V19C19 20.1 18.1 21 17 21H7C5.9 21 5 20.1 5 19V6H4C3.45 6 3 5.55 3 5S3.45 4 4 4H7Z" />
+              </svg>
             </div>
+          )}
 
-            {/* Modal Content */}
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-12rem)]">
-              <div className="flex gap-6 mb-6">
-                {/* Poster */}
-                {selectedMovie.poster_path ? (
-                  <img
-                    src={`https://image.tmdb.org/t/p/w300${selectedMovie.poster_path}`}
-                    alt={selectedMovie.title}
-                    className="w-32 h-48 object-cover rounded-xl shadow-lg flex-shrink-0"
-                  />
-                ) : (
-                  <div className="w-32 h-48 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M7 4V2C7 1.45 7.45 1 8 1H16C16.55 1 17 1.45 17 2V4H20C20.55 4 21 4.45 21 5S20.55 6 20 6H19V19C19 20.1 18.1 21 17 21H7C5.9 21 5 20.1 5 19V6H4C3.45 6 3 5.55 3 5S3.45 4 4 4H7Z" />
-                    </svg>
-                  </div>
-                )}
+          {/* Movie Info */}
+          <div className="flex-1">
+            <h3 className="text-xl sm:text-2xl font-bold mb-2 leading-tight">{selectedMovie.title}</h3>
+            <p className="text-gray-600 mb-2 text-sm sm:text-base">
+              {selectedMovie.release_date ? new Date(selectedMovie.release_date).toDateString() : "N/A"}
+            </p>
+            <p className="text-gray-600 mb-2 text-sm sm:text-base">
+              Genres: {selectedMovie.genre_ids?.map(id => genreMap[id]).join(", ") || "N/A"}
+            </p>
+            {/* Description - Desktop only (hidden on mobile) */}
+            <p className="hidden sm:block text-gray-700 text-sm sm:text-base leading-relaxed mb-4">
+              {selectedMovie.overview || "No description available."}
+            </p>
 
-                {/* Movie Info */}
-                <div className="flex-1">
-                  <h3 className="text-2xl font-bold mb-2">{selectedMovie.title}</h3>
-                  <p className="text-gray-600 mb-2">
-                    {selectedMovie.release_date ? new Date(selectedMovie.release_date).toDateString() : "N/A"}
-                  </p>
-                  <p className="text-gray-600 mb-2">
-                    Genres: {selectedMovie.genre_ids?.map(id => genreMap[id]).join(", ") || "N/A"}
-                  </p>
-                  <p className="text-gray-700">{selectedMovie.overview || "No description available."}</p>
-
-                  {/* Action Buttons */}
-                  <div className="mt-4 flex gap-3">
-                    <button
-                      onClick={() => addMovie(selectedMovie, "watchlist")}
-                      className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition-all"
-                    >
-                      Add to Watchlist
-                    </button>
-                    <button
-                      onClick={() => addMovie(selectedMovie, "watched")}
-                      className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-all"
-                    >
-                      Mark as Watched
-                    </button>
-                  </div>
-                </div>
-              </div>
+            {/* Action Buttons - Desktop only */}
+            <div className="hidden sm:flex mt-4 gap-3">
+              <button
+                onClick={() => addMovie(selectedMovie, "watchlist")}
+                className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition-all"
+              >
+                Add to Watchlist
+              </button>
+              <button
+                onClick={() => addMovie(selectedMovie, "watched")}
+                className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-all"
+              >
+                Mark as Watched
+              </button>
             </div>
           </div>
         </div>
-      )}
+
+        {/* Description - Mobile only (hidden on desktop) */}
+        <div className="block sm:hidden mb-6">
+          <p className="text-gray-700 text-sm leading-relaxed">
+            {selectedMovie.overview || "No description available."}
+          </p>
+        </div>
+
+        {/* Action Buttons - Mobile only */}
+        <div className="block sm:hidden flex flex-col gap-3">
+          <button
+            onClick={() => addMovie(selectedMovie, "watchlist")}
+            className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-all text-sm"
+          >
+            Add to Watchlist
+          </button>
+          <button
+            onClick={() => addMovie(selectedMovie, "watched")}
+            className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-all text-sm"
+          >
+            Mark as Watched
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }
