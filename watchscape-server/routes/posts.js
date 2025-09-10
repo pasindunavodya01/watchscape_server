@@ -283,4 +283,65 @@ router.get("/:id", async (req, res) => {
 });
 
 
+
+// Add these routes to your existing posts router (posts.js)
+
+// DELETE POST
+router.delete("/:id", async (req, res) => {
+  try {
+    const postId = req.params.id;
+    const post = await Post.findById(postId);
+    
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    // Optional: Add authorization check to ensure user can only delete their own posts
+    // const { userId } = req.body;
+    // if (post.userId !== userId) {
+    //   return res.status(403).json({ message: "Unauthorized to delete this post" });
+    // }
+
+    await Post.findByIdAndDelete(postId);
+    res.json({ message: "Post deleted successfully" });
+  } catch (err) {
+    console.error("Delete post error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// EDIT/UPDATE POST
+router.put("/:id", async (req, res) => {
+  try {
+    const postId = req.params.id;
+    const { text } = req.body;
+
+    if (!text) {
+      return res.status(400).json({ message: "Post text is required" });
+    }
+
+    const post = await Post.findById(postId);
+    
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    // Optional: Add authorization check to ensure user can only edit their own posts
+    // const { userId } = req.body;
+    // if (post.userId !== userId) {
+    //   return res.status(403).json({ message: "Unauthorized to edit this post" });
+    // }
+
+    // Update the post
+    post.text = text;
+    post.updatedAt = new Date();
+    await post.save();
+
+    res.json({ message: "Post updated successfully", post });
+  } catch (err) {
+    console.error("Edit post error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 export default router;

@@ -11,6 +11,7 @@ import {
   XMarkIcon,
   ChevronRightIcon
 } from "@heroicons/react/24/outline";
+import { HeartIcon as HeartSolid } from "@heroicons/react/24/solid";
 
 const API = "https://patient-determination-production.up.railway.app";
 
@@ -37,6 +38,11 @@ export default function Profile({ user }) {
   // posts fetched EXACTLY like Home, then filtered to this user
   const [posts, setPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(false);
+
+  // New states for interactions
+  const [likingPosts, setLikingPosts] = useState({});
+  const [commentTexts, setCommentTexts] = useState({});
+  const [submittingComments, setSubmittingComments] = useState({});
 
   const fetchFollowers = async () => {
     setLoadingList(true);
@@ -127,6 +133,67 @@ export default function Profile({ user }) {
     }
   };
 
+  // New interaction functions
+  const toggleLike = async (postId) => {
+    if (!user?.uid || likingPosts[postId]) return;
+    
+    setLikingPosts(prev => ({ ...prev, [postId]: true }));
+    
+    try {
+      const res = await fetch(`${API}/api/posts/${postId}/like`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.uid }),
+      });
+      
+      if (!res.ok) throw new Error("Failed to like post");
+      const data = await res.json();
+      
+      setPosts(prev => prev.map(post => 
+        post._id === postId ? { ...post, likes: data.likes } : post
+      ));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLikingPosts(prev => ({ ...prev, [postId]: false }));
+    }
+  };
+
+  const addComment = async (postId) => {
+    const commentText = commentTexts[postId];
+    if (!user?.uid || !commentText?.trim() || submittingComments[postId]) return;
+    
+    setSubmittingComments(prev => ({ ...prev, [postId]: true }));
+    
+    try {
+      const res = await fetch(`${API}/api/posts/${postId}/comment`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.uid, text: commentText }),
+      });
+      
+      if (!res.ok) throw new Error("Failed to comment");
+      const data = await res.json();
+      
+      setPosts(prev => prev.map(post => 
+        post._id === postId ? { ...post, comments: data.comments } : post
+      ));
+      
+      setCommentTexts(prev => ({ ...prev, [postId]: "" }));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSubmittingComments(prev => ({ ...prev, [postId]: false }));
+    }
+  };
+
+  const handleCommentKeyPress = (e, postId) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      addComment(postId);
+    }
+  };
+
   useEffect(() => {
     fetchProfile();
     fetchUserPosts();
@@ -165,8 +232,13 @@ export default function Profile({ user }) {
     );
   };
 
-  // Helper function to render post with proper movie activity handling
+  // Enhanced helper function to render post with interactions
   const renderPost = (post) => {
+    const isLiked = post.likes?.includes(user?.uid);
+    const commentText = commentTexts[post._id] || "";
+    const isSubmittingComment = submittingComments[post._id];
+    const isLikingPost = likingPosts[post._id];
+
     // Handle movie activity posts
     if (post.type === 'movie_activity' && post.movieActivity) {
       const movie = post.movieActivity.movie;
@@ -211,19 +283,66 @@ export default function Profile({ user }) {
               </div>
             )}
 
-            <div className="flex items-center justify-between text-sm text-gray-500 pt-3 border-t border-gray-100">
-              <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+            {/* Interactive buttons */}
+            <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+              <span className="text-sm text-gray-500">{new Date(post.createdAt).toLocaleDateString()}</span>
               <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1">
-                  <HeartIcon className="w-4 h-4" />
+                <button
+                  onClick={() => toggleLike(post._id)}
+                  disabled={isLikingPost || !user}
+                  className={`flex items-center gap-1 text-sm transition-colors ${
+                    isLiked ? "text-red-500 hover:text-red-600" : "text-gray-500 hover:text-red-500"
+                  }`}
+                >
+                  {isLiked ? <HeartSolid className="w-4 h-4" /> : <HeartIcon className="w-4 h-4" />}
                   <span>{post.likes?.length || 0}</span>
-                </div>
-                <div className="flex items-center gap-1">
+                </button>
+                <div className="flex items-center gap-1 text-sm text-gray-500">
                   <ChatBubbleLeftIcon className="w-4 h-4" />
                   <span>{post.comments?.length || 0}</span>
                 </div>
               </div>
             </div>
+
+            {/* Comment section */}
+            {user && (
+              <div className="mt-4 pt-3 border-t border-gray-100">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Add a comment..."
+                    value={commentText}
+                    onChange={(e) => setCommentTexts(prev => ({ ...prev, [post._id]: e.target.value }))}
+                    onKeyPress={(e) => handleCommentKeyPress(e, post._id)}
+                    className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  />
+                  <button
+                    onClick={() => addComment(post._id)}
+                    disabled={isSubmittingComment || !commentText.trim()}
+                    className="px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSubmittingComment ? "..." : "Post"}
+                  </button>
+                </div>
+
+                {/* Comments list */}
+                {post.comments && post.comments.length > 0 && (
+                  <div className="mt-3 space-y-2 max-h-40 overflow-y-auto">
+                    {post.comments.slice(-3).map((comment, idx) => (
+                      <div key={idx} className="bg-gray-50 rounded-lg p-2">
+                        <div className="flex justify-between items-start text-xs text-gray-500 mb-1">
+                          <span className="font-medium">{comment.userName || comment.username || "Anonymous"}</span>
+                          {comment.createdAt && (
+                            <span>{new Date(comment.createdAt).toLocaleDateString()}</span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-700">{comment.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       );
@@ -245,19 +364,66 @@ export default function Profile({ user }) {
         <div className="p-4">
           <p className="text-gray-800 whitespace-pre-wrap mb-3">{post.text}</p>
           
-          <div className="flex items-center justify-between text-sm text-gray-500 pt-3 border-t border-gray-100">
-            <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+          {/* Interactive buttons */}
+          <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+            <span className="text-sm text-gray-500">{new Date(post.createdAt).toLocaleDateString()}</span>
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1">
-                <HeartIcon className="w-4 h-4" />
+              <button
+                onClick={() => toggleLike(post._id)}
+                disabled={isLikingPost || !user}
+                className={`flex items-center gap-1 text-sm transition-colors ${
+                  isLiked ? "text-red-500 hover:text-red-600" : "text-gray-500 hover:text-red-500"
+                }`}
+              >
+                {isLiked ? <HeartSolid className="w-4 h-4" /> : <HeartIcon className="w-4 h-4" />}
                 <span>{post.likes?.length || 0}</span>
-              </div>
-              <div className="flex items-center gap-1">
+              </button>
+              <div className="flex items-center gap-1 text-sm text-gray-500">
                 <ChatBubbleLeftIcon className="w-4 h-4" />
                 <span>{post.comments?.length || 0}</span>
               </div>
             </div>
           </div>
+
+          {/* Comment section */}
+          {user && (
+            <div className="mt-4 pt-3 border-t border-gray-100">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Add a comment..."
+                  value={commentText}
+                  onChange={(e) => setCommentTexts(prev => ({ ...prev, [post._id]: e.target.value }))}
+                  onKeyPress={(e) => handleCommentKeyPress(e, post._id)}
+                  className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                />
+                <button
+                  onClick={() => addComment(post._id)}
+                  disabled={isSubmittingComment || !commentText.trim()}
+                  className="px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmittingComment ? "..." : "Post"}
+                </button>
+              </div>
+
+              {/* Comments list */}
+              {post.comments && post.comments.length > 0 && (
+                <div className="mt-3 space-y-2 max-h-40 overflow-y-auto">
+                  {post.comments.slice(-3).map((comment, idx) => (
+                    <div key={idx} className="bg-gray-50 rounded-lg p-2">
+                      <div className="flex justify-between items-start text-xs text-gray-500 mb-1">
+                        <span className="font-medium">{comment.userName || comment.username || "Anonymous"}</span>
+                        {comment.createdAt && (
+                          <span>{new Date(comment.createdAt).toLocaleDateString()}</span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-700">{comment.text}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -338,34 +504,31 @@ export default function Profile({ user }) {
         </div>
       </div>
 
-{/* Pinned Films */}
-<div className="bg-white rounded-xl shadow-sm p-6 relative">
-  <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-    <FilmIcon className="w-6 h-6 text-purple-600" />
-    Pinned Films
-  </h2>
+      {/* Pinned Films */}
+      <div className="bg-white rounded-xl shadow-sm p-6 relative">
+        <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <FilmIcon className="w-6 h-6 text-purple-600" />
+          Pinned Films
+        </h2>
 
-  {profile?.pinnedFilms?.length ? (
-    <div className="relative">
-      <div className="overflow-x-auto scrollbar-hide">
-        <div className="flex gap-4 pb-2 pr-10" style={{ width: 'max-content' }}>
-          {profile.pinnedFilms.slice(0, 8).map((film) => renderMovieCard(film, "small"))}
-        </div>
+        {profile?.pinnedFilms?.length ? (
+          <div className="relative">
+            <div className="overflow-x-auto scrollbar-hide">
+              <div className="flex gap-4 pb-2 pr-10" style={{ width: 'max-content' }}>
+                {profile.pinnedFilms.slice(0, 8).map((film) => renderMovieCard(film, "small"))}
+              </div>
+            </div>
+
+            {/* Gradient scroll hint */}
+            <div className="absolute top-0 right-0 h-full w-12 pointer-events-none bg-gradient-to-l from-white to-transparent" />
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <FilmIcon className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+            <p>No pinned films yet</p>
+          </div>
+        )}
       </div>
-
-      {/* Gradient scroll hint */}
-      <div className="absolute top-0 right-0 h-full w-12 pointer-events-none bg-gradient-to-l from-white to-transparent" />
-    </div>
-  ) : (
-    <div className="text-center py-8 text-gray-500">
-      <FilmIcon className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-      <p>No pinned films yet</p>
-    </div>
-  )}
-</div>
-
-
-
 
       {/* Movie Collections */}
       <div className="grid md:grid-cols-2 gap-6">

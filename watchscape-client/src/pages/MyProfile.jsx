@@ -13,6 +13,7 @@ import {
   TrashIcon,
   PencilIcon
 } from "@heroicons/react/24/outline";
+import { HeartIcon as HeartSolid } from "@heroicons/react/24/solid";
 
 const API = "https://patient-determination-production.up.railway.app";
 
@@ -34,6 +35,12 @@ export default function MyProfile({ user }) {
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [showAllPinned, setShowAllPinned] = useState(false);
+
+  // New states for interactions
+  const [likingPosts, setLikingPosts] = useState({});
+  const [commentTexts, setCommentTexts] = useState({});
+  const [submittingComments, setSubmittingComments] = useState({});
+  const [showComments, setShowComments] = useState({});
 
   const fetchProfile = async () => {
     try {
@@ -176,6 +183,71 @@ export default function MyProfile({ user }) {
     }
   };
 
+  // New interaction functions
+  const toggleLike = async (postId) => {
+    if (!user?.uid || likingPosts[postId]) return;
+    
+    setLikingPosts(prev => ({ ...prev, [postId]: true }));
+    
+    try {
+      const res = await fetch(`${API}/api/posts/${postId}/like`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.uid }),
+      });
+      
+      if (!res.ok) throw new Error("Failed to like post");
+      const data = await res.json();
+      
+      setPosts(prev => prev.map(post => 
+        post._id === postId ? { ...post, likes: data.likes } : post
+      ));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLikingPosts(prev => ({ ...prev, [postId]: false }));
+    }
+  };
+
+  const addComment = async (postId) => {
+    const commentText = commentTexts[postId];
+    if (!user?.uid || !commentText?.trim() || submittingComments[postId]) return;
+    
+    setSubmittingComments(prev => ({ ...prev, [postId]: true }));
+    
+    try {
+      const res = await fetch(`${API}/api/posts/${postId}/comment`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.uid, text: commentText }),
+      });
+      
+      if (!res.ok) throw new Error("Failed to comment");
+      const data = await res.json();
+      
+      setPosts(prev => prev.map(post => 
+        post._id === postId ? { ...post, comments: data.comments } : post
+      ));
+      
+      setCommentTexts(prev => ({ ...prev, [postId]: "" }));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSubmittingComments(prev => ({ ...prev, [postId]: false }));
+    }
+  };
+
+  const handleCommentKeyPress = (e, postId) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      addComment(postId);
+    }
+  };
+
+  const toggleCommentsView = (postId) => {
+    setShowComments(prev => ({ ...prev, [postId]: !prev[postId] }));
+  };
+
   // Helper functions
   const getMoviePoster = (post) => {
     if (post.type === 'movie_activity' && post.movieActivity?.movie?.posterPath) {
@@ -206,8 +278,14 @@ export default function MyProfile({ user }) {
     return null;
   };
 
-  // Render post function
+  // Enhanced render post function
   const renderPost = (post) => {
+    const isLiked = post.likes?.includes(user?.uid);
+    const commentText = commentTexts[post._id] || "";
+    const isSubmittingComment = submittingComments[post._id];
+    const isLikingPost = likingPosts[post._id];
+    const showingComments = showComments[post._id];
+
     // Handle movie activity posts
     if (post.type === 'movie_activity' && post.movieActivity) {
       const movie = post.movieActivity.movie;
@@ -252,19 +330,71 @@ export default function MyProfile({ user }) {
               </div>
             )}
 
-            <div className="flex items-center justify-between text-sm text-gray-500 pt-3 border-t border-gray-100">
-              <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+            {/* Interactive buttons */}
+            <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+              <span className="text-sm text-gray-500">{new Date(post.createdAt).toLocaleDateString()}</span>
               <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1">
-                  <HeartIcon className="w-4 h-4" />
+                <button
+                  onClick={() => toggleLike(post._id)}
+                  disabled={isLikingPost || !user}
+                  className={`flex items-center gap-1 text-sm transition-colors ${
+                    isLiked ? "text-red-500 hover:text-red-600" : "text-gray-500 hover:text-red-500"
+                  }`}
+                >
+                  {isLiked ? <HeartSolid className="w-4 h-4" /> : <HeartIcon className="w-4 h-4" />}
                   <span>{post.likes?.length || 0}</span>
-                </div>
-                <div className="flex items-center gap-1">
+                </button>
+                <button
+                  onClick={() => toggleCommentsView(post._id)}
+                  className="flex items-center gap-1 text-sm text-gray-500 hover:text-purple-600"
+                >
                   <ChatBubbleLeftIcon className="w-4 h-4" />
                   <span>{post.comments?.length || 0}</span>
-                </div>
+                </button>
               </div>
             </div>
+
+            {/* Comments section */}
+            {showingComments && (
+              <div className="mt-4 pt-3 border-t border-gray-100">
+                <div className="flex gap-2 mb-3">
+                  <input
+                    type="text"
+                    placeholder="Add a comment..."
+                    value={commentText}
+                    onChange={(e) => setCommentTexts(prev => ({ ...prev, [post._id]: e.target.value }))}
+                    onKeyPress={(e) => handleCommentKeyPress(e, post._id)}
+                    className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  />
+                  <button
+                    onClick={() => addComment(post._id)}
+                    disabled={isSubmittingComment || !commentText.trim()}
+                    className="px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSubmittingComment ? "..." : "Post"}
+                  </button>
+                </div>
+
+                {/* Comments list */}
+                {post.comments && post.comments.length > 0 ? (
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {post.comments.map((comment, idx) => (
+                      <div key={idx} className="bg-gray-50 rounded-lg p-3">
+                        <div className="flex justify-between items-start text-xs text-gray-500 mb-1">
+                          <span className="font-medium">{comment.userName || comment.username || "Anonymous"}</span>
+                          {comment.createdAt && (
+                            <span>{new Date(comment.createdAt).toLocaleDateString()}</span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-700">{comment.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 text-center py-4">No comments yet. Be the first!</p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       );
@@ -294,19 +424,71 @@ export default function MyProfile({ user }) {
             <p className="text-gray-800 whitespace-pre-wrap mb-3">{post.text}</p>
           )}
           
-          <div className="flex items-center justify-between text-sm text-gray-500 pt-3 border-t border-gray-100">
-            <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+          {/* Interactive buttons */}
+          <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+            <span className="text-sm text-gray-500">{new Date(post.createdAt).toLocaleDateString()}</span>
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1">
-                <HeartIcon className="w-4 h-4" />
+              <button
+                onClick={() => toggleLike(post._id)}
+                disabled={isLikingPost || !user}
+                className={`flex items-center gap-1 text-sm transition-colors ${
+                  isLiked ? "text-red-500 hover:text-red-600" : "text-gray-500 hover:text-red-500"
+                }`}
+              >
+                {isLiked ? <HeartSolid className="w-4 h-4" /> : <HeartIcon className="w-4 h-4" />}
                 <span>{post.likes?.length || 0}</span>
-              </div>
-              <div className="flex items-center gap-1">
+              </button>
+              <button
+                onClick={() => toggleCommentsView(post._id)}
+                className="flex items-center gap-1 text-sm text-gray-500 hover:text-purple-600"
+              >
                 <ChatBubbleLeftIcon className="w-4 h-4" />
                 <span>{post.comments?.length || 0}</span>
-              </div>
+              </button>
             </div>
           </div>
+
+          {/* Comments section */}
+          {showingComments && (
+            <div className="mt-4 pt-3 border-t border-gray-100">
+              <div className="flex gap-2 mb-3">
+                <input
+                  type="text"
+                  placeholder="Add a comment..."
+                  value={commentText}
+                  onChange={(e) => setCommentTexts(prev => ({ ...prev, [post._id]: e.target.value }))}
+                  onKeyPress={(e) => handleCommentKeyPress(e, post._id)}
+                  className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                />
+                <button
+                  onClick={() => addComment(post._id)}
+                  disabled={isSubmittingComment || !commentText.trim()}
+                  className="px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmittingComment ? "..." : "Post"}
+                </button>
+              </div>
+
+              {/* Comments list */}
+              {post.comments && post.comments.length > 0 ? (
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {post.comments.map((comment, idx) => (
+                    <div key={idx} className="bg-gray-50 rounded-lg p-3">
+                      <div className="flex justify-between items-start text-xs text-gray-500 mb-1">
+                        <span className="font-medium">{comment.userName || comment.username || "Anonymous"}</span>
+                        {comment.createdAt && (
+                          <span>{new Date(comment.createdAt).toLocaleDateString()}</span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-700">{comment.text}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 text-center py-4">No comments yet. Be the first!</p>
+              )}
+            </div>
+          )}
 
           {/* Edit/Delete buttons - Only for regular posts, not movie activities */}
           {post.type !== 'movie_activity' && (

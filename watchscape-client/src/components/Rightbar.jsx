@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import {
   XMarkIcon,
   BookmarkIcon,
   UsersIcon,
-  UserPlusIcon,
+  UserIcon,
 } from "@heroicons/react/24/outline";
 
 const API = "https://patient-determination-production.up.railway.app"; // replace with your backend API
@@ -20,12 +21,13 @@ export default function Rightbar({
   const [showUserResults, setShowUserResults] = useState(false);
   const userSearchRef = useRef(null);
 
-  // 🔍 Search API call
+  // Search API call
   useEffect(() => {
     let active = true;
     const run = async () => {
       if (!userQuery.trim()) {
         setUserResults([]);
+        setShowUserResults(false);
         return;
       }
       setUserSearching(true);
@@ -49,7 +51,7 @@ export default function Rightbar({
     };
   }, [userQuery]);
 
-  // 🖱️ Hide results on outside click
+  // Hide results on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (userSearchRef.current && !userSearchRef.current.contains(e.target)) {
@@ -59,6 +61,11 @@ export default function Rightbar({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const handleUserClick = () => {
+    setShowUserResults(false);
+    setUserQuery("");
+  };
 
   return (
     <aside
@@ -95,11 +102,11 @@ export default function Rightbar({
         </div>
       </section>
 
-      {/* Follow Suggestions */}
-      <section ref={userSearchRef}>
+      {/* User Search */}
+      <section ref={userSearchRef} className="relative">
         <h2 className="text-lg font-bold mb-3 text-purple-700 flex items-center gap-2">
           <UsersIcon className="h-5 w-5 text-purple-600" />
-          Follow Suggestions
+          Find Users
         </h2>
 
         {/* Search Input */}
@@ -113,42 +120,41 @@ export default function Rightbar({
 
         {/* Results Dropdown */}
         {showUserResults && (
-          <div className="absolute mt-2 w-64 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto z-50">
+          <div className="absolute mt-2 w-full bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto z-50">
             {userSearching ? (
-              <p className="p-3 text-sm text-gray-500">Searching...</p>
+              <div className="p-3 text-sm text-gray-500 flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                Searching...
+              </div>
             ) : userResults.length > 0 ? (
               userResults.map((u) => (
-                <div
+                <Link
                   key={u.uid}
-                  className="flex items-center justify-between px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                  to={`/dashboard/profile/${u.uid}`}
+                  onClick={handleUserClick}
+                  className="flex items-center gap-3 px-3 py-3 hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-100 last:border-b-0"
                 >
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={`https://i.pravatar.cc/40?u=${u.uid}`}
-                      alt={u.name}
-                      className="w-8 h-8 rounded-full"
-                    />
-                    <span className="text-sm font-medium">{u.name || u.email}</span>
+                  <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <UserIcon className="w-5 h-5 text-white" />
                   </div>
-                  <button className="px-2 py-1 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
-                    Follow
-                  </button>
-                </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {u.name || u.username || u.email}
+                    </p>
+                    {u.name && u.username && (
+                      <p className="text-xs text-gray-500 truncate">@{u.username}</p>
+                    )}
+                  </div>
+                </Link>
               ))
             ) : (
-              <p className="p-3 text-sm text-gray-500">No users found</p>
+              <div className="p-3 text-sm text-gray-500 text-center">
+                <UsersIcon className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                No users found
+              </div>
             )}
           </div>
         )}
-      </section>
-
-      {/* Follow Requests */}
-      <section>
-        <h2 className="text-lg font-bold mb-3 text-purple-700 flex items-center gap-2">
-          <UserPlusIcon className="h-5 w-5 text-purple-600" />
-          Follow Requests
-        </h2>
-        <p className="text-sm text-gray-500 italic">Coming soon...</p>
       </section>
     </aside>
   );
