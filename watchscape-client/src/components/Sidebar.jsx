@@ -21,6 +21,19 @@ export default function Sidebar({ user, onLogout, className = "", overlay = fals
     { name: "Profile", to: `/dashboard/my-profile`, icon: UserIcon },
   ];
 
+  const handleNavClick = () => {
+    if (overlay && onClose) {
+      onClose();
+    }
+  };
+
+  const handleLogoutClick = () => {
+    if (overlay && onClose) {
+      onClose();
+    }
+    onLogout();
+  };
+
   return (
     <aside className={`${className} bg-white shadow-lg border-r border-blue-100 flex flex-col`}>
       {/* Close button for mobile overlay */}
@@ -35,10 +48,7 @@ export default function Sidebar({ user, onLogout, className = "", overlay = fals
           </button>
         </div>
       )}
-      
-
-
-
+                
       <div className="p-6">
         <nav className="flex flex-col space-y-2">
           {menuItems.map(({ name, to, icon: Icon, end }) => (
@@ -46,6 +56,7 @@ export default function Sidebar({ user, onLogout, className = "", overlay = fals
               key={name}
               to={to}
               end={end}
+              onClick={handleNavClick}
               className={({ isActive }) =>
                 `flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
                   isActive
@@ -58,10 +69,10 @@ export default function Sidebar({ user, onLogout, className = "", overlay = fals
               {name}
             </NavLink>
           ))}
-
+           
           {/* Mobile-only logout button */}
           <button
-            onClick={onLogout}
+            onClick={handleLogoutClick}
             className="flex items-center px-4 py-2 rounded-lg text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors duration-200 md:hidden"
           >
             <PowerIcon className="h-5 w-5 mr-3" />
@@ -69,7 +80,7 @@ export default function Sidebar({ user, onLogout, className = "", overlay = fals
           </button>
         </nav>
       </div>
-
+       
       {/* Desktop-only logout button */}
       <div className="mt-auto p-6 hidden md:block">
         <button

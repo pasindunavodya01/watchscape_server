@@ -65,6 +65,10 @@ export default function Rightbar({
   const handleUserClick = () => {
     setShowUserResults(false);
     setUserQuery("");
+    // Close the rightbar if it's an overlay (mobile)
+    if (overlay && onClose) {
+      onClose();
+    }
   };
 
   return (
