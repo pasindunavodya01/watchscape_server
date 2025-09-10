@@ -2,7 +2,7 @@ import React from "react";
 import { Bars3Icon, EllipsisVerticalIcon } from "@heroicons/react/24/outline";
 import NotificationBadge from "./NotificationBadge";
 
-export default function Navbar({ user, onToggleSidebar, onToggleRightbar }) {
+export default function Navbar({ user, onToggleSidebar, onToggleRightbar, onOpenNotifications }) {
   return (
     <header className="fixed top-0 left-0 w-full h-16 bg-blue-600 shadow px-4 flex justify-between items-center z-50">
       {/* Left Section */}
@@ -27,7 +27,8 @@ export default function Navbar({ user, onToggleSidebar, onToggleRightbar }) {
         </span>
 
         {/* Notification Bell */}
-        <NotificationBadge user={user} />
+        <NotificationBadge user={user} onOpenNotifications={onOpenNotifications} />
+
 
        
         {/* Avatar */}

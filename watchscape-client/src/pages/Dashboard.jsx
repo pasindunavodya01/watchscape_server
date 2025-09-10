@@ -54,10 +54,21 @@ export default function Dashboard({ user, onLogout }) {
     <div className="h-screen flex flex-col">
       {/* Fixed top navbar */}
       <Navbar
-        user={user}
-        onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
-        onToggleRightbar={() => setRightbarOpen((prev) => !prev)}
-      />
+  user={user}
+  onToggleSidebar={() => {
+    setSidebarOpen((prev) => !prev);
+    setRightbarOpen(false);
+  }}
+  onToggleRightbar={() => {
+    setRightbarOpen((prev) => !prev);
+    setSidebarOpen(false);
+  }}
+  onOpenNotifications={() => {
+    setSidebarOpen(false);
+    setRightbarOpen(false);
+  }}
+/>
+
 
       {/* Main flex row under navbar */}
       <div className="flex flex-grow pt-16 min-h-[calc(100vh-64px)] bg-blue-50">
