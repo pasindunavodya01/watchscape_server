@@ -835,13 +835,7 @@ function MovieActivityCard({ post, currentUid, onToggleLike, onAddComment, onTog
               <ChatBubbleLeftIcon className="w-5 h-5" />
               <span className="text-sm font-medium">{post.comments?.length || 0}</span>
             </button>
-            <button 
-              className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
-              onClick={onShare}
-            >
-              <ShareIcon className="w-5 h-5" />
-              <span className="text-sm font-medium">Share</span>
-            </button>
+            
           </div>
         </div>
       </div>
