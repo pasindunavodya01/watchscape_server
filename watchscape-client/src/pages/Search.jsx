@@ -77,6 +77,23 @@ export default function Search({ user, onMovieChange }) {
         
         if (existingMovie) {
           await fetch(`https://patient-determination-production.up.railway.app/api/movies/${existingMovie._id}`, { method: "DELETE" });
+
+          // Clean up the associated post
+          try {
+            const postsRes = await fetch("https://patient-determination-production.up.railway.app/api/posts");
+            const allPosts = await postsRes.json();
+            const associatedPost = allPosts.find(p => 
+              p.userId === user.uid && 
+              p.type === "movie_activity" && 
+              p.movieActivity?.action === otherStatus && 
+              String(p.movieActivity?.movie?.tmdbId) === String(movie.id)
+            );
+            if (associatedPost) {
+              await fetch(`https://patient-determination-production.up.railway.app/api/posts/${associatedPost._id}`, { method: "DELETE" });
+            }
+          } catch (e) {
+            console.error("Cleanup post error:", e);
+          }
         }
       }
 

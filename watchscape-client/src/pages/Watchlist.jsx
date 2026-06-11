@@ -49,10 +49,28 @@ export default function Watchlist({ user, onMovieChange }) {
       return;
     }
     try {
+      const movieToRemove = movies.find((m) => m._id === id);
       const res = await fetch(`https://patient-determination-production.up.railway.app/api/movies/${id}`, {
         method: "DELETE",
       });
       if (res.ok) {
+        if (movieToRemove && user) {
+          try {
+            const postsRes = await fetch("https://patient-determination-production.up.railway.app/api/posts");
+            const allPosts = await postsRes.json();
+            const associatedPost = allPosts.find(p => 
+              p.userId === user.uid && 
+              p.type === "movie_activity" && 
+              p.movieActivity?.action === "watchlist" && 
+              String(p.movieActivity?.movie?.tmdbId) === String(movieToRemove.tmdbId)
+            );
+            if (associatedPost) {
+              await fetch(`https://patient-determination-production.up.railway.app/api/posts/${associatedPost._id}`, { method: "DELETE" });
+            }
+          } catch (e) {
+            console.error("Cleanup post error:", e);
+          }
+        }
         setMovies(movies.filter((m) => m._id !== id));
         if (onMovieChange) onMovieChange();
       } else {
@@ -83,6 +101,22 @@ export default function Watchlist({ user, onMovieChange }) {
         await fetch(`https://patient-determination-production.up.railway.app/api/movies/${movie._id}`, {
           method: "DELETE",
         });
+
+        try {
+          const postsRes = await fetch("https://patient-determination-production.up.railway.app/api/posts");
+          const allPosts = await postsRes.json();
+          const associatedPost = allPosts.find(p => 
+            p.userId === user.uid && 
+            p.type === "movie_activity" && 
+            p.movieActivity?.action === "watchlist" && 
+            String(p.movieActivity?.movie?.tmdbId) === String(movie.tmdbId)
+          );
+          if (associatedPost) {
+            await fetch(`https://patient-determination-production.up.railway.app/api/posts/${associatedPost._id}`, { method: "DELETE" });
+          }
+        } catch (e) {
+          console.error("Cleanup post error:", e);
+        }
         
         setMovies(movies.filter((m) => m._id !== movie._id));
         if (onMovieChange) onMovieChange();
@@ -94,6 +128,22 @@ export default function Watchlist({ user, onMovieChange }) {
           await fetch(`https://patient-determination-production.up.railway.app/api/movies/${movie._id}`, {
             method: "DELETE",
           });
+
+          try {
+            const postsRes = await fetch("https://patient-determination-production.up.railway.app/api/posts");
+            const allPosts = await postsRes.json();
+            const associatedPost = allPosts.find(p => 
+              p.userId === user.uid && 
+              p.type === "movie_activity" && 
+              p.movieActivity?.action === "watchlist" && 
+              String(p.movieActivity?.movie?.tmdbId) === String(movie.tmdbId)
+            );
+            if (associatedPost) {
+              await fetch(`https://patient-determination-production.up.railway.app/api/posts/${associatedPost._id}`, { method: "DELETE" });
+            }
+          } catch (e) {
+            console.error("Cleanup post error:", e);
+          }
           setMovies(movies.filter((m) => m._id !== movie._id));
           if (onMovieChange) onMovieChange();
           alert("Movie marked as watched!");
