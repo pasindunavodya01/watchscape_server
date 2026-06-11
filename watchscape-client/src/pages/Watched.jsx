@@ -45,6 +45,9 @@ export default function Watched({ user, onMovieChange }) {
   }, [user]);
 
   const removeMovie = async (id) => {
+    if (!window.confirm("Are you sure you want to remove this movie from your watched list?")) {
+      return;
+    }
     try {
       const res = await fetch(`https://patient-determination-production.up.railway.app/api/movies/${id}`, {
         method: "DELETE",

@@ -138,6 +138,7 @@ export default function MyProfile({ user }) {
 
   // Unpin movie
   const unpinMovie = async (tmdbId) => {
+    if (!window.confirm("Are you sure you want to unpin this movie?")) return;
     try {
       const res = await fetch(`${API}/api/users/${user.uid}/pin-film/${tmdbId}`, {
         method: "DELETE",

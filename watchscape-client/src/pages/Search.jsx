@@ -67,6 +67,19 @@ export default function Search({ user, onMovieChange }) {
 
   const addMovie = async (movie, status) => {
     try {
+      // Before adding to the new list, remove it from the other list if it exists
+      const otherStatus = status === "watchlist" ? "watched" : "watchlist";
+      const checkRes = await fetch(`https://patient-determination-production.up.railway.app/api/movies?userId=${user.uid}&status=${otherStatus}`);
+      
+      if (checkRes.ok) {
+        const otherList = await checkRes.json();
+        const existingMovie = otherList.find(m => String(m.tmdbId) === String(movie.id));
+        
+        if (existingMovie) {
+          await fetch(`https://patient-determination-production.up.railway.app/api/movies/${existingMovie._id}`, { method: "DELETE" });
+        }
+      }
+
       const res = await fetch("https://patient-determination-production.up.railway.app/api/posts/movie-activity", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -85,7 +98,12 @@ export default function Search({ user, onMovieChange }) {
         onMovieChange?.();
       } else {
         const errData = await res.json();
-        alert(errData.message || "Failed to add movie");
+        if (errData.message === 'Movie already in this list') {
+          alert(`Movie is already in your ${status}!`);
+          onMovieChange?.(); // Trigger change to reflect cross-list deletion
+        } else {
+          alert(errData.message || "Failed to add movie");
+        }
       }
     } catch (error) {
       console.error(error);

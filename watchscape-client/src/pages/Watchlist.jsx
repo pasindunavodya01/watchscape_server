@@ -45,6 +45,9 @@ export default function Watchlist({ user, onMovieChange }) {
   }, [user]);
 
   const removeMovie = async (id) => {
+    if (!window.confirm("Are you sure you want to remove this movie from your watchlist?")) {
+      return;
+    }
     try {
       const res = await fetch(`https://patient-determination-production.up.railway.app/api/movies/${id}`, {
         method: "DELETE",
@@ -87,7 +90,16 @@ export default function Watchlist({ user, onMovieChange }) {
         alert("Movie marked as watched!");
       } else {
         const errData = await res.json();
-        alert(errData.message || "Failed to mark as watched");
+        if (errData.message === 'Movie already in this list') {
+          await fetch(`https://patient-determination-production.up.railway.app/api/movies/${movie._id}`, {
+            method: "DELETE",
+          });
+          setMovies(movies.filter((m) => m._id !== movie._id));
+          if (onMovieChange) onMovieChange();
+          alert("Movie marked as watched!");
+        } else {
+          alert(errData.message || "Failed to mark as watched");
+        }
       }
     } catch (error) {
       console.error("Error marking as watched:", error);
