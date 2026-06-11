@@ -99,7 +99,7 @@ export default function Dashboard({ user, onLogout }) {
         {/* Main content area */}
         <main className="flex-grow min-h-[calc(100vh-64px)] overflow-auto px-4 md:ml-64 lg:mr-72 py-6">
           <Routes>
-            <Route index element={<Home user={user} />} />
+            <Route index element={<Home user={user} onMovieChange={refreshCounts} />} />
             <Route
               path="search"
               element={<Search user={user} onMovieChange={refreshCounts} />}

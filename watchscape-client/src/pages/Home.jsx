@@ -43,7 +43,7 @@ const genreMap = {
 
 const API = "https://patient-determination-production.up.railway.app";
 
-export default function Home({ user }) {
+export default function Home({ user, onMovieChange }) {
   const [posts, setPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(false);
 
@@ -63,6 +63,12 @@ export default function Home({ user }) {
   const [movieResults, setMovieResults] = useState([]);
   const [movieLoading, setMovieLoading] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState(null);
+
+  // Global movie search
+  const [globalMovieQuery, setGlobalMovieQuery] = useState("");
+  const [globalMovieResults, setGlobalMovieResults] = useState([]);
+  const [globalMovieLoading, setGlobalMovieLoading] = useState(false);
+  const [selectedGlobalMovie, setSelectedGlobalMovie] = useState(null);
 
   // fetch posts
   const fetchPosts = async () => {
@@ -130,6 +136,87 @@ export default function Home({ user }) {
     const path = selectedMovie.posterPath || selectedMovie.poster_path;
     return `https://image.tmdb.org/t/p/w300${path}`;
   }, [selectedMovie]);
+
+  // Global movie search function
+  const searchGlobalMovies = async (e) => {
+    e.preventDefault();
+    if (!globalMovieQuery.trim()) return;
+    setGlobalMovieLoading(true);
+    try {
+      const res = await fetch(`${API}/api/movies/search?q=${encodeURIComponent(globalMovieQuery)}`);
+      const data = await res.json();
+      setGlobalMovieResults(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+      setGlobalMovieResults([]);
+    } finally {
+      setGlobalMovieLoading(false);
+    }
+  };
+
+  // Add movie to watchlist/watched
+  const addMovie = async (movie, status) => {
+    try {
+      // Before adding to the new list, remove it from the other list if it exists
+      const otherStatus = status === "watchlist" ? "watched" : "watchlist";
+      const checkRes = await fetch(`${API}/api/movies?userId=${user.uid}&status=${otherStatus}`);
+      
+      if (checkRes.ok) {
+        const otherList = await checkRes.json();
+        const existingMovie = otherList.find(m => String(m.tmdbId) === String(movie.id));
+        
+        if (existingMovie) {
+          await fetch(`${API}/api/movies/${existingMovie._id}`, { method: "DELETE" });
+
+          // Clean up the associated post
+          try {
+            const postsRes = await fetch(`${API}/api/posts`);
+            const allPosts = await postsRes.json();
+            const associatedPost = allPosts.find(p => 
+              p.userId === user.uid && 
+              p.type === "movie_activity" && 
+              p.movieActivity?.action === otherStatus && 
+              String(p.movieActivity?.movie?.tmdbId) === String(movie.id)
+            );
+            if (associatedPost) {
+              await fetch(`${API}/api/posts/${associatedPost._id}`, { method: "DELETE" });
+            }
+          } catch (e) {
+            console.error("Cleanup post error:", e);
+          }
+        }
+      }
+
+      const res = await fetch(`${API}/api/posts/movie-activity`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tmdbId: movie.id,
+          title: movie.title,
+          posterPath: movie.poster_path,
+          releaseDate: movie.release_date,
+          overview: movie.overview || '',
+          userId: user.uid,
+          status,
+        }),
+      });
+      if (res.ok) {
+        alert(`Movie added to your ${status}!`);
+        onMovieChange?.();
+      } else {
+        const errData = await res.json();
+        if (errData.message === 'Movie already in this list') {
+          alert(`Movie is already in your ${status}!`);
+          onMovieChange?.(); // Trigger change to reflect cross-list deletion
+        } else {
+          alert(errData.message || "Failed to add movie");
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error adding movie");
+    }
+  };
 
   // actions
   const createPost = async () => {
@@ -399,6 +486,233 @@ export default function Home({ user }) {
           </div>
         )}
       </div>
+
+      {/* Global Movie Search */}
+      <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="flex flex-col sm:flex-row gap-3 items-center">
+          <MagnifyingGlassIcon className="w-6 h-6 text-purple-600 hidden sm:block" />
+          <div className="flex-1 w-full">
+            <input
+              type="text"
+              placeholder="Search and add movies to your lists..."
+              value={globalMovieQuery}
+              onChange={(e) => setGlobalMovieQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && searchGlobalMovies(e)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={searchGlobalMovies}
+            disabled={globalMovieLoading || !globalMovieQuery.trim()}
+            className="w-full sm:w-auto px-8 py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+          >
+            {globalMovieLoading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Searching...
+              </>
+            ) : (
+              "Search"
+            )}
+          </button>
+        </div>
+
+        {globalMovieLoading && (
+          <div className="flex justify-center items-center py-10">
+            <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        )}
+
+        {!globalMovieLoading && globalMovieResults.length > 0 && (
+          <div className="mt-6 border-t pt-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              {globalMovieResults.map((movie) => (
+                <div
+                  key={movie.id}
+                  className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg hover:scale-105 transition-all duration-200 group"
+                >
+                  {/* Movie Poster */}
+                  <div className="relative aspect-[2/3] bg-gray-100">
+                    {movie.poster_path ? (
+                      <img
+                        src={`https://image.tmdb.org/t/p/w400${movie.poster_path}`}
+                        alt={movie.title}
+                        className="w-full h-full object-cover cursor-pointer"
+                        onClick={() => setSelectedGlobalMovie(movie)}
+                      />
+                    ) : (
+                      <div 
+                        className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center text-gray-500 cursor-pointer"
+                        onClick={() => setSelectedGlobalMovie(movie)}
+                      >
+                        <FilmIcon className="w-16 h-16" />
+                      </div>
+                    )}
+
+                    {/* Info Button */}
+                    <button
+                      onClick={() => setSelectedGlobalMovie(movie)}
+                      className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black bg-opacity-60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-opacity-80"
+                      title="View Details"
+                    >
+                      <InformationCircleIcon className="w-5 h-5" />
+                    </button>
+
+                    {/* Rating Badge */}
+                    {movie.vote_average > 0 && (
+                      <div className="absolute top-3 left-3 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                        <StarIcon className="w-3 h-3 text-white" fill="currentColor" />
+                        {movie.vote_average.toFixed(1)}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Movie Info */}
+                  <div className="p-4">
+                    <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 leading-tight">
+                      {movie.title}
+                    </h3>
+                    <p className="text-sm text-gray-500 mb-4">
+                      {movie.release_date ? new Date(movie.release_date).getFullYear() : "N/A"}
+                    </p>
+
+                    {/* Action Buttons */}
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => addMovie(movie, "watchlist")}
+                        className="w-full bg-purple-600 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <PlusIcon className="w-4 h-4" />
+                        Watchlist
+                      </button>
+                      <button
+                        onClick={() => addMovie(movie, "watched")}
+                        className="w-full bg-green-600 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <FilmIcon className="w-4 h-4" />
+                        Watched
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Enhanced Movie Details Modal for Global Search */}
+      {selectedGlobalMovie && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center p-2 sm:p-4 z-50"
+          onClick={() => setSelectedGlobalMovie(null)}
+        >
+          <div
+            className="bg-white rounded-xl sm:rounded-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden shadow-2xl mx-2 sm:mx-0"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="relative">
+              {selectedGlobalMovie.backdrop_path ? (
+                <div className="relative h-32 sm:h-48 bg-gradient-to-t from-black/60 to-transparent">
+                  <img
+                    src={`https://image.tmdb.org/t/p/w780${selectedGlobalMovie.backdrop_path}`}
+                    alt={selectedGlobalMovie.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                </div>
+              ) : (
+                <div className="h-32 sm:h-48 bg-gradient-to-br from-purple-600 to-blue-600"></div>
+              )}
+              
+              <button
+                onClick={() => setSelectedGlobalMovie(null)}
+                className="absolute top-2 right-2 sm:top-4 sm:right-4 w-8 h-8 sm:w-10 sm:h-10 bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all"
+              >
+                <XMarkIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(95vh-8rem)] sm:max-h-[calc(90vh-12rem)]">
+              <div className="flex gap-4 sm:gap-6 mb-4 sm:mb-6">
+                {/* Poster */}
+                {selectedGlobalMovie.poster_path ? (
+                  <img
+                    src={`https://image.tmdb.org/t/p/w300${selectedGlobalMovie.poster_path}`}
+                    alt={selectedGlobalMovie.title}
+                    className="w-24 h-36 sm:w-32 sm:h-48 object-cover rounded-lg sm:rounded-xl shadow-lg flex-shrink-0"
+                  />
+                ) : (
+                  <div className="w-24 h-36 sm:w-32 sm:h-48 bg-gray-200 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
+                    <FilmIcon className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400" />
+                  </div>
+                )}
+
+                {/* Movie Info */}
+                <div className="flex-1">
+                  <h3 className="text-xl sm:text-2xl font-bold mb-2 leading-tight">{selectedGlobalMovie.title}</h3>
+                  <p className="text-gray-600 mb-2 text-sm sm:text-base">
+                    {selectedGlobalMovie.release_date ? new Date(selectedGlobalMovie.release_date).toDateString() : "N/A"}
+                  </p>
+                  <p className="text-gray-600 mb-2 text-sm sm:text-base">
+                    Genres: {selectedGlobalMovie.genre_ids?.map(id => genreMap[id]).join(", ") || "N/A"}
+                  </p>
+                  {/* Description - Desktop only (hidden on mobile) */}
+                  <p className="hidden sm:block text-gray-700 text-sm sm:text-base leading-relaxed mb-4">
+                    {selectedGlobalMovie.overview || "No description available."}
+                  </p>
+
+                  {/* Action Buttons - Desktop only */}
+                  <div className="hidden sm:flex mt-4 gap-3">
+                    <button
+                      onClick={() => { addMovie(selectedGlobalMovie, "watchlist"); setSelectedGlobalMovie(null); }}
+                      className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition-all flex items-center justify-center gap-2"
+                    >
+                      <PlusIcon className="w-4 h-4" />
+                      Watchlist
+                    </button>
+                    <button
+                      onClick={() => { addMovie(selectedGlobalMovie, "watched"); setSelectedGlobalMovie(null); }}
+                      className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-all flex items-center justify-center gap-2"
+                    >
+                      <FilmIcon className="w-4 h-4" />
+                      Watched
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Description - Mobile only (hidden on desktop) */}
+              <div className="block sm:hidden mb-6">
+                <p className="text-gray-700 text-sm leading-relaxed">
+                  {selectedGlobalMovie.overview || "No description available."}
+                </p>
+              </div>
+
+              {/* Action Buttons - Mobile only */}
+              <div className="block sm:hidden flex flex-col gap-3">
+                <button
+                  onClick={() => { addMovie(selectedGlobalMovie, "watchlist"); setSelectedGlobalMovie(null); }}
+                  className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-all text-sm flex items-center justify-center gap-2"
+                >
+                  <PlusIcon className="w-4 h-4" />
+                  Watchlist
+                </button>
+                <button
+                  onClick={() => { addMovie(selectedGlobalMovie, "watched"); setSelectedGlobalMovie(null); }}
+                  className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-all text-sm flex items-center justify-center gap-2"
+                >
+                  <FilmIcon className="w-4 h-4" />
+                  Watched
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Feed */}
       <div className="space-y-6">
