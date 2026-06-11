@@ -11,11 +11,21 @@ import {
   MagnifyingGlassIcon,
   PlusIcon,
   TrashIcon,
-  PencilIcon
+  PencilIcon,
+  InformationCircleIcon,
+  StarIcon
 } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartSolid } from "@heroicons/react/24/solid";
 
 const API = "https://patient-determination-production.up.railway.app";
+
+// Genre mapping for TMDB
+const genreMap = {
+  28: "Action", 12: "Adventure", 16: "Animation", 35: "Comedy", 80: "Crime",
+  18: "Drama", 10751: "Family", 14: "Fantasy", 36: "History", 27: "Horror",
+  10402: "Music", 9648: "Mystery", 10749: "Romance", 878: "Sci-Fi", 10770: "TV Movie",
+  53: "Thriller", 10752: "War", 37: "Western"
+};
 
 export default function MyProfile({ user }) {
   const [profile, setProfile] = useState(null);
@@ -41,6 +51,7 @@ export default function MyProfile({ user }) {
   const [commentTexts, setCommentTexts] = useState({});
   const [submittingComments, setSubmittingComments] = useState({});
   const [showComments, setShowComments] = useState({});
+  const [selectedPostMovie, setSelectedPostMovie] = useState(null);
 
   const fetchProfile = async () => {
     try {
@@ -249,6 +260,54 @@ export default function MyProfile({ user }) {
     setShowComments(prev => ({ ...prev, [postId]: !prev[postId] }));
   };
 
+  const addMovie = async (movie, status) => {
+    try {
+      const otherStatus = status === "watchlist" ? "watched" : "watchlist";
+      const checkRes = await fetch(`${API}/api/movies?userId=${user.uid}&status=${otherStatus}`);
+      
+      if (checkRes.ok) {
+        const otherList = await checkRes.json();
+        const existingMovie = otherList.find(m => String(m.tmdbId) === String(movie.id));
+        
+        if (existingMovie) {
+          await fetch(`${API}/api/movies/${existingMovie._id}`, { method: "DELETE" });
+          try {
+            const postsRes = await fetch(`${API}/api/posts`);
+            const allPosts = await postsRes.json();
+            const associatedPost = allPosts.find(p => 
+              p.userId === user.uid && p.type === "movie_activity" && 
+              p.movieActivity?.action === otherStatus && String(p.movieActivity?.movie?.tmdbId) === String(movie.id)
+            );
+            if (associatedPost) await fetch(`${API}/api/posts/${associatedPost._id}`, { method: "DELETE" });
+          } catch (e) { console.error("Cleanup post error:", e); }
+        }
+      }
+
+      const res = await fetch(`${API}/api/posts/movie-activity`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tmdbId: movie.id,
+          title: movie.title,
+          posterPath: movie.poster_path,
+          releaseDate: movie.release_date,
+          overview: movie.overview || '',
+          userId: user.uid,
+          status,
+        }),
+      });
+      if (res.ok) {
+        alert(`Movie added to your ${status}!`);
+      } else {
+        const errData = await res.json();
+        alert(errData.message === 'Movie already in this list' ? `Movie is already in your ${status}!` : (errData.message || "Failed to add movie"));
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error adding movie");
+    }
+  };
+
   // Helper functions
   const getMoviePoster = (post) => {
     if (post.type === 'movie_activity' && post.movieActivity?.movie?.posterPath) {
@@ -305,7 +364,7 @@ export default function MyProfile({ user }) {
             </div>
             
             {movie && (
-              <div className="flex gap-3 mb-4">
+              <div className="relative flex gap-3 mb-4 pr-10">
                 {movie.posterPath ? (
                   <img
                     src={`https://image.tmdb.org/t/p/w200${movie.posterPath}`}
@@ -317,6 +376,22 @@ export default function MyProfile({ user }) {
                     <FilmIcon className="w-6 h-6" />
                   </div>
                 )}
+                <button
+                  className="absolute top-0 right-0 w-8 h-8 rounded-full bg-black bg-opacity-60 text-white flex items-center justify-center hover:bg-opacity-80 transition-all"
+                  title="View Movie Details"
+                  onClick={() => setSelectedPostMovie({
+                    id: movie.tmdbId,
+                    title: movie.title,
+                    poster_path: movie.posterPath,
+                    release_date: movie.releaseDate,
+                    overview: movie.overview,
+                    backdrop_path: movie.backdropPath,
+                    genre_ids: movie.genre_ids,
+                    vote_average: movie.vote_average,
+                  })}
+                >
+                  <InformationCircleIcon className="w-4 h-4" />
+                </button>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-gray-900 line-clamp-2">{movie.title}</h3>
                   {movie.releaseDate && (
@@ -405,12 +480,28 @@ export default function MyProfile({ user }) {
     return (
       <div key={post._id} className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
         {getMoviePoster(post) && (
-          <div className="bg-gray-100 overflow-hidden">
+          <div className="relative bg-gray-100 overflow-hidden">
             <img
               src={getMoviePoster(post)}
               alt={getMovieTitle(post)}
               className="w-full h-auto object-cover"
             />
+            <button
+              className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black bg-opacity-60 text-white flex items-center justify-center hover:bg-opacity-80 transition-all"
+              title="View Movie Details"
+              onClick={() => setSelectedPostMovie({
+                id: post.movie.tmdbId,
+                title: post.movie.title,
+                poster_path: post.movie.posterPath,
+                release_date: post.movie.releaseDate,
+                overview: post.movie.overview,
+                backdrop_path: post.movie.backdropPath,
+                genre_ids: post.movie.genre_ids,
+                vote_average: post.movie.vote_average,
+              })}
+            >
+              <InformationCircleIcon className="w-4 h-4" />
+            </button>
           </div>
         )}
         
@@ -631,6 +722,21 @@ export default function MyProfile({ user }) {
                     >
                       <PlusIcon className="w-4 h-4" />
                     </button>
+                    <button 
+                      onClick={() => setSelectedPostMovie({
+                        id: movie.id,
+                        title: movie.title,
+                        poster_path: movie.poster_path,
+                        release_date: movie.release_date,
+                        overview: movie.overview,
+                        backdrop_path: movie.backdrop_path,
+                        genre_ids: movie.genre_ids,
+                        vote_average: movie.vote_average,
+                      })}
+                      className="absolute top-2 left-2 w-8 h-8 bg-black bg-opacity-60 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-opacity-80"
+                    >
+                      <InformationCircleIcon className="w-4 h-4" />
+                    </button>
                   </div>
                   <p className="text-xs mt-2 font-medium text-gray-800 line-clamp-2">{movie.title}</p>
                   {movie.release_date && (
@@ -684,6 +790,21 @@ export default function MyProfile({ user }) {
                     className="absolute top-2 right-2 w-8 h-8 bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-red-700"
                   >
                     <XMarkIcon className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={() => setSelectedPostMovie({
+                      id: film.tmdbId || film.id,
+                      title: film.title,
+                      poster_path: film.posterPath || film.poster_path,
+                      release_date: film.releaseDate || film.release_date,
+                      overview: film.overview,
+                      backdrop_path: film.backdropPath || film.backdrop_path,
+                      genre_ids: film.genre_ids,
+                      vote_average: film.vote_average,
+                    })}
+                    className="absolute top-2 left-2 w-8 h-8 bg-black bg-opacity-60 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-opacity-80"
+                  >
+                    <InformationCircleIcon className="w-4 h-4" />
                   </button>
                 </div>
                 <p className="text-xs mt-2 font-medium text-gray-800 line-clamp-2">{film.title}</p>
@@ -807,6 +928,112 @@ export default function MyProfile({ user }) {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Enhanced Movie Details Modal */}
+      {selectedPostMovie && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center p-2 sm:p-4 z-50"
+          onClick={() => setSelectedPostMovie(null)}
+        >
+          <div
+            className="bg-white rounded-xl sm:rounded-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden shadow-2xl mx-2 sm:mx-0"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative">
+              {selectedPostMovie.backdrop_path ? (
+                <div className="relative h-32 sm:h-48 bg-gradient-to-t from-black/60 to-transparent">
+                  <img
+                    src={`https://image.tmdb.org/t/p/w780${selectedPostMovie.backdrop_path}`}
+                    alt={selectedPostMovie.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                </div>
+              ) : (
+                <div className="h-32 sm:h-48 bg-gradient-to-br from-purple-600 to-blue-600"></div>
+              )}
+              <button
+                onClick={() => setSelectedPostMovie(null)}
+                className="absolute top-2 right-2 sm:top-4 sm:right-4 w-8 h-8 sm:w-10 sm:h-10 bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all"
+              >
+                <XMarkIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+            </div>
+            <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(95vh-8rem)] sm:max-h-[calc(90vh-12rem)]">
+              <div className="flex gap-4 sm:gap-6 mb-4 sm:mb-6">
+                {selectedPostMovie.poster_path ? (
+                  <img
+                    src={`https://image.tmdb.org/t/p/w300${selectedPostMovie.poster_path}`}
+                    alt={selectedPostMovie.title}
+                    className="w-24 h-36 sm:w-32 sm:h-48 object-cover rounded-lg sm:rounded-xl shadow-lg flex-shrink-0"
+                  />
+                ) : (
+                  <div className="w-24 h-36 sm:w-32 sm:h-48 bg-gray-200 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
+                    <FilmIcon className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400" />
+                  </div>
+                )}
+                <div className="flex-1">
+                  <h3 className="text-xl sm:text-2xl font-bold mb-2 leading-tight">{selectedPostMovie.title}</h3>
+                  <p className="text-gray-600 mb-2 text-sm sm:text-base">
+                    {selectedPostMovie.release_date ? new Date(selectedPostMovie.release_date).toDateString() : "N/A"}
+                  </p>
+                  {selectedPostMovie.genre_ids && selectedPostMovie.genre_ids.length > 0 && (
+                    <p className="text-gray-600 mb-2 text-sm sm:text-base">
+                      Genres: {selectedPostMovie.genre_ids.map(id => genreMap[id]).join(", ") || "N/A"}
+                    </p>
+                  )}
+                  {selectedPostMovie.vote_average && (
+                    <p className="text-gray-600 mb-2 flex items-center gap-1 text-sm sm:text-base">
+                      <StarIcon className="w-4 h-4 text-yellow-500" />
+                      {selectedPostMovie.vote_average.toFixed(1)}/10
+                    </p>
+                  )}
+                  <p className="hidden sm:block text-gray-700 text-sm sm:text-base leading-relaxed mb-4">
+                    {selectedPostMovie.overview || "No description available."}
+                  </p>
+                  <div className="hidden sm:flex mt-4 gap-3">
+                    <button
+                      onClick={() => { addMovie(selectedPostMovie, "watchlist"); setSelectedPostMovie(null); }}
+                      className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition-all flex items-center justify-center gap-2"
+                    >
+                      <PlusIcon className="w-4 h-4" />
+                      Watchlist
+                    </button>
+                    <button
+                      onClick={() => { addMovie(selectedPostMovie, "watched"); setSelectedPostMovie(null); }}
+                      className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-all flex items-center justify-center gap-2"
+                    >
+                      <FilmIcon className="w-4 h-4" />
+                      Watched
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="block sm:hidden mb-6">
+                <p className="text-gray-700 text-sm leading-relaxed">
+                  {selectedPostMovie.overview || "No description available."}
+                </p>
+              </div>
+              <div className="block sm:hidden flex flex-col gap-3 mt-4">
+                <button
+                  onClick={() => { addMovie(selectedPostMovie, "watchlist"); setSelectedPostMovie(null); }}
+                  className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-all text-sm flex items-center justify-center gap-2"
+                >
+                  <PlusIcon className="w-4 h-4" />
+                  Watchlist
+                </button>
+                <button
+                  onClick={() => { addMovie(selectedPostMovie, "watched"); setSelectedPostMovie(null); }}
+                  className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-all text-sm flex items-center justify-center gap-2"
+                >
+                  <FilmIcon className="w-4 h-4" />
+                  Watched
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -733,6 +733,7 @@ export default function Home({ user, onMovieChange }) {
                 key={p._id}
                 post={p}
                 currentUid={user.uid}
+                  onAddMovie={addMovie}
                 onToggleLike={() => toggleLike(p._id)}
                 onAddComment={(txt, clear) => addComment(p._id, txt, clear)}
                 onToggleFollow={() => toggleFollow(p.userId)}
@@ -743,6 +744,7 @@ export default function Home({ user, onMovieChange }) {
                 key={p._id}
                 post={p}
                 currentUid={user.uid}
+                  onAddMovie={addMovie}
                 onToggleLike={() => toggleLike(p._id)}
                 onAddComment={(txt, clear) => addComment(p._id, txt, clear)}
                 onToggleFollow={() => toggleFollow(p.userId)}
@@ -757,7 +759,7 @@ export default function Home({ user, onMovieChange }) {
 }
 
 // POST CARD
-function PostCard({ post, currentUid, onToggleLike, onAddComment, onToggleFollow, onShare }) {
+function PostCard({ post, currentUid, onAddMovie, onToggleLike, onAddComment, onToggleFollow, onShare }) {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [selectedPostMovie, setSelectedPostMovie] = useState(null);
@@ -821,11 +823,12 @@ function PostCard({ post, currentUid, onToggleLike, onAddComment, onToggleFollow
             title="View Movie Details"
     onClick={() =>
   setSelectedPostMovie({
+    id: post.movie.tmdbId,
     title: post.movie.title,
-    posterPath: post.movie.posterPath,
-    releaseDate: post.movie.releaseDate,
+    poster_path: post.movie.posterPath,
+    release_date: post.movie.releaseDate,
     overview: post.movie.overview,
-    backdropPath: post.movie.backdropPath,
+    backdrop_path: post.movie.backdropPath,
     genre_ids: post.movie.genre_ids,
     vote_average: post.movie.vote_average,
   })
@@ -961,10 +964,10 @@ function PostCard({ post, currentUid, onToggleLike, onAddComment, onToggleFollow
     >
       {/* Header */}
       <div className="relative">
-        {(selectedPostMovie.backdrop_path || selectedPostMovie.backdropPath) ? (
+        {selectedPostMovie.backdrop_path ? (
           <div className="relative h-32 sm:h-48 bg-gradient-to-t from-black/60 to-transparent">
             <img
-              src={`https://image.tmdb.org/t/p/w780${selectedPostMovie.backdrop_path || selectedPostMovie.backdropPath}`}
+              src={`https://image.tmdb.org/t/p/w780${selectedPostMovie.backdrop_path}`}
               alt={selectedPostMovie.title}
               className="w-full h-full object-cover"
             />
@@ -986,9 +989,9 @@ function PostCard({ post, currentUid, onToggleLike, onAddComment, onToggleFollow
       <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(95vh-8rem)] sm:max-h-[calc(90vh-12rem)]">
         <div className="flex gap-4 sm:gap-6 mb-4 sm:mb-6">
           {/* Poster */}
-          {(selectedPostMovie.posterPath || selectedPostMovie.poster_path) ? (
+          {selectedPostMovie.poster_path ? (
             <img
-              src={`https://image.tmdb.org/t/p/w300${selectedPostMovie.posterPath || selectedPostMovie.poster_path}`}
+              src={`https://image.tmdb.org/t/p/w300${selectedPostMovie.poster_path}`}
               alt={selectedPostMovie.title}
               className="w-24 h-36 sm:w-32 sm:h-48 object-cover rounded-lg sm:rounded-xl shadow-lg flex-shrink-0"
             />
@@ -1002,7 +1005,7 @@ function PostCard({ post, currentUid, onToggleLike, onAddComment, onToggleFollow
           <div className="flex-1">
             <h3 className="text-xl sm:text-2xl font-bold mb-2 leading-tight">{selectedPostMovie.title}</h3>
             <p className="text-gray-600 mb-2 text-sm sm:text-base">
-              {selectedPostMovie.releaseDate ? new Date(selectedPostMovie.releaseDate).toDateString() : "N/A"}
+              {selectedPostMovie.release_date ? new Date(selectedPostMovie.release_date).toDateString() : "N/A"}
             </p>
             {selectedPostMovie.genre_ids && selectedPostMovie.genre_ids.length > 0 && (
               <p className="text-gray-600 mb-2 text-sm sm:text-base">
@@ -1013,6 +1016,24 @@ function PostCard({ post, currentUid, onToggleLike, onAddComment, onToggleFollow
             <p className="hidden sm:block text-gray-700 text-sm sm:text-base leading-relaxed">
               {selectedPostMovie.overview || "No description available."}
             </p>
+
+            {/* Action Buttons - Desktop only */}
+            <div className="hidden sm:flex mt-4 gap-3">
+              <button
+                onClick={() => { onAddMovie(selectedPostMovie, "watchlist"); setSelectedPostMovie(null); }}
+                className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition-all flex items-center justify-center gap-2"
+              >
+                <PlusIcon className="w-4 h-4" />
+                Watchlist
+              </button>
+              <button
+                onClick={() => { onAddMovie(selectedPostMovie, "watched"); setSelectedPostMovie(null); }}
+                className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-all flex items-center justify-center gap-2"
+              >
+                <FilmIcon className="w-4 h-4" />
+                Watched
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1021,6 +1042,24 @@ function PostCard({ post, currentUid, onToggleLike, onAddComment, onToggleFollow
           <p className="text-gray-700 text-sm leading-relaxed">
             {selectedPostMovie.overview || "No description available."}
           </p>
+        </div>
+
+        {/* Action Buttons - Mobile only */}
+        <div className="block sm:hidden flex flex-col gap-3 mt-4">
+          <button
+            onClick={() => { onAddMovie(selectedPostMovie, "watchlist"); setSelectedPostMovie(null); }}
+            className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-all text-sm flex items-center justify-center gap-2"
+          >
+            <PlusIcon className="w-4 h-4" />
+            Watchlist
+          </button>
+          <button
+            onClick={() => { onAddMovie(selectedPostMovie, "watched"); setSelectedPostMovie(null); }}
+            className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-all text-sm flex items-center justify-center gap-2"
+          >
+            <FilmIcon className="w-4 h-4" />
+            Watched
+          </button>
         </div>
       </div>
     </div>
@@ -1031,7 +1070,7 @@ function PostCard({ post, currentUid, onToggleLike, onAddComment, onToggleFollow
 }
 
 // MOVIE ACTIVITY CARD
-function MovieActivityCard({ post, currentUid, onToggleLike, onAddComment, onToggleFollow, onShare }) {
+function MovieActivityCard({ post, currentUid, onAddMovie, onToggleLike, onAddComment, onToggleFollow, onShare }) {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [selectedPostMovie, setSelectedPostMovie] = useState(null);
@@ -1100,11 +1139,12 @@ function MovieActivityCard({ post, currentUid, onToggleLike, onAddComment, onTog
               title="View Movie Details"
               onClick={() =>
                 setSelectedPostMovie({
+                  id: post.movieActivity.movie.tmdbId,
                   title: post.movieActivity.movie.title,
-                  posterPath: post.movieActivity.movie.posterPath,
-                  releaseDate: post.movieActivity.movie.releaseDate,
+                  poster_path: post.movieActivity.movie.posterPath,
+                  release_date: post.movieActivity.movie.releaseDate,
                   overview: post.movieActivity.movie.overview,
-                  backdropPath: post.movieActivity.movie.backdropPath,
+                  backdrop_path: post.movieActivity.movie.backdropPath,
                   genre_ids: post.movieActivity.movie.genre_ids,
                   vote_average: post.movieActivity.movie.vote_average,
                 })
@@ -1246,10 +1286,10 @@ function MovieActivityCard({ post, currentUid, onToggleLike, onAddComment, onTog
     >
       {/* Header */}
       <div className="relative">
-        {(selectedPostMovie.backdrop_path || selectedPostMovie.backdropPath) ? (
+        {selectedPostMovie.backdrop_path ? (
           <div className="relative h-32 sm:h-48 bg-gradient-to-t from-black/60 to-transparent">
             <img
-              src={`https://image.tmdb.org/t/p/w780${selectedPostMovie.backdrop_path || selectedPostMovie.backdropPath}`}
+              src={`https://image.tmdb.org/t/p/w780${selectedPostMovie.backdrop_path}`}
               alt={selectedPostMovie.title}
               className="w-full h-full object-cover"
             />
@@ -1271,9 +1311,9 @@ function MovieActivityCard({ post, currentUid, onToggleLike, onAddComment, onTog
       <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(95vh-8rem)] sm:max-h-[calc(90vh-12rem)]">
         <div className="flex gap-4 sm:gap-6 mb-4 sm:mb-6">
           {/* Poster */}
-          {(selectedPostMovie.posterPath || selectedPostMovie.poster_path) ? (
+          {selectedPostMovie.poster_path ? (
             <img
-              src={`https://image.tmdb.org/t/p/w300${selectedPostMovie.posterPath || selectedPostMovie.poster_path}`}
+              src={`https://image.tmdb.org/t/p/w300${selectedPostMovie.poster_path}`}
               alt={selectedPostMovie.title}
               className="w-24 h-36 sm:w-32 sm:h-48 object-cover rounded-lg sm:rounded-xl shadow-lg flex-shrink-0"
             />
@@ -1287,7 +1327,7 @@ function MovieActivityCard({ post, currentUid, onToggleLike, onAddComment, onTog
           <div className="flex-1">
             <h3 className="text-xl sm:text-2xl font-bold mb-2 leading-tight">{selectedPostMovie.title}</h3>
             <p className="text-gray-600 mb-2 text-sm sm:text-base">
-              {selectedPostMovie.releaseDate ? new Date(selectedPostMovie.releaseDate).toDateString() : "N/A"}
+              {selectedPostMovie.release_date ? new Date(selectedPostMovie.release_date).toDateString() : "N/A"}
             </p>
             {selectedPostMovie.genre_ids && selectedPostMovie.genre_ids.length > 0 && (
               <p className="text-gray-600 mb-2 text-sm sm:text-base">
@@ -1304,6 +1344,24 @@ function MovieActivityCard({ post, currentUid, onToggleLike, onAddComment, onTog
             <p className="hidden sm:block text-gray-700 text-sm sm:text-base leading-relaxed">
               {selectedPostMovie.overview || "No description available."}
             </p>
+
+            {/* Action Buttons - Desktop only */}
+            <div className="hidden sm:flex mt-4 gap-3">
+              <button
+                onClick={() => { onAddMovie(selectedPostMovie, "watchlist"); setSelectedPostMovie(null); }}
+                className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition-all flex items-center justify-center gap-2"
+              >
+                <PlusIcon className="w-4 h-4" />
+                Watchlist
+              </button>
+              <button
+                onClick={() => { onAddMovie(selectedPostMovie, "watched"); setSelectedPostMovie(null); }}
+                className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-all flex items-center justify-center gap-2"
+              >
+                <FilmIcon className="w-4 h-4" />
+                Watched
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1312,6 +1370,24 @@ function MovieActivityCard({ post, currentUid, onToggleLike, onAddComment, onTog
           <p className="text-gray-700 text-sm leading-relaxed">
             {selectedPostMovie.overview || "No description available."}
           </p>
+        </div>
+
+        {/* Action Buttons - Mobile only */}
+        <div className="block sm:hidden flex flex-col gap-3 mt-4">
+          <button
+            onClick={() => { onAddMovie(selectedPostMovie, "watchlist"); setSelectedPostMovie(null); }}
+            className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-all text-sm flex items-center justify-center gap-2"
+          >
+            <PlusIcon className="w-4 h-4" />
+            Watchlist
+          </button>
+          <button
+            onClick={() => { onAddMovie(selectedPostMovie, "watched"); setSelectedPostMovie(null); }}
+            className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-all text-sm flex items-center justify-center gap-2"
+          >
+            <FilmIcon className="w-4 h-4" />
+            Watched
+          </button>
         </div>
       </div>
     </div>
