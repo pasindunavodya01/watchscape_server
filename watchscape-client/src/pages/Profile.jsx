@@ -87,21 +87,21 @@ export default function Profile({ user }) {
 
   const fetchMovieCollections = async () => {
     setMoviesLoading(true);
-    try {
-      // Fetch watchlist
-      const watchlistRes = await fetch(`${API}/api/movies?userId=${userId}&status=watchlist`);
-      const watchlistData = await watchlistRes.json();
-      setWatchlistMovies(Array.isArray(watchlistData) ? watchlistData : []);
+try {
+  // Fetch watchlist
+  const watchlistRes = await fetch(`${API}/api/movies?userId=${userId}&status=watchlist`);
+  const watchlistData = await watchlistRes.json();
+  setWatchlistMovies(Array.isArray(watchlistData) ? [...watchlistData].reverse() : []);
 
-      // Fetch watched movies
-      const watchedRes = await fetch(`${API}/api/movies?userId=${userId}&status=watched`);
-      const watchedData = await watchedRes.json();
-      setWatchedMovies(Array.isArray(watchedData) ? watchedData : []);
-    } catch (err) {
-      console.error("Failed to fetch movie collections:", err);
-    } finally {
-      setMoviesLoading(false);
-    }
+  // Fetch watched movies
+  const watchedRes = await fetch(`${API}/api/movies?userId=${userId}&status=watched`);
+  const watchedData = await watchedRes.json();
+  setWatchedMovies(Array.isArray(watchedData) ? [...watchedData].reverse() : []);
+} catch (err) {
+  console.error("Failed to fetch movie collections:", err);
+} finally {
+  setMoviesLoading(false);
+}
   };
 
   const fetchUserPosts = async () => {

@@ -150,8 +150,8 @@ router.patch("/:uid/pin-film", async (req, res) => {
     }
 
     const pinCount = await Pin.countDocuments({ userUid: req.params.uid });
-    if (pinCount >= 6) {
-      return res.status(400).json({ message: "Maximum 6 films can be pinned" });
+    if (pinCount >= 8) {
+      return res.status(400).json({ message: "Maximum 8 films can be pinned" });
     }
 
     await Pin.create({

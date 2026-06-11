@@ -16,3 +16,5 @@ server/build/
 .DS_Store
 .vscode/
 .idea/
+
+.sss
