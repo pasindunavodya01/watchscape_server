@@ -353,165 +353,30 @@ export default function Home({ user, onMovieChange }) {
         </div>
       </div>
 
-      {/* Composer */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        {!composerOpen ? (
-          <div 
-            className="p-4 sm:p-6 cursor-text hover:bg-gray-50 transition-colors"
-            onClick={() => setComposerOpen(true)}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                <UserIcon className="w-5 h-5 text-white" />
-              </div>
-              <div className="flex-1 py-3 px-4 bg-gray-100 rounded-full text-gray-500">
-                Write something ...
-              </div>
-              <PencilSquareIcon className="w-6 h-6 text-purple-600" />
-            </div>
-          </div>
-        ) : (
-          <div className="p-4 sm:p-6">
-            <div className="flex items-start gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                <UserIcon className="w-5 h-5 text-white" />
-              </div>
-              <textarea
-                className="flex-1 border border-gray-300 rounded-lg p-4 resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
-                rows={3}
-                placeholder="What's on your mind?"
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-              />
-            </div>
-
-           {/* Movie Search */}
-<div className="mb-4">
-  <div className="flex gap-3 mb-3">
-    <div className="flex-1 relative">
-      <input
-        className="w-full px-4 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
-        placeholder="Search a movie..."
-        value={movieQuery}
-        onChange={(e) => setMovieQuery(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), searchMovies())}
-      />
-    </div>
-    <button
-      onClick={searchMovies}
-      className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 font-medium"
-      disabled={movieLoading}
-    >
-      {movieLoading ? (
-        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-      ) : (
-        <MagnifyingGlassIcon className="w-4 h-4" />
-      )}
-      {movieLoading ? "Searching..." : "Find"}
-    </button>
-  </div>
-
-
-              {movieResults.length > 0 && (
-                <div className="border-t border-gray-200 pt-4">
-                  <p className="text-sm text-gray-600 mb-3">Search Results:</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {movieResults.map((m) => (
-                      <button
-                        key={m.id}
-                        className="group text-left border border-gray-200 rounded-lg overflow-hidden hover:shadow-md hover:border-purple-300 transition-all"
-                        onClick={() => {
-                          setSelectedMovie({ id: m.id, title: m.title, poster_path: m.poster_path || "" });
-                          setMovieResults([]); setMovieQuery(m.title);
-                        }}
-                      >
-                        {m.poster_path ? (
-                          <img 
-                            src={`https://image.tmdb.org/t/p/w200${m.poster_path}`} 
-                            alt={m.title} 
-                            className="w-full aspect-[2/3] object-cover" 
-                          />
-                        ) : (
-                          <div className="w-full aspect-[2/3] flex items-center justify-center bg-gray-100 text-gray-400">
-                            <FilmIcon className="w-8 h-8" />
-                          </div>
-                        )}
-                        <div className="p-2">
-                          <div className="text-sm font-medium text-gray-900 line-clamp-2">{m.title}</div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {selectedMovie && (
-                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    {postMoviePreviewUrl ? (
-                      <img 
-                        src={postMoviePreviewUrl} 
-                        alt={selectedMovie.title} 
-                        className="w-16 h-24 object-cover rounded-lg shadow-sm" 
-                      />
-                    ) : (
-                      <div className="w-16 h-24 bg-gray-200 rounded-lg flex items-center justify-center">
-                        <FilmIcon className="w-6 h-6 text-gray-400" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-gray-900">{selectedMovie.title}</div>
-                      <button 
-                        className="flex items-center gap-1 text-sm text-red-600 hover:text-red-700 mt-2 transition-colors" 
-                        onClick={() => setSelectedMovie(null)}
-                      >
-                        <XMarkIcon className="w-4 h-4" />
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end gap-3">
-              <button
-                className="px-6 py-3 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors font-medium"
-                onClick={() => { 
-                  setComposerOpen(false); 
-                  setText(""); 
-                  setSelectedMovie(null); 
-                  setMovieResults([]); 
-                  setMovieQuery(""); 
-                }}
-              >
-                Cancel
-              </button>
-              <button 
-                className="px-6 py-3 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed" 
-                onClick={createPost}
-                disabled={!text.trim()}
-              >
-                Post
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
       {/* Global Movie Search */}
       <div className={`bg-white rounded-xl shadow-sm p-4 sm:p-6 ${!showMobileSearch ? 'hidden md:block' : ''}`}>
         <div className="flex flex-col sm:flex-row gap-3 items-center">
           <MagnifyingGlassIcon className="w-6 h-6 text-purple-600 hidden sm:block" />
-          <div className="flex-1 w-full">
+          <div className="flex-1 w-full relative">
             <input
               type="text"
               placeholder="Search and add movies to your lists..."
               value={globalMovieQuery}
               onChange={(e) => setGlobalMovieQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && searchGlobalMovies(e)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
+              className="w-full px-4 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
             />
+            {globalMovieQuery && (
+              <button
+                onClick={() => {
+                  setGlobalMovieQuery("");
+                  setGlobalMovieResults([]);
+                }}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            )}
           </div>
           <button
             type="button"
@@ -725,6 +590,163 @@ export default function Home({ user, onMovieChange }) {
           </div>
         </div>
       )}
+
+      {/* Composer */}
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        {!composerOpen ? (
+          <div 
+            className="p-4 sm:p-6 cursor-text hover:bg-gray-50 transition-colors"
+            onClick={() => setComposerOpen(true)}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                <UserIcon className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1 py-3 px-4 bg-gray-100 rounded-full text-gray-500">
+                Write something ...
+              </div>
+              <PencilSquareIcon className="w-6 h-6 text-purple-600" />
+            </div>
+          </div>
+        ) : (
+          <div className="p-4 sm:p-6">
+           {/* Movie Search */}
+<div className="mb-4">
+  <div className="flex gap-3 mb-3">
+    <div className="flex-1 relative">
+      <input
+        className="w-full px-4 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+        placeholder="Search a movie..."
+        value={movieQuery}
+        onChange={(e) => setMovieQuery(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), searchMovies())}
+      />
+      {movieQuery && (
+        <button
+          onClick={() => {
+            setMovieQuery("");
+            setMovieResults([]);
+          }}
+          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <XMarkIcon className="w-5 h-5" />
+        </button>
+      )}
+    </div>
+    <button
+      onClick={searchMovies}
+      className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 font-medium"
+      disabled={movieLoading}
+    >
+      {movieLoading ? (
+        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+      ) : (
+        <MagnifyingGlassIcon className="w-4 h-4" />
+      )}
+      {movieLoading ? "Searching..." : "Find"}
+    </button>
+  </div>
+
+
+              {movieResults.length > 0 && (
+                <div className="border-t border-gray-200 pt-4">
+                  <p className="text-sm text-gray-600 mb-3">Search Results:</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {movieResults.map((m) => (
+                      <button
+                        key={m.id}
+                        className="group text-left border border-gray-200 rounded-lg overflow-hidden hover:shadow-md hover:border-purple-300 transition-all"
+                        onClick={() => {
+                          setSelectedMovie({ id: m.id, title: m.title, poster_path: m.poster_path || "" });
+                          setMovieResults([]); setMovieQuery(m.title);
+                        }}
+                      >
+                        {m.poster_path ? (
+                          <img 
+                            src={`https://image.tmdb.org/t/p/w200${m.poster_path}`} 
+                            alt={m.title} 
+                            className="w-full aspect-[2/3] object-cover" 
+                          />
+                        ) : (
+                          <div className="w-full aspect-[2/3] flex items-center justify-center bg-gray-100 text-gray-400">
+                            <FilmIcon className="w-8 h-8" />
+                          </div>
+                        )}
+                        <div className="p-2">
+                          <div className="text-sm font-medium text-gray-900 line-clamp-2">{m.title}</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedMovie && (
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    {postMoviePreviewUrl ? (
+                      <img 
+                        src={postMoviePreviewUrl} 
+                        alt={selectedMovie.title} 
+                        className="w-16 h-24 object-cover rounded-lg shadow-sm" 
+                      />
+                    ) : (
+                      <div className="w-16 h-24 bg-gray-200 rounded-lg flex items-center justify-center">
+                        <FilmIcon className="w-6 h-6 text-gray-400" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-gray-900">{selectedMovie.title}</div>
+                      <button 
+                        className="flex items-center gap-1 text-sm text-red-600 hover:text-red-700 mt-2 transition-colors" 
+                        onClick={() => setSelectedMovie(null)}
+                      >
+                        <XMarkIcon className="w-4 h-4" />
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                <UserIcon className="w-5 h-5 text-white" />
+              </div>
+              <textarea
+                className="flex-1 border border-gray-300 rounded-lg p-4 resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                rows={3}
+                placeholder="What's on your mind?"
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+              />
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                className="px-6 py-3 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+                onClick={() => { 
+                  setComposerOpen(false); 
+                  setText(""); 
+                  setSelectedMovie(null); 
+                  setMovieResults([]); 
+                  setMovieQuery(""); 
+                }}
+              >
+                Cancel
+              </button>
+              <button 
+                className="px-6 py-3 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed" 
+                onClick={createPost}
+                disabled={!text.trim()}
+              >
+                Post
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Feed */}
       <div className="space-y-6">
