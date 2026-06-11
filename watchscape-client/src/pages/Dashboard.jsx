@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Routes, Route, Outlet } from "react-router-dom";
+import { Routes, Route, Outlet, NavLink } from "react-router-dom";
+import { HomeIcon, MagnifyingGlassIcon, BookmarkIcon, BellIcon, UserIcon } from "@heroicons/react/24/outline";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import Rightbar from "../components/Rightbar";
@@ -97,7 +98,7 @@ export default function Dashboard({ user, onLogout }) {
         )}
 
         {/* Main content area */}
-        <main className="flex-grow min-h-[calc(100vh-64px)] overflow-auto px-4 md:ml-64 lg:mr-72 py-6">
+        <main className="flex-grow min-h-[calc(100vh-64px)] overflow-auto px-4 md:ml-64 lg:mr-72 py-6 pb-24 md:pb-6">
           <Routes>
             <Route index element={<Home user={user} onMovieChange={refreshCounts} />} />
             <Route
@@ -147,6 +148,30 @@ export default function Dashboard({ user, onLogout }) {
             />
           </>
         )}
+
+        {/* Bottom Nav for Mobile */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center h-16 z-50 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+          <NavLink to="/dashboard" end className={({isActive}) => `flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive ? 'text-purple-600' : 'text-gray-500 hover:text-gray-900'}`}>
+            <HomeIcon className="w-6 h-6" />
+            <span className="text-[10px] font-medium">Home</span>
+          </NavLink>
+          <NavLink to="/dashboard/search" className={({isActive}) => `flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive ? 'text-purple-600' : 'text-gray-500 hover:text-gray-900'}`}>
+            <MagnifyingGlassIcon className="w-6 h-6" />
+            <span className="text-[10px] font-medium">Search</span>
+          </NavLink>
+          <NavLink to="/dashboard/watchlist" className={({isActive}) => `flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive ? 'text-purple-600' : 'text-gray-500 hover:text-gray-900'}`}>
+            <BookmarkIcon className="w-6 h-6" />
+            <span className="text-[10px] font-medium">Watchlist</span>
+          </NavLink>
+          <NavLink to="/dashboard/notifications" className={({isActive}) => `flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive ? 'text-purple-600' : 'text-gray-500 hover:text-gray-900'}`}>
+            <BellIcon className="w-6 h-6" />
+            <span className="text-[10px] font-medium">Alerts</span>
+          </NavLink>
+          <NavLink to="/dashboard/my-profile" className={({isActive}) => `flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive ? 'text-purple-600' : 'text-gray-500 hover:text-gray-900'}`}>
+            <UserIcon className="w-6 h-6" />
+            <span className="text-[10px] font-medium">Profile</span>
+          </NavLink>
+        </nav>
       </div>
     </div>
   );

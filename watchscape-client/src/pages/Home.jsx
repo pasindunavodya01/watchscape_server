@@ -69,6 +69,7 @@ export default function Home({ user, onMovieChange }) {
   const [globalMovieResults, setGlobalMovieResults] = useState([]);
   const [globalMovieLoading, setGlobalMovieLoading] = useState(false);
   const [selectedGlobalMovie, setSelectedGlobalMovie] = useState(null);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
 
   // fetch posts
   const fetchPosts = async () => {
@@ -295,11 +296,22 @@ export default function Home({ user, onMovieChange }) {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-4 space-y-6">
+    <div className="max-w-4xl mx-auto p-2 sm:p-4 space-y-4 sm:space-y-6">
+      {/* Mobile Search Toggle */}
+      <div className="md:hidden">
+        <button
+          onClick={() => setShowMobileSearch(!showMobileSearch)}
+          className="w-full bg-white rounded-xl shadow-sm p-4 flex items-center justify-center gap-2 text-purple-600 font-medium border border-purple-100 transition-colors hover:bg-purple-50"
+        >
+          <MagnifyingGlassIcon className="w-5 h-5" />
+          {showMobileSearch ? "Hide Search Panel" : "Search Users & Movies"}
+        </button>
+      </div>
+
       {/* Header */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className={`bg-white rounded-xl shadow-sm p-4 sm:p-6 ${!showMobileSearch ? 'hidden md:block' : ''}`}>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <h1 className="text-2xl font-bold text-gray-900">Feed</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 hidden md:block">Feed</h1>
           <div className="relative w-full md:w-96" ref={userSearchRef}>
             <div className="relative">
               <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -345,7 +357,7 @@ export default function Home({ user, onMovieChange }) {
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {!composerOpen ? (
           <div 
-            className="p-6 cursor-text hover:bg-gray-50 transition-colors"
+            className="p-4 sm:p-6 cursor-text hover:bg-gray-50 transition-colors"
             onClick={() => setComposerOpen(true)}
           >
             <div className="flex items-center gap-3">
@@ -359,7 +371,7 @@ export default function Home({ user, onMovieChange }) {
             </div>
           </div>
         ) : (
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             <div className="flex items-start gap-3 mb-4">
               <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
                 <UserIcon className="w-5 h-5 text-white" />
@@ -488,7 +500,7 @@ export default function Home({ user, onMovieChange }) {
       </div>
 
       {/* Global Movie Search */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className={`bg-white rounded-xl shadow-sm p-4 sm:p-6 ${!showMobileSearch ? 'hidden md:block' : ''}`}>
         <div className="flex flex-col sm:flex-row gap-3 items-center">
           <MagnifyingGlassIcon className="w-6 h-6 text-purple-600 hidden sm:block" />
           <div className="flex-1 w-full">
