@@ -98,7 +98,7 @@ export default function Dashboard({ user, onLogout }) {
         )}
 
         {/* Main content area */}
-        <main className="flex-grow min-h-[calc(100vh-64px)] overflow-auto px-4 md:ml-64 lg:mr-72 py-6 pb-24 md:pb-6">
+        <main className="flex-grow min-h-[calc(100vh-64px)] overflow-auto px-4 md:ml-64 lg:mr-72 py-6 pb-28 md:pb-6">
           <Routes>
             <Route index element={<Home user={user} onMovieChange={refreshCounts} />} />
             <Route
@@ -150,7 +150,7 @@ export default function Dashboard({ user, onLogout }) {
         )}
 
         {/* Bottom Nav for Mobile */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center h-16 z-50 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center h-20 pb-2 z-50 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
           <NavLink to="/dashboard" end className={({isActive}) => `flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive ? 'text-purple-600' : 'text-gray-500 hover:text-gray-900'}`}>
             <HomeIcon className="w-6 h-6" />
             <span className="text-[10px] font-medium">Home</span>
