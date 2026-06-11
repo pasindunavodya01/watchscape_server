@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate, useLocation } from 'react-router-dom';
 
 // Genre mapping for TMDB (same as in Search.jsx)
 const genreMap = {
@@ -23,12 +24,20 @@ const genreMap = {
 };
 
 export default function Watched({ user, onMovieChange }) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedMovie, setSelectedMovie] = useState(null);
+  const [guestNotice, setGuestNotice] = useState(null);
 
   const fetchMovies = async () => {
-    if (!user) return;
+    if (!user?.uid || user?.isGuest) {
+      setGuestNotice('Sign in to view your watched movies.');
+      setMovies([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch(`https://patient-determination-production.up.railway.app/api/movies?userId=${user.uid}&status=watched`);
@@ -45,6 +54,10 @@ export default function Watched({ user, onMovieChange }) {
   }, [user]);
 
   const removeMovie = async (id) => {
+    if (!user || user.isGuest) {
+      setGuestNotice('Sign in to manage your watched list.');
+      return;
+    }
     if (!window.confirm("Are you sure you want to remove this movie from your watched list?")) {
       return;
     }
@@ -88,6 +101,24 @@ export default function Watched({ user, onMovieChange }) {
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Watched Movies</h1>
         <p className="text-gray-600">Movies you've already watched</p>
       </div>
+
+      {guestNotice && (
+        <div className="mb-6">
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-yellow-800">{guestNotice}</p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => navigate('/login', { state: { from: location.pathname } })}
+                  className="px-3 py-1 bg-purple-600 text-white rounded text-sm"
+                >
+                  Login
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex justify-center items-center py-20">

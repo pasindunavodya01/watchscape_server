@@ -15,11 +15,13 @@ import PostDetail from './pages/PostDetail';
 
 export default function App() {
   const [user, setUser] = useState(null);
+  const [guestUser, setGuestUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
+      if (currentUser) setGuestUser(null);
       setLoading(false);
     });
     return () => unsubscribe();
@@ -28,6 +30,11 @@ export default function App() {
   const handleLogout = async () => {
     await signOut(auth);
     setUser(null);
+    setGuestUser(null);
+  };
+
+  const startGuest = () => {
+    setGuestUser({ uid: 'guest', isGuest: true });
   };
 
   if (loading)
@@ -41,7 +48,7 @@ export default function App() {
     <Router>
       <Routes>
         {/* Public routes */}
-        <Route path="/" element={<Landing />} />
+        <Route path="/" element={<Landing startGuest={startGuest} />} />
         {!user && <Route path="/login" element={<Login />} />}
         {!user && <Route path="/signup" element={<Signup />} />}
         {!user && <Route path="/forgot-password" element={<ForgotPassword />} />}
@@ -49,22 +56,22 @@ export default function App() {
         {/* Protected dashboard */}
         <Route
           path="/dashboard/*"
-          element={user ? <Dashboard user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />}
+          element={(user || guestUser) ? <Dashboard user={user || guestUser} onLogout={handleLogout} /> : <Navigate to="/login" replace />}
         />
 
         {/* Post detail route (needed for previews to work) */}
         <Route
           path="/dashboard/posts/:postId"
-          element={user ? <PostDetail user={user} /> : <Navigate to="/login" replace />}
+          element={(user || guestUser) ? <PostDetail user={user || guestUser} /> : <Navigate to="/login" replace />}
         />
 
         {/* Standalone profile page */}
         <Route
           path="/profile/:userId"
-          element={user ? <Profile user={user} /> : <Navigate to="/login" replace />}
+          element={(user || guestUser) ? <Profile user={user || guestUser} /> : <Navigate to="/login" replace />}
         />
 
-        {/* Notifications page */}
+        {/* Notifications page (requires real user) */}
         <Route
           path="/notifications"
           element={user ? <Notifications user={user} /> : <Navigate to="/login" replace />}

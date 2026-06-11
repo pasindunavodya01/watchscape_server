@@ -67,6 +67,7 @@ const PostPreviewCard = ({ post, onView }) => {
 
 export default function Notifications({ user }) {
   const navigate = useNavigate();
+  const location = window.location;
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -202,6 +203,33 @@ export default function Notifications({ user }) {
       <div className="max-w-4xl mx-auto p-6">
         <div className="flex justify-center items-center py-20">
           <div className="w-8 h-8 border-4 border-purple-700 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // If guest, show an inline login prompt instead of notifications
+  if (!user?.uid || user?.isGuest) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="text-center py-20">
+          <BellIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-2">Notifications</h2>
+          <p className="text-gray-600 mb-6">Please sign in to view your notifications.</p>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={() => navigate('/login', { state: { from: '/dashboard/notifications' } })}
+              className="px-5 py-2 bg-purple-600 text-white rounded-lg"
+            >
+              Login
+            </button>
+            <button
+              onClick={() => navigate('/signup')}
+              className="px-5 py-2 border border-gray-300 rounded-lg"
+            >
+              Sign up
+            </button>
+          </div>
         </div>
       </div>
     );

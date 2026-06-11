@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate, useLocation } from 'react-router-dom';
 
 // Genre mapping for TMDB (same as in Search.jsx)
 const genreMap = {
@@ -23,12 +24,20 @@ const genreMap = {
 };
 
 export default function Watchlist({ user, onMovieChange }) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedMovie, setSelectedMovie] = useState(null);
+  const [guestNotice, setGuestNotice] = useState(null);
 
   const fetchMovies = async () => {
-    if (!user) return;
+    if (!user?.uid || user?.isGuest) {
+      setGuestNotice('Sign in to view your watchlist.');
+      setMovies([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch(`https://patient-determination-production.up.railway.app/api/movies?userId=${user.uid}&status=watchlist`);
@@ -45,6 +54,10 @@ export default function Watchlist({ user, onMovieChange }) {
   }, [user]);
 
   const removeMovie = async (id) => {
+    if (!user || user.isGuest) {
+      setGuestNotice('Sign in to manage your watchlist.');
+      return;
+    }
     if (!window.confirm("Are you sure you want to remove this movie from your watchlist?")) {
       return;
     }
@@ -82,6 +95,10 @@ export default function Watchlist({ user, onMovieChange }) {
   };
 
   const markAsWatched = async (movie) => {
+    if (!user || user.isGuest) {
+      setGuestNotice('Please sign in to manage your watchlist.');
+      return;
+    }
     try {
       const res = await fetch("https://patient-determination-production.up.railway.app/api/posts/movie-activity", {
         method: "POST",
@@ -164,6 +181,24 @@ export default function Watchlist({ user, onMovieChange }) {
         <h1 className="text-3xl font-bold text-gray-900 mb-2">My Watchlist</h1>
         <p className="text-gray-600">Movies you want to watch later</p>
       </div>
+
+      {guestNotice && (
+        <div className="mb-6">
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-yellow-800">{guestNotice}</p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => navigate('/login', { state: { from: location.pathname } })}
+                  className="px-3 py-1 bg-purple-600 text-white rounded text-sm"
+                >
+                  Login
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex justify-center items-center py-20">

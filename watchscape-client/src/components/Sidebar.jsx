@@ -65,15 +65,17 @@ export default function Sidebar({ user, onLogout, className = "", overlay = fals
         </nav>
       </div>
        
-      {/* Desktop-only logout button */}
-      <div className="mt-auto p-6 hidden md:block">
-        <button
-          onClick={onLogout}
-          className="w-full text-left px-4 py-2 rounded-lg text-red-600 hover:bg-red-50 font-semibold transition-colors duration-200"
-        >
-          Logout
-        </button>
-      </div>
+      {/* Desktop-only logout button (hidden for guests) */}
+      {onLogout && user && !user.isGuest && (
+        <div className="mt-auto p-6 hidden md:block">
+          <button
+            onClick={onLogout}
+            className="w-full text-left px-4 py-2 rounded-lg text-red-600 hover:bg-red-50 font-semibold transition-colors duration-200"
+          >
+            Logout
+          </button>
+        </div>
+      )}
     </aside>
   );
 }

@@ -11,7 +11,7 @@ export default function NotificationBadge({ user, onOpenNotifications }) {
   const navigate = useNavigate();
 
   const fetchUnreadCount = async () => {
-    if (!user?.uid) return;
+    if (!user?.uid || user?.isGuest) return;
     try {
       setLoading(true);
       const res = await fetch(
@@ -36,6 +36,7 @@ export default function NotificationBadge({ user, onOpenNotifications }) {
   }, [user]);
 
   const handleClick = () => {
+    // Always navigate to the notifications page; the page will handle guest UI
     if (onOpenNotifications) onOpenNotifications(); // close sidebar & rightbar
     navigate("/dashboard/notifications"); // go to notifications
   };

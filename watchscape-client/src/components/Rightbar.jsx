@@ -15,6 +15,7 @@ export default function Rightbar({
   overlay = false,
   onClose,
   onLogout,
+  user,
 }) {
   const [userQuery, setUserQuery] = useState("");
   const [userResults, setUserResults] = useState([]);
@@ -162,8 +163,8 @@ export default function Rightbar({
         )}
       </section>
 
-      {/* Mobile-only logout button */}
-      {overlay && onLogout && (
+      {/* Mobile-only logout button (hidden for guests) */}
+      {overlay && onLogout && user && !user.isGuest && (
         <div className="mt-auto pt-4 border-t border-gray-100">
           <button
             onClick={onLogout}

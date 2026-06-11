@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from 'react-router-dom';
 
 // Genre mapping for TMDB
 const genreMap = {
@@ -23,6 +24,8 @@ const genreMap = {
 };
 
 export default function Search({ user, onMovieChange }) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -66,6 +69,11 @@ export default function Search({ user, onMovieChange }) {
   };
 
   const addMovie = async (movie, status) => {
+    if (!user || user.isGuest) {
+      const goLogin = window.confirm('You must sign in to add movies to lists.\n\nPress OK to go to Login, or Cancel to continue browsing as a guest.');
+      if (goLogin) navigate('/login', { state: { from: location.pathname } });
+      return;
+    }
     try {
       // Before adding to the new list, remove it from the other list if it exists
       const otherStatus = status === "watchlist" ? "watched" : "watchlist";

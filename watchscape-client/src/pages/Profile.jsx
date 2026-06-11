@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { 
   UserIcon,
   FilmIcon,
@@ -11,7 +11,8 @@ import {
   XMarkIcon,
   ChevronRightIcon,
   StarIcon,
-  PlusIcon
+  PlusIcon,
+  InformationCircleIcon,
 } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartSolid } from "@heroicons/react/24/solid";
 
@@ -27,6 +28,8 @@ const genreMap = {
 
 export default function Profile({ user }) {
   const { userId } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [profile, setProfile] = useState(null);
   const [followed, setFollowed] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -84,7 +87,7 @@ export default function Profile({ user }) {
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API}/api/users/${userId}/profile?viewerUid=${user.uid}`);
+      const res = await fetch(`${API}/api/users/${userId}/profile?viewerUid=${user?.uid || ''}`);
       if (!res.ok) throw new Error("Failed to fetch profile");
       const data = await res.json();
       setProfile(data);
@@ -132,6 +135,11 @@ try {
   };
 
   const toggleFollow = async () => {
+    if (!user || user.isGuest) {
+      const goLogin = window.confirm('You must sign in to follow users.\n\nPress OK to go to Login, or Cancel to continue browsing as a guest.');
+      if (goLogin) navigate('/login', { state: { from: location.pathname } });
+      return;
+    }
     try {
       await fetch(`${API}/api/users/${userId}/follow`, {
         method: "POST",
@@ -146,7 +154,13 @@ try {
 
   // New interaction functions
   const toggleLike = async (postId) => {
-    if (!user?.uid || likingPosts[postId]) return;
+    if (!user || user.isGuest || likingPosts[postId]) {
+      if (!user || user.isGuest) {
+        const goLogin = window.confirm('You must sign in to like posts.\n\nPress OK to go to Login, or Cancel to continue browsing as a guest.');
+        if (goLogin) navigate('/login', { state: { from: location.pathname } });
+      }
+      return;
+    }
     
     setLikingPosts(prev => ({ ...prev, [postId]: true }));
     
@@ -172,7 +186,13 @@ try {
 
   const addComment = async (postId) => {
     const commentText = commentTexts[postId];
-    if (!user?.uid || !commentText?.trim() || submittingComments[postId]) return;
+    if (!user || user.isGuest || !commentText?.trim() || submittingComments[postId]) {
+      if (!user || user.isGuest) {
+        const goLogin = window.confirm('You must sign in to comment.\n\nPress OK to go to Login, or Cancel to continue browsing as a guest.');
+        if (goLogin) navigate('/login', { state: { from: location.pathname } });
+      }
+      return;
+    }
     
     setSubmittingComments(prev => ({ ...prev, [postId]: true }));
     
@@ -206,6 +226,11 @@ try {
   };
 
   const addMovie = async (movie, status) => {
+    if (!user || user.isGuest) {
+      const goLogin = window.confirm('You must sign in to add movies.\n\nPress OK to go to Login, or Cancel to continue browsing as a guest.');
+      if (goLogin) navigate('/login', { state: { from: location.pathname } });
+      return;
+    }
     try {
       const otherStatus = status === "watchlist" ? "watched" : "watchlist";
       const checkRes = await fetch(`${API}/api/movies?userId=${user.uid}&status=${otherStatus}`);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Routes, Route, Outlet, NavLink } from "react-router-dom";
-import { HomeIcon, MagnifyingGlassIcon, BookmarkIcon, BellIcon, UserIcon } from "@heroicons/react/24/outline";
+import { HomeIcon, MagnifyingGlassIcon, BookmarkIcon, EyeIcon, UserIcon } from "@heroicons/react/24/outline";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import Rightbar from "../components/Rightbar";
@@ -21,7 +21,7 @@ export default function Dashboard({ user, onLogout }) {
 
   // Fetch movie stats
   const refreshCounts = async () => {
-    if (!user?.uid) return;
+    if (!user?.uid || user?.isGuest) return;
     try {
       const res = await fetch(
         `https://patient-determination-production.up.railway.app/api/movies/stats?userId=${user.uid}`
@@ -140,9 +140,9 @@ export default function Dashboard({ user, onLogout }) {
             <BookmarkIcon className="w-6 h-6" />
             <span className="text-[10px] font-medium">Watchlist</span>
           </NavLink>
-          <NavLink to="/dashboard/notifications" className={({isActive}) => `flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive ? 'text-purple-600' : 'text-gray-500 hover:text-gray-900'}`}>
-            <BellIcon className="w-6 h-6" />
-            <span className="text-[10px] font-medium">Alerts</span>
+          <NavLink to="/dashboard/watched" className={({isActive}) => `flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive ? 'text-purple-600' : 'text-gray-500 hover:text-gray-900'}`}>
+            <EyeIcon className="w-6 h-6" />
+            <span className="text-[10px] font-medium">Watched</span>
           </NavLink>
           <NavLink to="/dashboard/my-profile" className={({isActive}) => `flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive ? 'text-purple-600' : 'text-gray-500 hover:text-gray-900'}`}>
             <UserIcon className="w-6 h-6" />

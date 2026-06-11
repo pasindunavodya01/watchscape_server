@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase";
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function Signup() {
   const [email, setEmail] = useState("");
@@ -12,6 +13,9 @@ export default function Signup() {
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSignup = async (e) => {
     e.preventDefault();
@@ -42,6 +46,8 @@ export default function Signup() {
       });
 
       alert("Account created!");
+      const dest = location.state?.from || '/dashboard';
+      navigate(dest);
     } catch (error) {
       alert(error.message);
     }

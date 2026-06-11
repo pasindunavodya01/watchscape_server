@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { 
   HeartIcon as HeartOutline,
   ChatBubbleLeftIcon,
@@ -44,6 +44,8 @@ const genreMap = {
 const API = "https://patient-determination-production.up.railway.app";
 
 export default function Home({ user, onMovieChange }) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [posts, setPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(false);
 
@@ -157,6 +159,11 @@ export default function Home({ user, onMovieChange }) {
 
   // Add movie to watchlist/watched
   const addMovie = async (movie, status) => {
+    if (!user || user.isGuest) {
+      const goLogin = window.confirm('You must sign in to add movies to lists.\n\nPress OK to go to Login, or Cancel to continue browsing as a guest.');
+      if (goLogin) navigate('/login', { state: { from: location.pathname } });
+      return;
+    }
     try {
       // Before adding to the new list, remove it from the other list if it exists
       const otherStatus = status === "watchlist" ? "watched" : "watchlist";
@@ -222,6 +229,11 @@ export default function Home({ user, onMovieChange }) {
   // actions
   const createPost = async () => {
     if (!text.trim()) return;
+    if (!user || user.isGuest) {
+      const goLogin = window.confirm('You must sign in to post.\n\nPress OK to go to Login, or Cancel to continue browsing as a guest.');
+      if (goLogin) navigate('/login', { state: { from: location.pathname } });
+      return;
+    }
     const body = {
       userId: user.uid,
       text,
@@ -246,6 +258,11 @@ export default function Home({ user, onMovieChange }) {
   };
 
   const toggleLike = async (postId) => {
+    if (!user || user.isGuest) {
+      const goLogin = window.confirm('You must sign in to like posts.\n\nPress OK to go to Login, or Cancel to continue browsing as a guest.');
+      if (goLogin) navigate('/login', { state: { from: location.pathname } });
+      return;
+    }
     try {
       const res = await fetch(`${API}/api/posts/${postId}/like`, {
         method: "PUT",
@@ -260,6 +277,11 @@ export default function Home({ user, onMovieChange }) {
 
   const addComment = async (postId, commentText, clear) => {
     if (!commentText.trim()) return;
+    if (!user || user.isGuest) {
+      const goLogin = window.confirm('You must sign in to comment.\n\nPress OK to go to Login, or Cancel to continue browsing as a guest.');
+      if (goLogin) navigate('/login', { state: { from: location.pathname } });
+      return;
+    }
     try {
       const res = await fetch(`${API}/api/posts/${postId}/comment`, {
         method: "POST",
@@ -274,6 +296,11 @@ export default function Home({ user, onMovieChange }) {
   };
 
   const toggleFollow = async (targetUid) => {
+    if (!user || user.isGuest) {
+      const goLogin = window.confirm('You must sign in to follow users.\n\nPress OK to go to Login, or Cancel to continue browsing as a guest.');
+      if (goLogin) navigate('/login', { state: { from: location.pathname } });
+      return;
+    }
     try {
       await fetch(`${API}/api/users/${targetUid}/follow`, {
         method: "POST",
@@ -285,6 +312,11 @@ export default function Home({ user, onMovieChange }) {
   };
 
   const sharePost = async (postId) => {
+    if (!user || user.isGuest) {
+      const goLogin = window.confirm('You must sign in to share posts.\n\nPress OK to go to Login, or Cancel to continue browsing as a guest.');
+      if (goLogin) navigate('/login', { state: { from: location.pathname } });
+      return;
+    }
     try {
       await fetch(`${API}/api/posts/${postId}/share`, {
         method: "POST",
@@ -766,7 +798,7 @@ export default function Home({ user, onMovieChange }) {
               <MovieActivityCard
                 key={p._id}
                 post={p}
-                currentUid={user.uid}
+                currentUid={user?.uid}
                   onAddMovie={addMovie}
                 onToggleLike={() => toggleLike(p._id)}
                 onAddComment={(txt, clear) => addComment(p._id, txt, clear)}
@@ -777,7 +809,7 @@ export default function Home({ user, onMovieChange }) {
               <PostCard
                 key={p._id}
                 post={p}
-                currentUid={user.uid}
+                currentUid={user?.uid}
                   onAddMovie={addMovie}
                 onToggleLike={() => toggleLike(p._id)}
                 onAddComment={(txt, clear) => addComment(p._id, txt, clear)}

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { 
   UserIcon,
   FilmIcon,
@@ -28,6 +28,8 @@ const genreMap = {
 };
 
 export default function MyProfile({ user }) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(false);
@@ -55,6 +57,13 @@ export default function MyProfile({ user }) {
 
   const fetchProfile = async () => {
     try {
+      // If no authenticated user or browsing as guest, don't call user-specific API
+      if (!user?.uid || user?.isGuest) {
+        setProfile({ user: { name: "Guest", username: "guest" }, followersCount: 0, followingCount: 0, pinnedFilms: [] });
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       const res = await fetch(
         `${API}/api/users/${user.uid}/profile?viewerUid=${user.uid}`
@@ -72,6 +81,10 @@ export default function MyProfile({ user }) {
   const fetchMyPosts = async () => {
     setPostsLoading(true);
     try {
+      if (!user?.uid || user?.isGuest) {
+        setPosts([]);
+        return;
+      }
       const res = await fetch(`${API}/api/posts`);
       const data = await res.json();
       setPosts(Array.isArray(data) ? data.filter((p) => p.userId === user.uid) : []);
@@ -614,7 +627,33 @@ export default function MyProfile({ user }) {
   useEffect(() => {
     fetchProfile();
     fetchMyPosts();
-  }, []);
+  }, [user]);
+
+  // If browsing as guest, show a simple login prompt instead of profile content
+  if (!user?.uid || user?.isGuest) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="text-center py-20">
+          <h2 className="text-2xl font-bold mb-4">Please sign in to view your profile</h2>
+          <p className="text-gray-600 mb-6">Create an account or log in to access your profile and posts.</p>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={() => navigate('/login', { state: { from: location.pathname } })}
+              className="px-5 py-2 bg-purple-600 text-white rounded-lg"
+            >
+              Login
+            </button>
+            <button
+              onClick={() => navigate('/signup')}
+              className="px-5 py-2 border border-gray-300 rounded-lg"
+            >
+              Sign up
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
