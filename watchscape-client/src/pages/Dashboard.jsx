@@ -17,7 +17,6 @@ import Notifications from "./Notifications";
 
 export default function Dashboard({ user, onLogout }) {
   const [counts, setCounts] = useState({ watchlist: 0, watched: 0 });
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [rightbarOpen, setRightbarOpen] = useState(false);
 
   // Fetch movie stats
@@ -44,7 +43,6 @@ export default function Dashboard({ user, onLogout }) {
   // Auto-close overlays when resizing to desktop
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 768) setSidebarOpen(false);
       if (window.innerWidth >= 1024) setRightbarOpen(false);
     };
     window.addEventListener("resize", handleResize);
@@ -56,16 +54,10 @@ export default function Dashboard({ user, onLogout }) {
       {/* Fixed top navbar */}
       <Navbar
   user={user}
-  onToggleSidebar={() => {
-    setSidebarOpen((prev) => !prev);
-    setRightbarOpen(false);
-  }}
   onToggleRightbar={() => {
     setRightbarOpen((prev) => !prev);
-    setSidebarOpen(false);
   }}
   onOpenNotifications={() => {
-    setSidebarOpen(false);
     setRightbarOpen(false);
   }}
 />
@@ -80,22 +72,6 @@ export default function Dashboard({ user, onLogout }) {
           className="hidden md:flex fixed top-16 left-0 w-64 h-[calc(100vh-64px)]"
         />
 
-        {/* Mobile overlay sidebar */}
-        {sidebarOpen && (
-          <>
-            <Sidebar
-              user={user}
-              onLogout={onLogout}
-              overlay
-              onClose={() => setSidebarOpen(false)}
-              className="fixed top-16 left-0 w-64 h-[calc(100vh-64px)] z-50"
-            />
-            <div
-              className="fixed inset-0 bg-black bg-opacity-30 z-40"
-              onClick={() => setSidebarOpen(false)}
-            />
-          </>
-        )}
 
         {/* Main content area */}
         <main className="flex-grow min-h-[calc(100vh-64px)] overflow-auto px-4 md:ml-64 lg:mr-72 py-6 pb-28 md:pb-6">
@@ -140,7 +116,8 @@ export default function Dashboard({ user, onLogout }) {
               counts={counts}
               overlay
               onClose={() => setRightbarOpen(false)}
-              className="fixed top-16 right-0 w-72 h-[calc(100vh-64px)] z-50"
+              onLogout={onLogout}
+              className="fixed top-16 right-0 w-72 h-[calc(100vh-64px)] z-50 overflow-y-auto"
             />
             <div
               className="fixed inset-0 bg-black bg-opacity-30 z-40"

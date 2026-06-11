@@ -7,7 +7,7 @@ import {
   EyeIcon,
   UserIcon,
   PowerIcon,
-  BellIcon // logout icon
+  BellIcon
 } from "@heroicons/react/24/outline";
 
 export default function Sidebar({ user, onLogout, className = "", overlay = false, onClose }) {
@@ -25,13 +25,6 @@ export default function Sidebar({ user, onLogout, className = "", overlay = fals
     if (overlay && onClose) {
       onClose();
     }
-  };
-
-  const handleLogoutClick = () => {
-    if (overlay && onClose) {
-      onClose();
-    }
-    onLogout();
   };
 
   return (
@@ -69,15 +62,6 @@ export default function Sidebar({ user, onLogout, className = "", overlay = fals
               {name}
             </NavLink>
           ))}
-           
-          {/* Mobile-only logout button */}
-          <button
-            onClick={handleLogoutClick}
-            className="flex items-center px-4 py-2 rounded-lg text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors duration-200 md:hidden"
-          >
-            <PowerIcon className="h-5 w-5 mr-3" />
-            Logout
-          </button>
         </nav>
       </div>
        
