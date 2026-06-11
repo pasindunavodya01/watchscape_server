@@ -106,6 +106,7 @@ export default function Dashboard({ user, onLogout }) {
         {/* Rightbar - fixed on desktop */}
         <Rightbar
           counts={counts}
+          user={user}
           className="hidden lg:flex fixed top-16 right-0 w-72 h-[calc(100vh-64px)]"
         />
 
@@ -116,6 +117,7 @@ export default function Dashboard({ user, onLogout }) {
               counts={counts}
               overlay
               onClose={() => setRightbarOpen(false)}
+              user={user}
               onLogout={onLogout}
               className="fixed top-16 right-0 w-72 h-[calc(100vh-64px)] z-50 overflow-y-auto"
             />
