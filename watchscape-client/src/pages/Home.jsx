@@ -665,7 +665,7 @@ export default function Home({ user, onMovieChange }) {
             onClick={() => setComposerOpen(true)}
           >
             <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden bg-gradient-to-r from-purple-500 to-pink-500">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden bg-gradient-to-r from-purple-500 to-pink-500 flex-shrink-0">
                   {myProfilePic ? (
                     <img src={myProfilePic} alt={user?.name || 'You'} className="w-full h-full object-cover" />
                   ) : (
@@ -901,7 +901,7 @@ function PostCard({ post, currentUid, onAddMovie, onToggleLike, onAddComment, on
       <div className="p-4 pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center overflow-hidden">
+            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
               {post.userProfilePic ? (
                 <img src={post.userProfilePic} alt="Author" className="w-full h-full object-cover" />
               ) : (
@@ -1241,25 +1241,25 @@ function MovieActivityCard({ post, currentUid, onAddMovie, onToggleLike, onAddCo
       <div className="p-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center overflow-hidden">
+            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
               {post.userProfilePic ? (
                 <img src={post.userProfilePic} alt="Author" className="w-full h-full object-cover" />
               ) : (
                 <UserIcon className="w-5 h-5 text-white" />
               )}
             </div>
-            <div>
-              <div className="flex items-center gap-2">
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <Link 
                   to={`/dashboard/profile/${post.userId}`} 
-                  className="font-semibold text-gray-900 hover:text-purple-600 transition-colors"
+                  className="font-semibold text-gray-900 hover:text-purple-600 transition-colors truncate max-w-full"
                 >
                   {post.userName || post.username || post.userId}
                 </Link>
-                <div className="flex items-center gap-1 text-sm text-gray-600">
+                <span className="flex items-center gap-1 text-sm text-gray-600">
                   {actionIcon}
-                  <span>{actionText}</span>
-                </div>
+                  {actionText}
+                </span>
               </div>
               <p className="text-sm text-gray-500">
                 {new Date(post.createdAt).toLocaleDateString()} • {new Date(post.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}

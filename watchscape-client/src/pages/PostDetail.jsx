@@ -119,7 +119,7 @@ export default function PostDetail({ user }) {
           <div>
             {/* Clickable username that links to profile */}
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
                 {post.userProfilePic ? (
                   <img src={post.userProfilePic} alt={post.user?.name || post.userName || 'Author'} className="w-full h-full object-cover" />
                 ) : (
