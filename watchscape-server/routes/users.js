@@ -104,14 +104,14 @@ router.get("/:uid/profile", async (req, res) => {
     const { uid } = req.params;
     const viewerUid = req.query.viewerUid || null;
 
-    const user = await User.findOne({ uid }).select("uid name email profilePic followers following");
+    const user = await User.findOne({ uid }).select("uid name email profilePic followers following bio socialLinks");
     if (!user) return res.status(404).json({ message: "User not found" });
 
     const pins = await Pin.find({ userUid: uid }).lean();
     const posts = await Post.find({ userId: uid }).sort({ createdAt: -1 }).lean();
 
     res.json({
-      user: { uid: user.uid, name: user.name, email: user.email, profilePic: user.profilePic },
+      user: { uid: user.uid, name: user.name, email: user.email, profilePic: user.profilePic, bio: user.bio, socialLinks: user.socialLinks },
       followersCount: user.followers.length,
       followingCount: user.following.length,
       followedByViewer: viewerUid ? user.followers.includes(viewerUid) : false,
@@ -234,6 +234,30 @@ router.patch("/:uid/profile-pic", async (req, res) => {
     res.json({ message: "Profile picture updated successfully", profilePic: user.profilePic });
   } catch (err) {
     console.error("Update profile pic error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// UPDATE PROFILE BIO AND SOCIAL LINKS
+router.patch("/:uid/edit-profile", async (req, res) => {
+  try {
+    const { bio, socialLinks } = req.body;
+
+    const updateData = {};
+    if (bio !== undefined) updateData.bio = bio;
+    if (socialLinks !== undefined) updateData.socialLinks = socialLinks;
+
+    const user = await User.findOneAndUpdate(
+      { uid: req.params.uid },
+      { $set: updateData },
+      { new: true }
+    );
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.json({ message: "Profile updated successfully", bio: user.bio, socialLinks: user.socialLinks });
+  } catch (err) {
+    console.error("Edit profile error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });

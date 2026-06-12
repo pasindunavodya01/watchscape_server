@@ -26,6 +26,11 @@ const genreMap = {
   53: "Thriller", 10752: "War", 37: "Western"
 };
 
+const ensureAbsoluteUrl = (url) => {
+  if (!url) return "";
+  return url.startsWith("http://") || url.startsWith("https://") ? url : `https://${url}`;
+};
+
 export default function MyProfile({ user }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -58,6 +63,15 @@ export default function MyProfile({ user }) {
   const [selectedPostMovie, setSelectedPostMovie] = useState(null);
   const fileInputRef = useRef(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editBio, setEditBio] = useState("");
+  const [editSocialLinks, setEditSocialLinks] = useState({
+    instagram: "",
+    facebook: "",
+    github: "",
+    website: "",
+    custom: []
+  });
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -116,6 +130,16 @@ export default function MyProfile({ user }) {
       if (!res.ok) throw new Error("Failed to fetch profile");
       const data = await res.json();
       setProfile(data);
+      if (data.user) {
+        setEditBio(data.user.bio || "");
+        setEditSocialLinks({
+          instagram: data.user.socialLinks?.instagram || "",
+          facebook: data.user.socialLinks?.facebook || "",
+          github: data.user.socialLinks?.github || "",
+          website: data.user.socialLinks?.website || "",
+          custom: data.user.socialLinks?.custom || []
+        });
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -372,6 +396,45 @@ export default function MyProfile({ user }) {
       console.error(error);
       alert("Error adding movie");
     }
+  };
+
+  const handleUpdateProfile = async () => {
+    try {
+      const res = await fetch(`${API}/api/users/${user.uid}/edit-profile`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bio: editBio, socialLinks: editSocialLinks }),
+      });
+      if (!res.ok) throw new Error("Failed to update profile");
+      
+      setProfile(prev => ({
+        ...prev,
+        user: { ...prev.user, bio: editBio, socialLinks: editSocialLinks }
+      }));
+      setIsEditingProfile(false);
+    } catch (error) {
+      console.error(error);
+      alert("Failed to update profile");
+    }
+  };
+
+  const handleAddCustomLink = () => {
+    setEditSocialLinks(prev => ({
+      ...prev,
+      custom: [...(prev.custom || []), { name: "", url: "" }]
+    }));
+  };
+
+  const handleCustomLinkChange = (index, field, value) => {
+    const newCustom = [...(editSocialLinks.custom || [])];
+    newCustom[index][field] = value;
+    setEditSocialLinks({ ...editSocialLinks, custom: newCustom });
+  };
+
+  const handleRemoveCustomLink = (index) => {
+    const newCustom = [...(editSocialLinks.custom || [])];
+    newCustom.splice(index, 1);
+    setEditSocialLinks({ ...editSocialLinks, custom: newCustom });
   };
 
   // Helper functions
@@ -751,41 +814,85 @@ export default function MyProfile({ user }) {
     <div className="max-w-4xl mx-auto p-4 space-y-8">
       {/* Header */}
       <div className="bg-white rounded-xl shadow-sm p-6">
-        <div className="flex items-center gap-4">
+        <div className="flex items-start sm:items-center gap-4 flex-col sm:flex-row">
           <div 
-            className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center relative group cursor-pointer overflow-hidden"
+            className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center relative group cursor-pointer overflow-hidden flex-shrink-0"
             onClick={() => fileInputRef.current?.click()}
           >
             {profile.user.profilePic ? (
               <img src={profile.user.profilePic} alt="Profile" className="w-full h-full object-cover" />
             ) : (
-              <UserIcon className="w-8 h-8 text-white" />
+              <UserIcon className="w-10 h-10 sm:w-12 sm:h-12 text-white" />
             )}
             <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
               {uploadingImage ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               ) : (
-                <span className="text-white text-xs font-medium">Edit</span>
+                <span className="text-white text-xs sm:text-sm font-medium">Edit</span>
               )}
             </div>
             <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+          <div className="flex-1 w-full">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
               {profile.user.name || profile.user.username || "My Profile"}
             </h1>
-            <div className="flex items-center gap-6 mt-2 text-sm text-gray-600">
+            
+            {profile.user.bio && (
+              <p className="text-gray-600 mt-2 text-sm sm:text-base max-w-2xl whitespace-pre-wrap">{profile.user.bio}</p>
+            )}
+
+          {(profile.user.socialLinks?.facebook || profile.user.socialLinks?.instagram || profile.user.socialLinks?.github || profile.user.socialLinks?.website || profile.user.socialLinks?.custom?.length > 0) && (
+            <div className="flex items-center gap-4 mt-3 flex-wrap">
+                {profile.user.socialLinks.instagram && (
+                  <a href={ensureAbsoluteUrl(profile.user.socialLinks.instagram)} target="_blank" rel="noopener noreferrer" className="text-pink-600 hover:text-pink-700 transition-colors">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+                  </a>
+                )}
+              {profile.user.socialLinks.facebook && (
+                <a href={ensureAbsoluteUrl(profile.user.socialLinks.facebook)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 transition-colors">
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.351c0 .731.593 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.312h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z"/></svg>
+                </a>
+              )}
+                {profile.user.socialLinks.github && (
+                  <a href={ensureAbsoluteUrl(profile.user.socialLinks.github)} target="_blank" rel="noopener noreferrer" className="text-gray-800 hover:text-black transition-colors">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24"><path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.379.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.161 22 16.416 22 12c0-5.523-4.477-10-10-10z"/></svg>
+                  </a>
+                )}
+                {profile.user.socialLinks.website && (
+                  <a href={ensureAbsoluteUrl(profile.user.socialLinks.website)} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-800 transition-colors">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                  </a>
+                )}
+              {profile.user.socialLinks.custom?.map((link, idx) => (
+                <a key={idx} href={ensureAbsoluteUrl(link.url)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-gray-500 hover:text-gray-800 transition-colors" title={link.name}>
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                  {link.name && <span className="text-sm font-medium">{link.name}</span>}
+                </a>
+              ))}
+              </div>
+            )}
+            
+            <div className="flex items-center gap-4 sm:gap-6 mt-4 text-sm text-gray-600 border-t border-gray-100 pt-4">
               <button 
                 className="hover:text-purple-600 transition-colors"
                 onClick={() => { setShowFollowers(true); fetchFollowers(); }}
               >
-                <span className="font-semibold">{profile.followersCount}</span> followers
+                <span className="font-semibold text-gray-900 text-base">{profile.followersCount}</span> followers
               </button>
               <button 
                 className="hover:text-purple-600 transition-colors"
                 onClick={() => { setShowFollowing(true); fetchFollowing(); }}
               >
-                <span className="font-semibold">{profile.followingCount}</span> following
+                <span className="font-semibold text-gray-900 text-base">{profile.followingCount}</span> following
+              </button>
+              
+              <button 
+                onClick={() => setIsEditingProfile(true)}
+                className="ml-auto px-4 py-2 bg-purple-50 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-100 flex items-center gap-2 transition-colors"
+              >
+                <PencilIcon className="w-4 h-4" /> 
+                <span className="hidden sm:inline">Edit Profile</span>
               </button>
             </div>
           </div>
@@ -1185,6 +1292,130 @@ export default function MyProfile({ user }) {
                   Watched
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Profile Modal */}
+      {isEditingProfile && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl w-full max-w-lg overflow-hidden shadow-2xl">
+            <div className="flex justify-between items-center p-4 border-b border-gray-200 bg-gray-50">
+              <h2 className="font-bold text-lg text-gray-900">Edit Profile</h2>
+              <button 
+                onClick={() => setIsEditingProfile(false)}
+                className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-4 sm:p-6 overflow-y-auto max-h-[70vh] space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+                <textarea
+                  value={editBio}
+                  onChange={(e) => setEditBio(e.target.value)}
+                  placeholder="Tell us a little about yourself..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none resize-none"
+                  rows={3}
+                  maxLength={160}
+                />
+                <p className="text-right text-xs text-gray-500 mt-1">{editBio.length}/160</p>
+              </div>
+              
+              <div>
+                <h3 className="text-sm font-medium text-gray-900 border-b pb-2 mb-3">Social Links</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <svg className="w-5 h-5 text-pink-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+                    <input
+                      type="url"
+                      placeholder="Instagram URL"
+                      value={editSocialLinks.instagram}
+                      onChange={(e) => setEditSocialLinks({...editSocialLinks, instagram: e.target.value})}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm"
+                    />
+                  </div>
+              <div className="flex items-center gap-3">
+                <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.351c0 .731.593 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.312h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z"/></svg>
+                <input
+                  type="url"
+                  placeholder="Facebook URL"
+                  value={editSocialLinks.facebook}
+                  onChange={(e) => setEditSocialLinks({...editSocialLinks, facebook: e.target.value})}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm"
+                />
+              </div>
+                  <div className="flex items-center gap-3">
+                    <svg className="w-5 h-5 text-gray-800" fill="currentColor" viewBox="0 0 24 24"><path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.379.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.161 22 16.416 22 12c0-5.523-4.477-10-10-10z"/></svg>
+                    <input
+                      type="url"
+                      placeholder="GitHub URL"
+                      value={editSocialLinks.github}
+                      onChange={(e) => setEditSocialLinks({...editSocialLinks, github: e.target.value})}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                    <input
+                      type="url"
+                      placeholder="Personal Website URL"
+                      value={editSocialLinks.website}
+                      onChange={(e) => setEditSocialLinks({...editSocialLinks, website: e.target.value})}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm"
+                    />
+                  </div>
+
+              {/* Custom Links Edit */}
+              <div className="pt-3 border-t mt-2">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium text-gray-700">Additional Links</span>
+                  <button type="button" onClick={handleAddCustomLink} className="text-xs px-2 py-1 bg-purple-50 text-purple-600 rounded hover:bg-purple-100 font-medium transition-colors">+ Add Link</button>
+                </div>
+                <div className="space-y-3">
+                  {editSocialLinks.custom?.map((link, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        placeholder="Name (e.g. TikTok)"
+                        value={link.name}
+                        onChange={(e) => handleCustomLinkChange(idx, 'name', e.target.value)}
+                        className="w-1/3 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm"
+                      />
+                      <input
+                        type="url"
+                        placeholder="https://..."
+                        value={link.url}
+                        onChange={(e) => handleCustomLinkChange(idx, 'url', e.target.value)}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm"
+                      />
+                      <button type="button" onClick={() => handleRemoveCustomLink(idx)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                        <XMarkIcon className="w-5 h-5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
+              <button 
+                onClick={() => setIsEditingProfile(false)}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleUpdateProfile}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+              >
+                Save Changes
+              </button>
             </div>
           </div>
         </div>
