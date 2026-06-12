@@ -7,6 +7,9 @@ import { createNotification } from "./notifications.js";
 
 const router = express.Router();
 
+
+
+
 // CREATE POST (regular text)
 router.post("/", async (req, res) => {
   try {
