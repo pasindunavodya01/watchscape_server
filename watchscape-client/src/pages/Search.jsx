@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from 'react-router-dom';
+import { API } from "../config";
 
 // Genre mapping for TMDB
 const genreMap = {
@@ -36,7 +37,7 @@ export default function Search({ user, onMovieChange }) {
   const fetchPopular = async () => {
     setLoading(true);
     try {
-      const res = await fetch("https://patient-determination-production.up.railway.app/api/movies/popular");
+      const res = await fetch(`${API}/api/movies/popular`);
       const data = await res.json();
       setResults(data);
       setIsSearching(false);
@@ -58,7 +59,7 @@ export default function Search({ user, onMovieChange }) {
     setIsSearching(true);
     setLoading(true);
     try {
-      const res = await fetch(`https://patient-determination-production.up.railway.app/api/movies/search?q=${encodeURIComponent(query)}`);
+      const res = await fetch(`${API}/api/movies/search?q=${encodeURIComponent(query)}`);
       const data = await res.json();
       setResults(data);
     } catch (err) {
@@ -77,18 +78,18 @@ export default function Search({ user, onMovieChange }) {
     try {
       // Before adding to the new list, remove it from the other list if it exists
       const otherStatus = status === "watchlist" ? "watched" : "watchlist";
-      const checkRes = await fetch(`https://patient-determination-production.up.railway.app/api/movies?userId=${user.uid}&status=${otherStatus}`);
+      const checkRes = await fetch(`${API}/api/movies?userId=${user.uid}&status=${otherStatus}`);
       
       if (checkRes.ok) {
         const otherList = await checkRes.json();
         const existingMovie = otherList.find(m => String(m.tmdbId) === String(movie.id));
         
         if (existingMovie) {
-          await fetch(`https://patient-determination-production.up.railway.app/api/movies/${existingMovie._id}`, { method: "DELETE" });
+          await fetch(`${API}/api/movies/${existingMovie._id}`, { method: "DELETE" });
 
           // Clean up the associated post
           try {
-            const postsRes = await fetch("https://patient-determination-production.up.railway.app/api/posts");
+            const postsRes = await fetch(`${API}/api/posts`);
             const allPosts = await postsRes.json();
             const associatedPost = allPosts.find(p => 
               p.userId === user.uid && 
@@ -97,7 +98,7 @@ export default function Search({ user, onMovieChange }) {
               String(p.movieActivity?.movie?.tmdbId) === String(movie.id)
             );
             if (associatedPost) {
-              await fetch(`https://patient-determination-production.up.railway.app/api/posts/${associatedPost._id}`, { method: "DELETE" });
+              await fetch(`${API}/api/posts/${associatedPost._id}`, { method: "DELETE" });
             }
           } catch (e) {
             console.error("Cleanup post error:", e);
@@ -105,7 +106,7 @@ export default function Search({ user, onMovieChange }) {
         }
       }
 
-      const res = await fetch("https://patient-determination-production.up.railway.app/api/posts/movie-activity", {
+      const res = await fetch(`${API}/api/posts/movie-activity`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -18,6 +18,7 @@ import {
   InformationCircleIcon
 } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartSolid } from "@heroicons/react/24/solid";
+import { API } from "../config";
 
 // Genre mapping for TMDB
 const genreMap = {
@@ -40,8 +41,6 @@ const genreMap = {
   10752: "War",
   37: "Western",
 };
-
-const API = "https://patient-determination-production.up.railway.app";
 
 export default function Home({ user, onMovieChange }) {
   const navigate = useNavigate();

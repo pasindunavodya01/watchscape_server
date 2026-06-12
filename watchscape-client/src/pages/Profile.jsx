@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
-import { 
+import {
   UserIcon,
   FilmIcon,
   EyeIcon,
@@ -15,8 +15,7 @@ import {
   InformationCircleIcon,
 } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartSolid } from "@heroicons/react/24/solid";
-
-const API = "https://patient-determination-production.up.railway.app";
+import { API } from "../config";
 
 // Genre mapping for TMDB
 const genreMap = {

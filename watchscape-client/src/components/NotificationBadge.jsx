@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { BellIcon } from "@heroicons/react/24/outline";
 import { BellIcon as BellSolid } from "@heroicons/react/24/solid";
-
-const API = "https://patient-determination-production.up.railway.app";
+import { API } from "../config";
 
 export default function NotificationBadge({ user, onOpenNotifications }) {
   const [unreadCount, setUnreadCount] = useState(0);

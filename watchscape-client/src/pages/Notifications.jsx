@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { 
+import {
   BellIcon, 
   HeartIcon, 
   ChatBubbleLeftIcon, 
@@ -19,8 +19,7 @@ import {
   DocumentTextIcon as DocumentTextSolid,
   FilmIcon as FilmSolid
 } from "@heroicons/react/24/solid";
-
-const API = "https://patient-determination-production.up.railway.app";
+import { API } from "../config";
 
 // Post Preview Card Component
 const PostPreviewCard = ({ post, onView }) => {

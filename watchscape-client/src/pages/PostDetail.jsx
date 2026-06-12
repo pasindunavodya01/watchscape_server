@@ -6,8 +6,7 @@ import {
   ArrowLeftIcon
 } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartSolid } from "@heroicons/react/24/solid";
-
-const API = import.meta.env.VITE_API_URL || "https://patient-determination-production.up.railway.app";
+import { API } from "../config";
 
 export default function PostDetail({ user }) {
   const { postId } = useParams();

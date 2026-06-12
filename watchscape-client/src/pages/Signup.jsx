@@ -2,6 +2,7 @@ import { useState } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase";
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { API } from "../config";
 
 export default function Signup() {
   const [email, setEmail] = useState("");
@@ -33,7 +34,7 @@ export default function Signup() {
       );
       const user = userCredential.user;
 
-      await fetch("https://patient-determination-production.up.railway.app/api/users", {
+      await fetch(`${API}/api/users`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

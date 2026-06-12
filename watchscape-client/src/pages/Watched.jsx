@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from 'react-router-dom';
+import { API } from "../config";
 
 // Genre mapping for TMDB (same as in Search.jsx)
 const genreMap = {
@@ -43,7 +44,7 @@ export default function Watched({ user, onMovieChange }) {
     }
     if (page === 1) setLoading(true);
     try {
-      const res = await fetch(`https://patient-determination-production.up.railway.app/api/movies?userId=${user.uid}&status=watched&page=${page}&limit=${limit}`);
+      const res = await fetch(`${API}/api/movies?userId=${user.uid}&status=watched&page=${page}&limit=${limit}`);
       const data = await res.json();
       if (page === 1) setMovies(Array.isArray(data) ? data : []);
       else setMovies((prev) => [...prev, ...(Array.isArray(data) ? data : [])]);
@@ -76,13 +77,13 @@ export default function Watched({ user, onMovieChange }) {
     }
     try {
       const movieToRemove = movies.find((m) => m._id === id);
-      const res = await fetch(`https://patient-determination-production.up.railway.app/api/movies/${id}`, {
+      const res = await fetch(`${API}/api/movies/${id}`, {
         method: "DELETE",
       });
       if (res.ok) {
         if (movieToRemove && user) {
           try {
-            const postsRes = await fetch("https://patient-determination-production.up.railway.app/api/posts");
+            const postsRes = await fetch(`${API}/api/posts`);
             const allPosts = await postsRes.json();
             const associatedPost = allPosts.find(p => 
               p.userId === user.uid && 
@@ -91,7 +92,7 @@ export default function Watched({ user, onMovieChange }) {
               String(p.movieActivity?.movie?.tmdbId) === String(movieToRemove.tmdbId)
             );
             if (associatedPost) {
-              await fetch(`https://patient-determination-production.up.railway.app/api/posts/${associatedPost._id}`, { method: "DELETE" });
+              await fetch(`${API}/api/posts/${associatedPost._id}`, { method: "DELETE" });
             }
           } catch (e) {
             console.error("Cleanup post error:", e);

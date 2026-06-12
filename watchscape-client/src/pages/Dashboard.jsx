@@ -4,6 +4,7 @@ import { HomeIcon, MagnifyingGlassIcon, BookmarkIcon, EyeIcon, UserIcon } from "
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import Rightbar from "../components/Rightbar";
+import { API } from "../config";
 
 // Pages
 import Home from "./Home";
@@ -23,9 +24,7 @@ export default function Dashboard({ user, onLogout }) {
   const refreshCounts = async () => {
     if (!user?.uid || user?.isGuest) return;
     try {
-      const res = await fetch(
-        `https://patient-determination-production.up.railway.app/api/movies/stats?userId=${user.uid}`
-      );
+      const res = await fetch(`${API}/api/movies/stats?userId=${user.uid}`);
       const data = await res.json();
       setCounts({
         watchlist: data.watchlistCount,
