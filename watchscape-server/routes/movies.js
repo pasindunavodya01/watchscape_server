@@ -53,12 +53,16 @@ router.post("/", async (req, res) => {
 // Get movies with details (FIXED VERSION)
 router.get("/", async (req, res) => {
   try {
-    const { userId, status } = req.query;
+    const { userId, status, page = 1, limit = 12 } = req.query;
     if (!userId || !status) {
       return res.status(400).json({ message: 'Missing parameters' });
     }
 
-    const movies = await Movie.find({ userId, status });
+    const pageNum = parseInt(page, 10) || 1;
+    const lim = parseInt(limit, 10) || 12;
+    const skip = (pageNum - 1) * lim;
+
+    const movies = await Movie.find({ userId, status }).sort({ updatedAt: -1 }).skip(skip).limit(lim);
     const detailedMovies = await Promise.all(
       movies.map(async (m) => {
         try {
@@ -72,23 +76,24 @@ router.get("/", async (req, res) => {
             tmdbId: m.tmdbId,
             title: tmdbRes.data.title,
             posterPath: tmdbRes.data.poster_path,
-            backdropPath: tmdbRes.data.backdrop_path,  // ADD THIS
+            backdropPath: tmdbRes.data.backdrop_path,
             releaseDate: tmdbRes.data.release_date,
             overview: tmdbRes.data.overview,
-            genre_ids: tmdbRes.data.genres?.map(g => g.id) || [],  // ADD THIS
-            vote_average: tmdbRes.data.vote_average,  // BONUS: Add rating
+            genre_ids: tmdbRes.data.genres?.map(g => g.id) || [],
+            vote_average: tmdbRes.data.vote_average,
             tmdbDetails: tmdbRes.data,
           };
         } catch {
           return {
             ...m.toObject(),
-            backdropPath: null,  // Fallback for failed requests
+            backdropPath: null,
             genre_ids: [],
             vote_average: 0
           };
         }
       })
     );
+
     res.json(detailedMovies);
   } catch (err) {
     console.error(err);

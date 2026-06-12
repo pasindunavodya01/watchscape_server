@@ -45,12 +45,19 @@ export default function Profile({ user }) {
   const [watchlistMovies, setWatchlistMovies] = useState([]);
   const [watchedMovies, setWatchedMovies] = useState([]);
   const [moviesLoading, setMoviesLoading] = useState(false);
-  const [showAllWatchlist, setShowAllWatchlist] = useState(false);
-  const [showAllWatched, setShowAllWatched] = useState(false);
+  const [watchlistPage, setWatchlistPage] = useState(1);
+  const [watchedPage, setWatchedPage] = useState(1);
+  const watchlistLimit = 6;
+  const watchedLimit = 6;
+  const [watchlistHasMore, setWatchlistHasMore] = useState(false);
+  const [watchedHasMore, setWatchedHasMore] = useState(false);
 
   // posts fetched EXACTLY like Home, then filtered to this user
   const [posts, setPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(false);
+  const [postsPage, setPostsPage] = useState(1);
+  const postsLimit = 6;
+  const [postsHasMore, setPostsHasMore] = useState(false);
 
   // New states for interactions
   const [likingPosts, setLikingPosts] = useState({});
@@ -99,33 +106,44 @@ export default function Profile({ user }) {
     }
   };
 
-  const fetchMovieCollections = async () => {
-    setMoviesLoading(true);
-try {
-  // Fetch watchlist
-  const watchlistRes = await fetch(`${API}/api/movies?userId=${userId}&status=watchlist`);
-  const watchlistData = await watchlistRes.json();
-  setWatchlistMovies(Array.isArray(watchlistData) ? [...watchlistData].reverse() : []);
-
-  // Fetch watched movies
-  const watchedRes = await fetch(`${API}/api/movies?userId=${userId}&status=watched`);
-  const watchedData = await watchedRes.json();
-  setWatchedMovies(Array.isArray(watchedData) ? [...watchedData].reverse() : []);
-} catch (err) {
-  console.error("Failed to fetch movie collections:", err);
-} finally {
-  setMoviesLoading(false);
-}
+  const fetchWatchlist = async (pageNum = 1) => {
+    try {
+      if (pageNum === 1) setMoviesLoading(true);
+      const res = await fetch(`${API}/api/movies?userId=${userId}&status=watchlist&page=${pageNum}&limit=${watchlistLimit}`);
+      const data = await res.json();
+      if (pageNum === 1) setWatchlistMovies(Array.isArray(data) ? data : []);
+      else setWatchlistMovies((prev) => [...prev, ...(Array.isArray(data) ? data : [])]);
+      setWatchlistHasMore(Array.isArray(data) ? data.length === watchlistLimit : false);
+    } catch (err) {
+      console.error("Failed to fetch watchlist:", err);
+    } finally {
+      setMoviesLoading(false);
+    }
   };
 
-  const fetchUserPosts = async () => {
+  const fetchWatched = async (pageNum = 1) => {
+    try {
+      if (pageNum === 1) setMoviesLoading(true);
+      const res = await fetch(`${API}/api/movies?userId=${userId}&status=watched&page=${pageNum}&limit=${watchedLimit}`);
+      const data = await res.json();
+      if (pageNum === 1) setWatchedMovies(Array.isArray(data) ? data : []);
+      else setWatchedMovies((prev) => [...prev, ...(Array.isArray(data) ? data : [])]);
+      setWatchedHasMore(Array.isArray(data) ? data.length === watchedLimit : false);
+    } catch (err) {
+      console.error("Failed to fetch watched movies:", err);
+    } finally {
+      setMoviesLoading(false);
+    }
+  };
+
+  const fetchUserPosts = async (pageNum = 1) => {
     setPostsLoading(true);
     try {
-      // same endpoint Home uses
-      const res = await fetch(`${API}/api/posts`);
+      const res = await fetch(`${API}/api/posts?userId=${userId}&page=${pageNum}&limit=${postsLimit}`);
       const data = await res.json();
-      // show ONLY this user's posts, but with the enriched likes/comments
-      setPosts(Array.isArray(data) ? data.filter(p => p.userId === userId) : []);
+      if (pageNum === 1) setPosts(Array.isArray(data) ? data : []);
+      else setPosts((prev) => [...prev, ...(Array.isArray(data) ? data : [])]);
+      setPostsHasMore(Array.isArray(data) ? data.length === postsLimit : false);
     } catch (err) {
       console.error("Failed to fetch posts:", err);
       setPosts([]);
@@ -280,10 +298,32 @@ try {
 
   useEffect(() => {
     fetchProfile();
-    fetchUserPosts();
-    fetchMovieCollections();
+    setPostsPage(1);
+    setWatchlistPage(1);
+    setWatchedPage(1);
+    fetchUserPosts(1);
+    fetchWatchlist(1);
+    fetchWatched(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
+
+  const loadMoreWatchlist = () => {
+    const next = watchlistPage + 1;
+    setWatchlistPage(next);
+    fetchWatchlist(next);
+  };
+
+  const loadMoreWatched = () => {
+    const next = watchedPage + 1;
+    setWatchedPage(next);
+    fetchWatched(next);
+  };
+
+  const loadMorePosts = () => {
+    const next = postsPage + 1;
+    setPostsPage(next);
+    fetchUserPosts(next);
+  };
 
   // Helper function to render a movie card
   const renderMovieCard = (movie, size = "normal") => {
@@ -654,15 +694,7 @@ try {
             <h2 className="text-xl font-bold text-gray-900">
               Watchlist ({watchlistMovies.length})
             </h2>
-            {watchlistMovies.length > 6 && (
-              <button
-                onClick={() => setShowAllWatchlist(!showAllWatchlist)}
-                className="text-purple-600 hover:text-purple-700 text-sm font-medium flex items-center gap-1"
-              >
-                {showAllWatchlist ? 'Show Less' : 'View All'}
-                <ChevronRightIcon className={`w-4 h-4 transition-transform ${showAllWatchlist ? 'rotate-90' : ''}`} />
-              </button>
-            )}
+            {/* pagination handled with Load More */}
           </div>
           
           {moviesLoading ? (
@@ -675,9 +707,17 @@ try {
               <p>No movies in watchlist</p>
             </div>
           ) : (
+            <>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {(showAllWatchlist ? watchlistMovies : watchlistMovies.slice(0, 6)).map(renderMovieCard)}
+              {watchlistMovies.map(renderMovieCard)}
             </div>
+
+            {watchlistHasMore && (
+              <div className="text-center mt-4">
+                <button onClick={loadMoreWatchlist} className="px-4 py-2 bg-white border border-gray-200 rounded text-purple-600 font-medium">Load More</button>
+              </div>
+            )}
+            </>
           )}
         </div>
 
@@ -687,15 +727,7 @@ try {
             <h2 className="text-xl font-bold text-gray-900">
               Watched ({watchedMovies.length})
             </h2>
-            {watchedMovies.length > 6 && (
-              <button
-                onClick={() => setShowAllWatched(!showAllWatched)}
-                className="text-green-600 hover:text-green-700 text-sm font-medium flex items-center gap-1"
-              >
-                {showAllWatched ? 'Show Less' : 'View All'}
-                <ChevronRightIcon className={`w-4 h-4 transition-transform ${showAllWatched ? 'rotate-90' : ''}`} />
-              </button>
-            )}
+            {/* pagination handled with Load More */}
           </div>
           
           {moviesLoading ? (
@@ -708,9 +740,17 @@ try {
               <p>No watched movies</p>
             </div>
           ) : (
+            <>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {(showAllWatched ? watchedMovies : watchedMovies.slice(0, 6)).map(renderMovieCard)}
+              {watchedMovies.map(renderMovieCard)}
             </div>
+
+            {watchedHasMore && (
+              <div className="text-center mt-4">
+                <button onClick={loadMoreWatched} className="px-4 py-2 bg-white border border-gray-200 rounded text-green-600 font-medium">Load More</button>
+              </div>
+            )}
+            </>
           )}
         </div>
       </div>
@@ -732,9 +772,17 @@ try {
             <p className="text-sm mt-1">Start sharing your movie thoughts!</p>
           </div>
         ) : (
+          <>
           <div className="grid sm:grid-cols-2 gap-6">
             {posts.map(renderPost)}
           </div>
+
+          {postsHasMore && (
+            <div className="text-center mt-6">
+              <button onClick={loadMorePosts} className="px-6 py-2 bg-white border border-gray-200 rounded text-purple-600 font-medium">Load More Posts</button>
+            </div>
+          )}
+          </>
         )}
       </div>
 

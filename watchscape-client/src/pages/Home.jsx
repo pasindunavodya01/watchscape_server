@@ -48,6 +48,8 @@ export default function Home({ user, onMovieChange }) {
   const location = useLocation();
   const [posts, setPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
   // user search
   const [userQuery, setUserQuery] = useState("");
@@ -74,20 +76,32 @@ export default function Home({ user, onMovieChange }) {
   const [showMobileSearch, setShowMobileSearch] = useState(false);
 
   // fetch posts
-  const fetchPosts = async () => {
-    setPostsLoading(true);
+  const fetchPosts = async (pageNum = 1) => {
+    if (pageNum === 1) setPostsLoading(true);
     try {
-      const res = await fetch(`${API}/api/posts`);
+      const res = await fetch(`${API}/api/posts?page=${pageNum}&limit=10`);
       const data = await res.json();
-      setPosts(data);
+      if (pageNum === 1) {
+        setPosts(data);
+      } else {
+        setPosts((prev) => [...prev, ...data]);
+      }
+      setHasMore(data.length === 10);
     } catch (err) {
       console.error("Failed to fetch posts:", err);
+      setHasMore(false);
     } finally {
       setPostsLoading(false);
     }
   };
 
-  useEffect(() => { fetchPosts(); }, []);
+  useEffect(() => { fetchPosts(1); }, []);
+
+  const loadMorePosts = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchPosts(nextPage);
+  };
 
   // user search
   useEffect(() => {
@@ -253,7 +267,8 @@ export default function Home({ user, onMovieChange }) {
       });
       if (!res.ok) throw new Error("Failed to create post");
       setText(""); setSelectedMovie(null); setMovieQuery(""); setMovieResults([]); setComposerOpen(false);
-      fetchPosts();
+      setPage(1);
+      fetchPosts(1);
     } catch (err) { console.error(err); alert(err.message || "Failed to create post"); }
   };
 
@@ -782,7 +797,7 @@ export default function Home({ user, onMovieChange }) {
 
       {/* Feed */}
       <div className="space-y-6">
-        {postsLoading ? (
+        {postsLoading && page === 1 ? (
           <div className="flex justify-center items-center py-20">
             <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
           </div>
@@ -793,31 +808,45 @@ export default function Home({ user, onMovieChange }) {
             <p className="text-gray-400 mt-1">Start sharing your movie thoughts!</p>
           </div>
         ) : (
-          posts.map((p) => (
-            p.type === 'movie_activity' ? (
-              <MovieActivityCard
-                key={p._id}
-                post={p}
-                currentUid={user?.uid}
-                  onAddMovie={addMovie}
-                onToggleLike={() => toggleLike(p._id)}
-                onAddComment={(txt, clear) => addComment(p._id, txt, clear)}
-                onToggleFollow={() => toggleFollow(p.userId)}
-                onShare={() => sharePost(p._id)}
-              />
-            ) : (
-              <PostCard
-                key={p._id}
-                post={p}
-                currentUid={user?.uid}
-                  onAddMovie={addMovie}
-                onToggleLike={() => toggleLike(p._id)}
-                onAddComment={(txt, clear) => addComment(p._id, txt, clear)}
-                onToggleFollow={() => toggleFollow(p.userId)}
-                onShare={() => sharePost(p._id)}
-              />
-            )
-          ))
+          <>
+            {posts.map((p) => (
+              p.type === 'movie_activity' ? (
+                <MovieActivityCard
+                  key={p._id}
+                  post={p}
+                  currentUid={user?.uid}
+                    onAddMovie={addMovie}
+                  onToggleLike={() => toggleLike(p._id)}
+                  onAddComment={(txt, clear) => addComment(p._id, txt, clear)}
+                  onToggleFollow={() => toggleFollow(p.userId)}
+                  onShare={() => sharePost(p._id)}
+                />
+              ) : (
+                <PostCard
+                  key={p._id}
+                  post={p}
+                  currentUid={user?.uid}
+                    onAddMovie={addMovie}
+                  onToggleLike={() => toggleLike(p._id)}
+                  onAddComment={(txt, clear) => addComment(p._id, txt, clear)}
+                  onToggleFollow={() => toggleFollow(p.userId)}
+                  onShare={() => sharePost(p._id)}
+                />
+              )
+            ))}
+            
+            {hasMore && (
+              <div className="text-center py-4">
+                <button
+                  onClick={loadMorePosts}
+                  disabled={postsLoading}
+                  className="px-6 py-2 bg-white border border-gray-200 shadow-sm hover:bg-gray-50 rounded-lg text-purple-600 font-medium transition-colors disabled:opacity-50"
+                >
+                  {postsLoading ? "Loading..." : "Load More Posts"}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

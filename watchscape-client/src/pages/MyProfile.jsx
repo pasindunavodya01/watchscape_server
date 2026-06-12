@@ -33,6 +33,9 @@ export default function MyProfile({ user }) {
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(false);
+  const [postsPage, setPostsPage] = useState(1);
+  const postsLimit = 6;
+  const [postsHasMore, setPostsHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Followers/Following
@@ -78,19 +81,27 @@ export default function MyProfile({ user }) {
     }
   };
 
-  const fetchMyPosts = async () => {
+  const fetchMyPosts = async (pageNum = 1) => {
     setPostsLoading(true);
     try {
       if (!user?.uid || user?.isGuest) {
         setPosts([]);
+        setPostsHasMore(false);
         return;
       }
-      const res = await fetch(`${API}/api/posts`);
+      const res = await fetch(`${API}/api/posts?userId=${user.uid}&page=${pageNum}&limit=${postsLimit}`);
       const data = await res.json();
-      setPosts(Array.isArray(data) ? data.filter((p) => p.userId === user.uid) : []);
+      const postsArray = Array.isArray(data) ? data : [];
+      if (pageNum === 1) {
+        setPosts(postsArray);
+      } else {
+        setPosts((prev) => [...prev, ...postsArray]);
+      }
+      setPostsHasMore(postsArray.length === postsLimit);
     } catch (err) {
       console.error(err);
-      setPosts([]);
+      if (pageNum === 1) setPosts([]);
+      setPostsHasMore(false);
     } finally {
       setPostsLoading(false);
     }
@@ -626,7 +637,8 @@ export default function MyProfile({ user }) {
 
   useEffect(() => {
     fetchProfile();
-    fetchMyPosts();
+    setPostsPage(1);
+    fetchMyPosts(1);
   }, [user]);
 
   // If browsing as guest, show a simple login prompt instead of profile content
@@ -876,9 +888,26 @@ export default function MyProfile({ user }) {
             <p className="text-sm mt-1">Start sharing your movie thoughts!</p>
           </div>
         ) : (
-          <div className="grid sm:grid-cols-2 gap-6">
-            {posts.map(renderPost)}
-          </div>
+          <>
+            <div className="grid sm:grid-cols-2 gap-6">
+              {posts.map(renderPost)}
+            </div>
+            {postsHasMore && (
+              <div className="text-center mt-6">
+                <button
+                  onClick={() => {
+                    const next = postsPage + 1;
+                    setPostsPage(next);
+                    fetchMyPosts(next);
+                  }}
+                  className="px-6 py-2 bg-white border border-gray-200 rounded-lg text-purple-600 font-medium hover:bg-gray-50"
+                  disabled={postsLoading}
+                >
+                  {postsLoading ? "Loading..." : "Load More Posts"}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -1057,7 +1086,7 @@ export default function MyProfile({ user }) {
                   {selectedPostMovie.overview || "No description available."}
                 </p>
               </div>
-              <div className="block sm:hidden flex flex-col gap-3 mt-4">
+              <div className="sm:hidden flex flex-col gap-3 mt-4">
                 <button
                   onClick={() => { addMovie(selectedPostMovie, "watchlist"); setSelectedPostMovie(null); }}
                   className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-all text-sm flex items-center justify-center gap-2"

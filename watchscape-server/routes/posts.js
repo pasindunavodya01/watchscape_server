@@ -82,7 +82,15 @@ router.post("/movie-activity", async (req, res) => {
 // GET ALL POSTS WITH FULL MOVIE DETAILS
 router.get("/", async (req, res) => {
   try {
-    const posts = await Post.find().sort({ createdAt: -1 }).lean();
+    const { page = 1, limit = 10, userId } = req.query;
+    const pageNum = parseInt(page, 10) || 1;
+    const lim = parseInt(limit, 10) || 10;
+    const skip = (pageNum - 1) * lim;
+
+    const filter = {};
+    if (userId) filter.userId = userId;
+
+    const posts = await Post.find(filter).sort({ createdAt: -1 }).skip(skip).limit(lim).lean();
 
     const detailedPosts = await Promise.all(
       posts.map(async (post) => {

@@ -28,6 +28,9 @@ export default function Watched({ user, onMovieChange }) {
   const location = useLocation();
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const limit = 12;
+  const [hasMore, setHasMore] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [guestNotice, setGuestNotice] = useState(null);
 
@@ -38,20 +41,30 @@ export default function Watched({ user, onMovieChange }) {
       setLoading(false);
       return;
     }
-    setLoading(true);
+    if (page === 1) setLoading(true);
     try {
-      const res = await fetch(`https://patient-determination-production.up.railway.app/api/movies?userId=${user.uid}&status=watched`);
+      const res = await fetch(`https://patient-determination-production.up.railway.app/api/movies?userId=${user.uid}&status=watched&page=${page}&limit=${limit}`);
       const data = await res.json();
-      setMovies([...data].reverse());
+      if (page === 1) setMovies(Array.isArray(data) ? data : []);
+      else setMovies((prev) => [...prev, ...(Array.isArray(data) ? data : [])]);
+      setHasMore(Array.isArray(data) ? data.length === limit : false);
     } catch (err) {
       console.error("Failed to fetch watched movies:", err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
+    setPage(1);
     fetchMovies();
   }, [user]);
+
+  const loadMore = () => {
+    const next = page + 1;
+    setPage(next);
+    fetchMovies(next);
+  };
 
   const removeMovie = async (id) => {
     if (!user || user.isGuest) {
@@ -138,6 +151,7 @@ export default function Watched({ user, onMovieChange }) {
           <p className="text-gray-600">Movies you mark as watched will appear here</p>
         </div>
       ) : (
+        <>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {movies.map((movie) => (
             <div
@@ -207,6 +221,19 @@ export default function Watched({ user, onMovieChange }) {
             </div>
           ))}
         </div>
+
+        {hasMore && (
+          <div className="text-center py-6">
+            <button
+              onClick={loadMore}
+              disabled={loading}
+              className="px-6 py-2 bg-white border border-gray-200 shadow-sm hover:bg-gray-50 rounded-lg text-green-600 font-medium transition-colors disabled:opacity-50"
+            >
+              {loading ? "Loading..." : "Load More"}
+            </button>
+          </div>
+        )}
+        </>
       )}
 
       {/* Enhanced Movie Details Modal (same style as Search.jsx) */}
