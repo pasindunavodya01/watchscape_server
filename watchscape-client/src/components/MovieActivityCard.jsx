@@ -118,6 +118,12 @@ function MovieActivityCard({ post, currentUid, onToggleLike, onAddComment, onTog
             ))}
           </div>
 
+          {comments.length > 1 && (
+            <button className="text-xs text-blue-600 hover:underline mb-3 block" onClick={() => setShowComments(false)}>
+              Hide comments
+            </button>
+          )}
+
           <div className="flex gap-2">
             <input
               className="flex-1 border rounded px-3 py-2 text-sm"

@@ -3,7 +3,8 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   HeartIcon,
   ChatBubbleLeftIcon,
-  ArrowLeftIcon
+  ArrowLeftIcon,
+  UserIcon
 } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartSolid } from "@heroicons/react/24/solid";
 import { API } from "../config";
@@ -117,15 +118,31 @@ export default function PostDetail({ user }) {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
           <div>
             {/* Clickable username that links to profile */}
-            <Link 
-              to={`/dashboard/profile/${post.userId}`}
-              className="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors break-words cursor-pointer"
-            >
-              {post.username || post.userName || 'Anonymous'}
-            </Link>
-            <p className="text-sm text-gray-500">{new Date(post.createdAt).toLocaleDateString()} at {new Date(post.createdAt).toLocaleTimeString()}</p>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
+                {post.userProfilePic ? (
+                  <img src={post.userProfilePic} alt={post.user?.name || post.userName || 'Author'} className="w-full h-full object-cover" />
+                ) : (
+                  <UserIcon className="w-6 h-6 text-white" />
+                )}
+              </div>
+              <div>
+                {/* Clickable username that links to profile */}
+                <Link 
+                  to={`/dashboard/profile/${post.userId}`}
+                  className="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors break-words cursor-pointer"
+                >
+                  {post.username || post.userName || 'Anonymous'}
+                </Link>
+              {post.createdAt && (
+                <p className="text-sm text-gray-500 mt-1">
+                  {new Date(post.createdAt).toLocaleDateString()} • {new Date(post.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              )}
+              </div>
           </div>
         </div>
+      </div>
 
         {/* Post Text */}
         {post.text && <p className="text-gray-800 whitespace-pre-wrap break-words">{post.text}</p>}
@@ -196,22 +213,32 @@ export default function PostDetail({ user }) {
 
           <div className="space-y-3">
             {post.comments && post.comments.length > 0 ? (
-              post.comments.map((comment, idx) => (
-                <div key={idx} className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                  <div className="flex flex-col sm:flex-row justify-between mb-1">
-                    {/* Clickable comment username */}
-                    <Link 
-                      to={`/dashboard/profile/${comment.userId}`}
-                      className="font-medium text-gray-900 hover:text-blue-600 transition-colors cursor-pointer"
-                    >
-                      {comment.userName || comment.username || "Anonymous"}
-                    </Link>
-                    <span className="text-sm text-gray-500">{comment.createdAt && new Date(comment.createdAt).toLocaleDateString()}</span>
+                post.comments.map((comment, idx) => (
+                  <div key={idx} className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                    <div className="flex items-start gap-3 mb-2">
+                      <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
+                        {comment.userProfilePic ? (
+                          <img src={comment.userProfilePic} alt={comment.userName || 'User'} className="w-full h-full object-cover" />
+                        ) : (
+                          <UserIcon className="w-5 h-5 text-white" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <Link 
+                            to={`/dashboard/profile/${comment.userId}`}
+                            className="font-medium text-gray-900 hover:text-blue-600 transition-colors cursor-pointer"
+                          >
+                            {comment.userName || comment.username || "Anonymous"}
+                          </Link>
+                          <span className="text-sm text-gray-500">{comment.createdAt && new Date(comment.createdAt).toLocaleDateString()}</span>
+                        </div>
+                        <p className="text-gray-700 whitespace-pre-wrap break-words mt-1">{comment.text}</p>
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-gray-700 whitespace-pre-wrap break-words">{comment.text}</p>
-                </div>
-              ))
-            ) : (
+                ))
+              ) : (
               <div className="text-center py-8 text-gray-500">
                 <ChatBubbleLeftIcon className="w-12 h-12 mx-auto mb-2" />
                 <p>No comments yet</p>

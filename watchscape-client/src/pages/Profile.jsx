@@ -469,11 +469,20 @@ export default function Profile({ user }) {
                   <div className="mt-3 space-y-2 max-h-40 overflow-y-auto">
                     {post.comments.slice(-3).map((comment, idx) => (
                       <div key={idx} className="bg-gray-50 rounded-lg p-2">
-                        <div className="flex justify-between items-start text-xs text-gray-500 mb-1">
-                          <span className="font-medium">{comment.userName || comment.username || "Anonymous"}</span>
-                          {comment.createdAt && (
-                            <span>{new Date(comment.createdAt).toLocaleDateString()}</span>
+                      <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                        <div className="flex items-center gap-2">
+                          {comment.userProfilePic ? (
+                            <img src={comment.userProfilePic} alt="User" className="w-5 h-5 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-5 h-5 bg-gray-300 rounded-full flex items-center justify-center">
+                              <UserIcon className="w-3 h-3 text-white" />
+                            </div>
                           )}
+                          <span className="font-medium">{comment.userName || comment.username || "Anonymous"}</span>
+                        </div>
+                        {comment.createdAt && (
+                          <span>{new Date(comment.createdAt).toLocaleDateString()}</span>
+                        )}
                         </div>
                         <p className="text-sm text-gray-700">{comment.text}</p>
                       </div>
@@ -566,8 +575,17 @@ export default function Profile({ user }) {
                 <div className="mt-3 space-y-2 max-h-40 overflow-y-auto">
                   {post.comments.slice(-3).map((comment, idx) => (
                     <div key={idx} className="bg-gray-50 rounded-lg p-2">
-                      <div className="flex justify-between items-start text-xs text-gray-500 mb-1">
-                        <span className="font-medium">{comment.userName || comment.username || "Anonymous"}</span>
+                      <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                        <div className="flex items-center gap-2">
+                          {comment.userProfilePic ? (
+                            <img src={comment.userProfilePic} alt="User" className="w-5 h-5 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-5 h-5 bg-gray-300 rounded-full flex items-center justify-center">
+                              <UserIcon className="w-3 h-3 text-white" />
+                            </div>
+                          )}
+                          <span className="font-medium">{comment.userName || comment.username || "Anonymous"}</span>
+                        </div>
                         {comment.createdAt && (
                           <span>{new Date(comment.createdAt).toLocaleDateString()}</span>
                         )}
@@ -610,8 +628,12 @@ export default function Profile({ user }) {
       <div className="bg-white rounded-xl shadow-sm p-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-              <UserIcon className="w-8 h-8 text-white" />
+            <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center overflow-hidden">
+              {profile.user.profilePic ? (
+                <img src={profile.user.profilePic} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <UserIcon className="w-8 h-8 text-white" />
+              )}
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
@@ -817,8 +839,12 @@ export default function Profile({ user }) {
                       className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
                       onClick={() => setShowFollowers(false)}
                     >
-                      <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                        <UserIcon className="w-5 h-5 text-white" />
+                      <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center overflow-hidden">
+                        {f.profilePic ? (
+                          <img src={f.profilePic} alt={f.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <UserIcon className="w-5 h-5 text-white" />
+                        )}
                       </div>
                       <span className="font-medium text-gray-900">{f.name}</span>
                     </Link>
@@ -862,8 +888,12 @@ export default function Profile({ user }) {
                       className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
                       onClick={() => setShowFollowing(false)}
                     >
-                      <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                        <UserIcon className="w-5 h-5 text-white" />
+                      <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center overflow-hidden">
+                        {f.profilePic ? (
+                          <img src={f.profilePic} alt={f.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <UserIcon className="w-5 h-5 text-white" />
+                        )}
                       </div>
                       <span className="font-medium text-gray-900">{f.name}</span>
                     </Link>

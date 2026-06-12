@@ -1,11 +1,28 @@
-import React from "react";
-import { Bars3Icon, EllipsisVerticalIcon, ArrowRightOnRectangleIcon } from "@heroicons/react/24/outline";
+import React, { useState, useEffect } from "react";
+import { Bars3Icon, EllipsisVerticalIcon, ArrowRightOnRectangleIcon, UserIcon } from "@heroicons/react/24/outline";
 import { useNavigate, useLocation } from 'react-router-dom';
 import NotificationBadge from "./NotificationBadge";
+import { API } from "../config";
 
 export default function Navbar({ user, onToggleRightbar, onOpenNotifications }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [profilePic, setProfilePic] = useState(user?.photoURL || null);
+
+  useEffect(() => {
+    if (user?.uid && !user?.isGuest) {
+      fetch(`${API}/api/users/${user.uid}`)
+        .then((res) => {
+          if (!res.ok) throw new Error("Failed to fetch");
+          return res.json();
+        })
+        .then((data) => {
+          if (data.profilePic) setProfilePic(data.profilePic);
+        })
+        .catch(console.error);
+    }
+  }, [user]);
+
   return (
     <header className="fixed top-0 left-0 w-full h-16 bg-blue-600 shadow px-4 flex justify-between items-center z-50">
       {/* Left Section */}
@@ -48,11 +65,17 @@ export default function Navbar({ user, onToggleRightbar, onOpenNotifications }) 
 
        
         {/* Avatar */}
-        <img
-          src={`https://i.pravatar.cc/40?u=${user?.uid}`}
-          alt="User Avatar"
-          className="hidden sm:block w-10 h-10 rounded-full border-2 border-purple-700"
-        />
+        {profilePic ? (
+          <img
+            src={profilePic}
+            alt="User Avatar"
+            className="hidden sm:block w-10 h-10 rounded-full border-2 border-purple-700 object-cover"
+          />
+        ) : (
+          <div className="hidden sm:flex w-10 h-10 rounded-full border-2 border-purple-700 bg-purple-100 items-center justify-center overflow-hidden">
+            <UserIcon className="w-6 h-6 text-purple-600" />
+          </div>
+        )}
 
         {/* Three dots - Mobile only */}
         <button

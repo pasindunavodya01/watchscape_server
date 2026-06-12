@@ -87,6 +87,7 @@ export async function createNotification({ recipientUid, senderUid, type, messag
       recipientUid,
       senderUid,
       senderName,
+      senderProfilePic: sender.profilePic || '',
       type,
       message,
       postId,

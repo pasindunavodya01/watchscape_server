@@ -283,7 +283,11 @@ export default function Notifications({ user }) {
               <div className="flex items-start gap-3">
                 {/* Icon */}
                 <div className="mt-1">
-                  {getNotificationIcon(notification.type, notification.isRead)}
+                  {notification.senderProfilePic ? (
+                    <img src={notification.senderProfilePic} alt={notification.senderName} className="w-8 h-8 rounded-full object-cover" />
+                  ) : (
+                    getNotificationIcon(notification.type, notification.isRead)
+                  )}
                 </div>
 
                 {/* Content */}

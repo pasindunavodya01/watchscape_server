@@ -5,6 +5,7 @@ const NotificationSchema = new mongoose.Schema({
   recipientUid: { type: String, required: true }, // Who receives the notification
   senderUid: { type: String, required: true },    // Who triggered the notification
   senderName: { type: String, required: true },   // Sender's display name
+  senderProfilePic: { type: String, default: '' }, // Sender's profile picture URL
   type: { 
     type: String, 
     required: true,

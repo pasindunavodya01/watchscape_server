@@ -50,7 +50,7 @@ router.get("/", async (req, res) => {
     if (!q) return res.json([]);
     const rex = new RegExp(q, "i");
     const users = await User.find({ $or: [{ name: rex }, { email: rex }] })
-      .select("uid name email")
+      .select("uid name email profilePic")
       .limit(20);
     res.json(users);
   } catch (err) {
@@ -104,14 +104,14 @@ router.get("/:uid/profile", async (req, res) => {
     const { uid } = req.params;
     const viewerUid = req.query.viewerUid || null;
 
-    const user = await User.findOne({ uid }).select("uid name email followers following");
+    const user = await User.findOne({ uid }).select("uid name email profilePic followers following");
     if (!user) return res.status(404).json({ message: "User not found" });
 
     const pins = await Pin.find({ userUid: uid }).lean();
     const posts = await Post.find({ userId: uid }).sort({ createdAt: -1 }).lean();
 
     res.json({
-      user: { uid: user.uid, name: user.name, email: user.email },
+      user: { uid: user.uid, name: user.name, email: user.email, profilePic: user.profilePic },
       followersCount: user.followers.length,
       followingCount: user.following.length,
       followedByViewer: viewerUid ? user.followers.includes(viewerUid) : false,
@@ -193,7 +193,7 @@ router.get("/:uid/following", async (req, res) => {
     const user = await User.findOne({ uid: req.params.uid });
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    const followingUsers = await User.find({ uid: { $in: user.following } }).select("uid name email");
+    const followingUsers = await User.find({ uid: { $in: user.following } }).select("uid name email profilePic");
     res.json(followingUsers);
   } catch (err) {
     console.error(err);
@@ -207,10 +207,33 @@ router.get("/:uid/followers", async (req, res) => {
     const user = await User.findOne({ uid: req.params.uid });
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    const followerUsers = await User.find({ uid: { $in: user.followers } }).select("uid name email");
+    const followerUsers = await User.find({ uid: { $in: user.followers } }).select("uid name email profilePic");
     res.json(followerUsers);
   } catch (err) {
     console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// UPDATE PROFILE PIC
+router.patch("/:uid/profile-pic", async (req, res) => {
+  try {
+    const { profilePic } = req.body;
+    if (!profilePic) {
+      return res.status(400).json({ message: "profilePic required" });
+    }
+
+    const user = await User.findOneAndUpdate(
+      { uid: req.params.uid },
+      { profilePic },
+      { new: true }
+    );
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.json({ message: "Profile picture updated successfully", profilePic: user.profilePic });
+  } catch (err) {
+    console.error("Update profile pic error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });

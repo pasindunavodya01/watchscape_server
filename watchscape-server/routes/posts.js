@@ -35,7 +35,11 @@ router.post("/", async (req, res) => {
     });
 
     await newPost.save();
-    res.status(201).json(newPost);
+    // include author's profilePic on response
+    const author = await User.findOne({ uid: userId }).lean();
+    const result = newPost.toObject ? newPost.toObject() : newPost;
+    result.userProfilePic = author ? author.profilePic : null;
+    res.status(201).json(result);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
@@ -100,6 +104,16 @@ router.get("/", async (req, res) => {
         // Ensure username is set
         if (!post.userName && post.username) post.userName = post.username;
 
+        try {
+          const author = await User.findOne({ uid: post.userId }).lean();
+          if (author) {
+            if (!post.userName) post.userName = author.username || author.name || author.email;
+            post.userProfilePic = author.profilePic;
+          }
+        } catch (e) {
+          // ignore
+        }
+
         // Function to fetch TMDB details
         const enrichMovie = async (movieObj) => {
           if (!movieObj?.tmdbId) return movieObj;
@@ -139,13 +153,14 @@ router.get("/", async (req, res) => {
         // Enrich comments with username if missing
         post.comments = post.comments || [];
         for (const comment of post.comments) {
-          if (!comment.userName) {
-            try {
-              const user = await User.findOne({ uid: comment.userId }).lean();
+          try {
+            const user = await User.findOne({ uid: comment.userId }).lean();
+            if (!comment.userName) {
               comment.userName = user ? user.username || user.name || user.email : comment.userId;
-            } catch (error) {
-              comment.userName = comment.userId;
             }
+            comment.userProfilePic = user ? user.profilePic : null;
+          } catch (error) {
+            if (!comment.userName) comment.userName = comment.userId;
           }
         }
 
@@ -226,7 +241,31 @@ router.post("/:id/comment", async (req, res) => {
       postId: post._id.toString()
     });
 
-    res.json({ comments: post.comments });
+    // Enrich comments with user profile pics before returning
+    const enrichedComments = await Promise.all(
+      post.comments.map(async (c) => {
+        try {
+          const u = await User.findOne({ uid: c.userId }).lean();
+          return {
+            userId: c.userId,
+            userName: c.userName,
+            text: c.text,
+            createdAt: c.createdAt,
+            userProfilePic: u ? u.profilePic : null
+          };
+        } catch (e) {
+          return {
+            userId: c.userId,
+            userName: c.userName,
+            text: c.text,
+            createdAt: c.createdAt,
+            userProfilePic: null
+          };
+        }
+      })
+    );
+
+    res.json({ comments: enrichedComments });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
@@ -277,13 +316,19 @@ router.get("/:id", async (req, res) => {
     const post = await Post.findById(req.params.id).lean();
     if (!post) return res.status(404).json({ message: "Post not found" });
 
+    try {
+      const author = await User.findOne({ uid: post.userId }).lean();
+      if (author) post.userProfilePic = author.profilePic;
+    } catch(e) {}
+
     // Add userName for comments if missing
     post.comments = post.comments || [];
     for (const comment of post.comments) {
+      const user = await User.findOne({ uid: comment.userId }).lean();
       if (!comment.userName) {
-        const user = await User.findOne({ uid: comment.userId }).lean();
         comment.userName = user ? user.username || user.name || user.email : comment.userId;
       }
+      comment.userProfilePic = user ? user.profilePic : null;
     }
 
     res.json(post);

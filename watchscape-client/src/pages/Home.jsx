@@ -60,6 +60,7 @@ export default function Home({ user, onMovieChange }) {
   // composer UI
   const [composerOpen, setComposerOpen] = useState(false);
   const [text, setText] = useState("");
+  const [myProfilePic, setMyProfilePic] = useState(null);
 
   // movie search
   const [movieQuery, setMovieQuery] = useState("");
@@ -95,6 +96,21 @@ export default function Home({ user, onMovieChange }) {
   };
 
   useEffect(() => { fetchPosts(1); }, []);
+
+  // fetch current user's profile pic for composer/avatar
+  useEffect(() => {
+    let mounted = true;
+    if (!user?.uid) return;
+    (async () => {
+      try {
+        const res = await fetch(`${API}/api/users/${user.uid}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (mounted && data.profilePic) setMyProfilePic(data.profilePic);
+      } catch (e) { console.error(e); }
+    })();
+    return () => { mounted = false; };
+  }, [user]);
 
   const loadMorePosts = () => {
     const nextPage = page + 1;
@@ -387,8 +403,12 @@ export default function Home({ user, onMovieChange }) {
                     className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
                     onClick={() => setShowUserResults(false)}
                   >
-                    <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                      <UserIcon className="w-4 h-4 text-white" />
+                    <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center overflow-hidden">
+                      {u.profilePic ? (
+                        <img src={u.profilePic} alt={u.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <UserIcon className="w-4 h-4 text-white" />
+                      )}
                     </div>
                     <div className="font-medium text-gray-900">{u.name || u.username || "Unknown"}</div>
                   </Link>
@@ -645,9 +665,13 @@ export default function Home({ user, onMovieChange }) {
             onClick={() => setComposerOpen(true)}
           >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                <UserIcon className="w-5 h-5 text-white" />
-              </div>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden bg-gradient-to-r from-purple-500 to-pink-500">
+                  {myProfilePic ? (
+                    <img src={myProfilePic} alt={user?.name || 'You'} className="w-full h-full object-cover" />
+                  ) : (
+                    <UserIcon className="w-5 h-5 text-white" />
+                  )}
+                </div>
               <div className="flex-1 py-3 px-4 bg-gray-100 rounded-full text-gray-500">
                 Write something ...
               </div>
@@ -757,8 +781,12 @@ export default function Home({ user, onMovieChange }) {
             </div>
 
             <div className="flex items-start gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                <UserIcon className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden bg-gradient-to-r from-purple-500 to-pink-500 flex-shrink-0">
+                {myProfilePic ? (
+                  <img src={myProfilePic} alt={user?.name || 'You'} className="w-full h-full object-cover" />
+                ) : (
+                  <UserIcon className="w-5 h-5 text-white" />
+                )}
               </div>
               <textarea
                 className="flex-1 border border-gray-300 rounded-lg p-4 resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
@@ -814,7 +842,9 @@ export default function Home({ user, onMovieChange }) {
                   key={p._id}
                   post={p}
                   currentUid={user?.uid}
-                    onAddMovie={addMovie}
+                  user={user}
+                  myProfilePic={myProfilePic}
+                  onAddMovie={addMovie}
                   onToggleLike={() => toggleLike(p._id)}
                   onAddComment={(txt, clear) => addComment(p._id, txt, clear)}
                   onToggleFollow={() => toggleFollow(p.userId)}
@@ -825,7 +855,9 @@ export default function Home({ user, onMovieChange }) {
                   key={p._id}
                   post={p}
                   currentUid={user?.uid}
-                    onAddMovie={addMovie}
+                  user={user}
+                  myProfilePic={myProfilePic}
+                  onAddMovie={addMovie}
                   onToggleLike={() => toggleLike(p._id)}
                   onAddComment={(txt, clear) => addComment(p._id, txt, clear)}
                   onToggleFollow={() => toggleFollow(p.userId)}
@@ -853,7 +885,7 @@ export default function Home({ user, onMovieChange }) {
 }
 
 // POST CARD
-function PostCard({ post, currentUid, onAddMovie, onToggleLike, onAddComment, onToggleFollow, onShare }) {
+function PostCard({ post, currentUid, onAddMovie, onToggleLike, onAddComment, onToggleFollow, onShare, user, myProfilePic }) {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [selectedPostMovie, setSelectedPostMovie] = useState(null);
@@ -869,8 +901,12 @@ function PostCard({ post, currentUid, onAddMovie, onToggleLike, onAddComment, on
       <div className="p-4 pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-              <UserIcon className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center overflow-hidden">
+              {post.userProfilePic ? (
+                <img src={post.userProfilePic} alt="Author" className="w-full h-full object-cover" />
+              ) : (
+                <UserIcon className="w-5 h-5 text-white" />
+              )}
             </div>
             <div>
               <Link 
@@ -998,8 +1034,12 @@ function PostCard({ post, currentUid, onAddMovie, onToggleLike, onAddComment, on
             <div className="space-y-3">
               {commentsSorted.map((c, idx) => (
                 <div key={idx} className="flex items-start gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
-                    <UserIcon className="w-4 h-4 text-white" />
+                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {c.userProfilePic ? (
+                      <img src={c.userProfilePic} alt="User" className="w-full h-full object-cover" />
+                    ) : (
+                      <UserIcon className="w-4 h-4 text-white" />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm">
@@ -1018,12 +1058,25 @@ function PostCard({ post, currentUid, onAddMovie, onToggleLike, onAddComment, on
                 </div>
               ))}
             </div>
+            
+            {comments.length > 1 && (
+              <button 
+                className="text-sm text-gray-500 hover:text-purple-600 mt-4 transition-colors font-medium" 
+                onClick={() => setShowComments(false)}
+              >
+                Hide comments
+              </button>
+            )}
           </div>
 
           <div className="px-4 pb-4 border-t border-gray-100">
             <div className="flex gap-3 mt-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
-                <UserIcon className="w-4 h-4 text-white" />
+              <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-gradient-to-r from-purple-500 to-pink-500">
+                {myProfilePic ? (
+                  <img src={myProfilePic} alt={user?.name || 'You'} className="w-full h-full object-cover" />
+                ) : (
+                  <UserIcon className="w-4 h-4 text-white" />
+                )}
               </div>
               <div className="flex-1 flex gap-2">
                 <input
@@ -1164,7 +1217,7 @@ function PostCard({ post, currentUid, onAddMovie, onToggleLike, onAddComment, on
 }
 
 // MOVIE ACTIVITY CARD
-function MovieActivityCard({ post, currentUid, onAddMovie, onToggleLike, onAddComment, onToggleFollow, onShare }) {
+function MovieActivityCard({ post, currentUid, onAddMovie, onToggleLike, onAddComment, onToggleFollow, onShare, user, myProfilePic }) {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [selectedPostMovie, setSelectedPostMovie] = useState(null);
@@ -1188,8 +1241,12 @@ function MovieActivityCard({ post, currentUid, onAddMovie, onToggleLike, onAddCo
       <div className="p-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-              <UserIcon className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center overflow-hidden">
+              {post.userProfilePic ? (
+                <img src={post.userProfilePic} alt="Author" className="w-full h-full object-cover" />
+              ) : (
+                <UserIcon className="w-5 h-5 text-white" />
+              )}
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -1320,8 +1377,12 @@ function MovieActivityCard({ post, currentUid, onAddMovie, onToggleLike, onAddCo
             <div className="space-y-3">
               {commentsSorted.map((c, idx) => (
                 <div key={idx} className="flex items-start gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
-                    <UserIcon className="w-4 h-4 text-white" />
+                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {c.userProfilePic ? (
+                      <img src={c.userProfilePic} alt="User" className="w-full h-full object-cover" />
+                    ) : (
+                      <UserIcon className="w-4 h-4 text-white" />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm">
@@ -1340,12 +1401,25 @@ function MovieActivityCard({ post, currentUid, onAddMovie, onToggleLike, onAddCo
                 </div>
               ))}
             </div>
+            
+            {comments.length > 1 && (
+              <button 
+                className="text-sm text-gray-500 hover:text-purple-600 mt-4 transition-colors font-medium" 
+                onClick={() => setShowComments(false)}
+              >
+                Hide comments
+              </button>
+            )}
           </div>
 
           <div className="px-4 pb-4 border-t border-gray-100">
             <div className="flex gap-3 mt-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
-                <UserIcon className="w-4 h-4 text-white" />
+              <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-gradient-to-r from-purple-500 to-pink-500">
+                {myProfilePic ? (
+                  <img src={myProfilePic} alt={user?.name || 'You'} className="w-full h-full object-cover" />
+                ) : (
+                  <UserIcon className="w-4 h-4 text-white" />
+                )}
               </div>
               <div className="flex-1 flex gap-2">
                 <input
