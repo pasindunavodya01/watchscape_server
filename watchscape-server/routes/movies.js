@@ -62,6 +62,10 @@ router.get("/", async (req, res) => {
     const lim = parseInt(limit, 10) || 12;
     const skip = (pageNum - 1) * lim;
 
+    const totalCount = await Movie.countDocuments({ userId, status });
+    res.setHeader("X-Total-Count", totalCount);
+    res.setHeader("Access-Control-Expose-Headers", "X-Total-Count");
+
     const movies = await Movie.find({ userId, status }).sort({ updatedAt: -1 }).skip(skip).limit(lim);
     const detailedMovies = await Promise.all(
       movies.map(async (m) => {

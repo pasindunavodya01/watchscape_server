@@ -49,6 +49,8 @@ export default function Profile({ user }) {
   // Movie collections
   const [watchlistMovies, setWatchlistMovies] = useState([]);
   const [watchedMovies, setWatchedMovies] = useState([]);
+  const [totalWatchlist, setTotalWatchlist] = useState(0);
+  const [totalWatched, setTotalWatched] = useState(0);
   const [moviesLoading, setMoviesLoading] = useState(false);
   const [watchlistPage, setWatchlistPage] = useState(1);
   const [watchedPage, setWatchedPage] = useState(1);
@@ -117,6 +119,8 @@ export default function Profile({ user }) {
       if (pageNum === 1) setMoviesLoading(true);
       const res = await fetch(`${API}/api/movies?userId=${userId}&status=watchlist&page=${pageNum}&limit=${watchlistLimit}`);
       const data = await res.json();
+      const xTotal = res.headers.get("X-Total-Count");
+      if (xTotal !== null) setTotalWatchlist(parseInt(xTotal, 10));
       if (pageNum === 1) setWatchlistMovies(Array.isArray(data) ? data : []);
       else setWatchlistMovies((prev) => [...prev, ...(Array.isArray(data) ? data : [])]);
       setWatchlistHasMore(Array.isArray(data) ? data.length === watchlistLimit : false);
@@ -132,6 +136,8 @@ export default function Profile({ user }) {
       if (pageNum === 1) setMoviesLoading(true);
       const res = await fetch(`${API}/api/movies?userId=${userId}&status=watched&page=${pageNum}&limit=${watchedLimit}`);
       const data = await res.json();
+      const xTotal = res.headers.get("X-Total-Count");
+      if (xTotal !== null) setTotalWatched(parseInt(xTotal, 10));
       if (pageNum === 1) setWatchedMovies(Array.isArray(data) ? data : []);
       else setWatchedMovies((prev) => [...prev, ...(Array.isArray(data) ? data : [])]);
       setWatchedHasMore(Array.isArray(data) ? data.length === watchedLimit : false);
@@ -642,11 +648,17 @@ export default function Profile({ user }) {
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-8">
       {/* Header */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-          <div className="flex items-start sm:items-center gap-4 flex-col sm:flex-row w-full sm:w-auto">
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+        {/* Cover banner */}
+        {profile.user.coverPic ? (
+          <img src={profile.user.coverPic} alt="Cover" className="w-full h-32 sm:h-36 object-cover" />
+        ) : (
+          <div className="h-28 bg-gradient-to-r from-violet-600 via-fuchsia-600 to-blue-600" />
+        )}
+        <div className="px-5 pb-5">
+          <div className="flex items-end justify-between -mt-12 mb-4">
             <div 
-              className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0 cursor-pointer hover:scale-[1.02] transition-transform shadow-inner"
+              className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0 cursor-pointer hover:scale-[1.02] transition-transform shadow-inner ring-4 ring-white"
               onClick={() => {
                 if (profile.user.profilePic) {
                   setShowFullProfilePic(profile.user.profilePic);
@@ -660,85 +672,86 @@ export default function Profile({ user }) {
                 <UserIcon className="w-10 h-10 sm:w-12 sm:h-12 text-white" />
               )}
             </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-                {profile.user.name || profile.user.username || "Profile"}
-              </h1>
-              
-              {profile.user.bio && (
-                <p className="text-gray-600 mt-2 text-sm sm:text-base max-w-2xl whitespace-pre-wrap">{profile.user.bio}</p>
-              )}
+            
+            {user.uid !== userId && (
+              <button
+                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
+                  followed 
+                    ? "bg-gray-100 text-gray-700 hover:bg-gray-200" 
+                    : "bg-purple-600 text-white hover:bg-purple-700"
+                }`}
+                onClick={toggleFollow}
+              >
+                {followed ? (
+                  <>
+                    <UserMinusIcon className="w-4 h-4" />
+                    Unfollow
+                  </>
+                ) : (
+                  <>
+                    <UserPlusIcon className="w-4 h-4" />
+                    Follow
+                  </>
+                )}
+              </button>
+            )}
+          </div>
 
-              {(profile.user.socialLinks?.facebook || profile.user.socialLinks?.instagram || profile.user.socialLinks?.github || profile.user.socialLinks?.website || profile.user.socialLinks?.custom?.length > 0) && (
-                <div className="flex items-center gap-4 mt-3 flex-wrap">
-                  {profile.user.socialLinks.instagram && (
-                    <a href={ensureAbsoluteUrl(profile.user.socialLinks.instagram)} target="_blank" rel="noopener noreferrer" className="text-pink-600 hover:text-pink-700 transition-colors">
-                      <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
-                    </a>
-                  )}
-                  {profile.user.socialLinks.facebook && (
-                    <a href={ensureAbsoluteUrl(profile.user.socialLinks.facebook)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 transition-colors">
-                      <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.351c0 .731.593 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.312h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z"/></svg>
-                    </a>
-                  )}
-                  {profile.user.socialLinks.github && (
-                    <a href={ensureAbsoluteUrl(profile.user.socialLinks.github)} target="_blank" rel="noopener noreferrer" className="text-gray-800 hover:text-black transition-colors">
-                      <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24"><path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.379.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.161 22 16.416 22 12c0-5.523-4.477-10-10-10z"/></svg>
-                    </a>
-                  )}
-                  {profile.user.socialLinks.website && (
-                    <a href={ensureAbsoluteUrl(profile.user.socialLinks.website)} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-800 transition-colors">
-                      <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
-                    </a>
-                  )}
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+              {profile.user.name || profile.user.username || "Profile"}
+            </h1>
+            
+            {profile.user.bio && (
+              <p className="text-gray-600 mt-2 text-sm sm:text-base max-w-2xl whitespace-pre-wrap">{profile.user.bio}</p>
+            )}
+
+            {(profile.user.socialLinks?.facebook || profile.user.socialLinks?.instagram || profile.user.socialLinks?.github || profile.user.socialLinks?.website || profile.user.socialLinks?.custom?.length > 0) && (
+              <div className="flex items-center gap-4 mt-3 flex-wrap">
+                {profile.user.socialLinks.instagram && (
+                  <a href={ensureAbsoluteUrl(profile.user.socialLinks.instagram)} target="_blank" rel="noopener noreferrer" className="text-pink-600 hover:text-pink-700 transition-colors">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+                  </a>
+                )}
+                {profile.user.socialLinks.facebook && (
+                  <a href={ensureAbsoluteUrl(profile.user.socialLinks.facebook)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 transition-colors">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.351c0 .731.593 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.312h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z"/></svg>
+                  </a>
+                )}
+                {profile.user.socialLinks.github && (
+                  <a href={ensureAbsoluteUrl(profile.user.socialLinks.github)} target="_blank" rel="noopener noreferrer" className="text-gray-800 hover:text-black transition-colors">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24"><path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.379.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.161 22 16.416 22 12c0-5.523-4.477-10-10-10z"/></svg>
+                  </a>
+                )}
+                {profile.user.socialLinks.website && (
+                  <a href={ensureAbsoluteUrl(profile.user.socialLinks.website)} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-800 transition-colors">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                  </a>
+                )}
                 {profile.user.socialLinks.custom?.map((link, idx) => (
                   <a key={idx} href={ensureAbsoluteUrl(link.url)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-gray-500 hover:text-gray-800 transition-colors" title={link.name}>
                     <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
                     {link.name && <span className="text-sm font-medium">{link.name}</span>}
                   </a>
                 ))}
-                </div>
-              )}
-              
-              <div className="flex items-center gap-4 sm:gap-6 mt-4 text-sm text-gray-600 border-t border-gray-100 pt-4">
-                <button 
-                  className="hover:text-purple-600 transition-colors"
-                  onClick={() => { setShowFollowers(true); fetchFollowers(); }}
-                >
-                  <span className="font-semibold text-gray-900 text-base">{profile.followersCount}</span> followers
-                </button>
-                <button 
-                  className="hover:text-purple-600 transition-colors"
-                  onClick={() => { setShowFollowing(true); fetchFollowing(); }}
-                >
-                  <span className="font-semibold text-gray-900 text-base">{profile.followingCount}</span> following
-                </button>
               </div>
+            )}
+            
+            <div className="flex items-center gap-4 sm:gap-6 mt-4 text-sm text-gray-600 border-t border-gray-100 pt-4">
+              <button 
+                className="hover:text-purple-600 transition-colors"
+                onClick={() => { setShowFollowers(true); fetchFollowers(); }}
+              >
+                <span className="font-semibold text-gray-900 text-base">{profile.followersCount}</span> followers
+              </button>
+              <button 
+                className="hover:text-purple-600 transition-colors"
+                onClick={() => { setShowFollowing(true); fetchFollowing(); }}
+              >
+                <span className="font-semibold text-gray-900 text-base">{profile.followingCount}</span> following
+              </button>
             </div>
           </div>
-          
-          {user.uid !== userId && (
-            <button
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
-                followed 
-                  ? "bg-gray-100 text-gray-700 hover:bg-gray-200" 
-                  : "bg-purple-600 text-white hover:bg-purple-700"
-              }`}
-              onClick={toggleFollow}
-            >
-              {followed ? (
-                <>
-                  <UserMinusIcon className="w-4 h-4" />
-                  Unfollow
-                </>
-              ) : (
-                <>
-                  <UserPlusIcon className="w-4 h-4" />
-                  Follow
-                </>
-              )}
-            </button>
-          )}
         </div>
       </div>
 
@@ -774,7 +787,7 @@ export default function Profile({ user }) {
         <div className="bg-white rounded-xl shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-gray-900">
-              Watchlist ({watchlistMovies.length})
+              Watchlist ({totalWatchlist})
             </h2>
             {/* pagination handled with Load More */}
           </div>
@@ -812,7 +825,7 @@ export default function Profile({ user }) {
         <div className="bg-white rounded-xl shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-gray-900">
-              Watched ({watchedMovies.length})
+              Watched ({totalWatched})
             </h2>
             {/* pagination handled with Load More */}
           </div>

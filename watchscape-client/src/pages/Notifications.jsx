@@ -1,80 +1,142 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import ProfileLink from "../components/ProfileLink";
 import {
-  BellIcon, 
-  HeartIcon, 
-  ChatBubbleLeftIcon, 
-  ShareIcon, 
-  UserPlusIcon,
-  DocumentTextIcon,
-  FilmIcon,
-  EyeIcon,
-  UserIcon
+  BellIcon, HeartIcon, ChatBubbleLeftIcon, ShareIcon,
+  UserPlusIcon, DocumentTextIcon, FilmIcon, EyeIcon, UserIcon, CheckIcon
 } from "@heroicons/react/24/outline";
 import {
   HeartIcon as HeartSolid,
-  ChatBubbleLeftIcon as ChatBubbleSolid,
-  ShareIcon as ShareSolid,
   UserPlusIcon as UserPlusSolid,
-  DocumentTextIcon as DocumentTextSolid,
   FilmIcon as FilmSolid
 } from "@heroicons/react/24/solid";
 import { API } from "../config";
 
-// Post Preview Card Component
-const PostPreviewCard = ({ post, onView }) => {
-  if (!post) return null;
+const TYPE_CONFIG = {
+  like:           { icon: HeartSolid,    color: 'bg-rose-500/20 text-rose-400',    border: 'border-l-rose-500',    label: 'liked your post' },
+  comment:        { icon: ChatBubbleLeftIcon, color: 'bg-blue-500/20 text-blue-400', border: 'border-l-blue-500', label: 'commented on your post' },
+  share:          { icon: ShareIcon,     color: 'bg-green-500/20 text-green-400',  border: 'border-l-green-500',   label: 'shared your post' },
+  follow:         { icon: UserPlusSolid, color: 'bg-violet-500/20 text-violet-400',border: 'border-l-violet-500', label: 'followed you' },
+  post:           { icon: DocumentTextIcon,color:'bg-indigo-500/20 text-indigo-400',border:'border-l-indigo-500', label: 'posted something new' },
+  movie_activity: { icon: FilmSolid,    color: 'bg-amber-500/20 text-amber-400',  border: 'border-l-amber-500',   label: 'movie activity' },
+};
+
+function NotificationItem({ notification, onMarkRead, onViewPost, onViewProfile }) {
+  const config = TYPE_CONFIG[notification.type] || { icon: BellIcon, color: 'bg-slate-500/20 text-slate-400', border: 'border-l-slate-500' };
+  const Icon = config.icon;
+  const isRead = notification.isRead;
+
+  const timeAgo = (date) => {
+    const diff = Math.floor((Date.now() - new Date(date)) / 1000);
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
+    return new Date(date).toLocaleDateString();
+  };
 
   return (
-    <div className="mt-3 p-3 border rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
-      <div className="flex items-start justify-between">
-        <div className="flex-1 min-w-0">
-          {/* Post content preview */}
-          <p className="text-sm text-gray-700 line-clamp-2 mb-2">
-            {post.text || (post.movieActivity ? 
-              `${post.movieActivity.action} "${post.movieActivity.movie?.title || 'Unknown Movie'}"` : 
-              'No content'
-            )}
-          </p>
-          
-          {/* Movie info if present */}
-          {(post.movie || post.movieActivity?.movie) && (
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              <FilmIcon className="w-4 h-4" />
-              <span>{post.movie?.title || post.movieActivity?.movie?.title}</span>
+    <div
+      className={`relative flex items-start gap-3 p-4 rounded-xl border-l-4 transition-all duration-200 ${config.border} ${
+        isRead ? 'bg-white border border-slate-200 border-l-[4px]' : 'bg-violet-50/50 border border-violet-100 border-l-[4px]'
+      }`}
+      onClick={() => !isRead && onMarkRead(notification._id)}
+    >
+      {/* Icon / Avatar */}
+      <div className="flex-shrink-0 mt-0.5">
+        {notification.senderProfilePic ? (
+          <div className="relative">
+            <img
+              src={notification.senderProfilePic}
+              alt={notification.senderName}
+              className="w-9 h-9 rounded-full object-cover"
+            />
+            {/* Type badge */}
+            <div className={`absolute -bottom-1 -right-1 w-4.5 h-4.5 rounded-full flex items-center justify-center ${config.color} border border-white`}>
+              <Icon className="w-2.5 h-2.5" />
             </div>
-          )}
-          
-          {/* Post stats */}
-          <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-            <span>👍 {post.likes?.length || 0}</span>
-            <span>💬 {post.comments?.length || 0}</span>
           </div>
+        ) : (
+          <div className={`w-9 h-9 rounded-full flex items-center justify-center ${config.color}`}>
+            <Icon className="w-4.5 h-4.5" />
+          </div>
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        <p className={`text-sm leading-relaxed ${isRead ? 'text-slate-600' : 'text-slate-800 font-medium'}`}>
+          <ProfileLink
+            uid={notification.senderUid}
+            className="font-semibold text-violet-600 hover:text-violet-500 transition-colors"
+            onClick={() => onMarkRead(notification._id)}
+          >
+            {notification.senderName}
+          </ProfileLink>
+          {' '}{notification.message}
+        </p>
+
+        <div className="flex items-center gap-2 mt-1.5">
+          <span className="text-xs text-slate-400">{timeAgo(notification.createdAt)}</span>
+          {!isRead && (
+            <span className="inline-flex items-center gap-1 text-xs text-violet-500 font-medium">
+              <span className="w-1.5 h-1.5 bg-violet-500 rounded-full animate-pulse" />
+              New
+            </span>
+          )}
         </div>
-        
-        <button
-          onClick={() => onView(post._id)}
-          className="ml-3 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 flex items-center gap-1"
-        >
-          <EyeIcon className="w-3 h-3" />
-          View Post
-        </button>
+
+        {/* Action buttons */}
+        <div className="flex gap-2 mt-2.5">
+          {notification.type === 'follow' && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onViewProfile(notification.senderUid, notification._id); }}
+              className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors"
+            >
+              <UserIcon className="w-3 h-3" /> View Profile
+            </button>
+          )}
+          {['like', 'comment', 'share'].includes(notification.type) && notification.postId && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onViewPost(notification.postId, notification._id); }}
+              className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-violet-100 hover:bg-violet-200 text-violet-700 rounded-lg transition-colors"
+            >
+              <EyeIcon className="w-3 h-3" /> View Post
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Read indicator */}
+      {!isRead && (
+        <div className="flex-shrink-0">
+          <div className="w-2 h-2 bg-violet-500 rounded-full mt-1.5" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SkeletonNotification() {
+  return (
+    <div className="flex items-start gap-3 p-4 bg-white rounded-xl border border-slate-200 animate-pulse">
+      <div className="w-9 h-9 rounded-full skeleton-light flex-shrink-0" />
+      <div className="flex-1 space-y-2">
+        <div className="h-3.5 skeleton-light rounded w-3/4" />
+        <div className="h-3 skeleton-light rounded w-1/3" />
       </div>
     </div>
   );
-};
+}
 
 export default function Notifications({ user }) {
   const navigate = useNavigate();
-  const location = window.location;
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
-  // Fetch notifications
   const fetchNotifications = async (pageNum = 1) => {
     if (!user?.uid) return;
     try {
@@ -83,42 +145,30 @@ export default function Notifications({ user }) {
       const data = await res.json();
       if (pageNum === 1) setNotifications(data.notifications || []);
       else setNotifications(prev => [...prev, ...(data.notifications || [])]);
-      setHasMore(data.notifications && data.notifications.length === 20);
-    } catch (err) {
-      console.error("Failed to fetch notifications:", err);
-      setHasMore(false);
-    } finally {
-      setLoading(false);
-    }
+      setHasMore(data.notifications?.length === 20);
+    } catch (err) { console.error(err); setHasMore(false); }
+    finally { setLoading(false); }
   };
 
-  // Fetch unread count separately
   const fetchUnreadCount = async () => {
     if (!user?.uid) return;
     try {
       const res = await fetch(`${API}/api/notifications/${user.uid}/unread-count`);
       const data = await res.json();
       setUnreadCount(data.unreadCount || 0);
-    } catch (err) {
-      console.error("Failed to fetch unread count:", err);
-    }
+    } catch {}
   };
 
   useEffect(() => {
-    if (user?.uid) {
-      fetchNotifications();
-      fetchUnreadCount();
-    }
+    if (user?.uid) { fetchNotifications(); fetchUnreadCount(); }
   }, [user]);
 
-  const markAsRead = async (notificationId) => {
+  const markAsRead = async (id) => {
     try {
-      await fetch(`${API}/api/notifications/${notificationId}/read`, { method: "PATCH" });
-      setNotifications(prev => prev.map(n => n._id === notificationId ? { ...n, isRead: true } : n));
+      await fetch(`${API}/api/notifications/${id}/read`, { method: "PATCH" });
+      setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch (err) {
-      console.error("Failed to mark as read:", err);
-    }
+    } catch {}
   };
 
   const markAllAsRead = async () => {
@@ -126,108 +176,42 @@ export default function Notifications({ user }) {
       await fetch(`${API}/api/notifications/${user.uid}/read-all`, { method: "PATCH" });
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       setUnreadCount(0);
-    } catch (err) {
-      console.error("Failed to mark all as read:", err);
-    }
+    } catch {}
   };
 
   const loadMore = () => {
-    if (!loading && hasMore) {
-      const nextPage = page + 1;
-      setPage(nextPage);
-      fetchNotifications(nextPage);
-    }
+    if (!loading && hasMore) { const next = page + 1; setPage(next); fetchNotifications(next); }
   };
 
   const handleViewPost = (postId, notificationId) => {
-    if (notificationId) {
-      markAsRead(notificationId);
-    }
+    if (notificationId) markAsRead(notificationId);
     navigate(`/dashboard/posts/${postId}`);
   };
 
   const handleViewProfile = (senderUid, notificationId) => {
-    if (notificationId) {
-      markAsRead(notificationId);
-    }
+    if (notificationId) markAsRead(notificationId);
     const isMe = user?.uid === senderUid;
     navigate(isMe ? "/dashboard/my-profile" : `/dashboard/profile/${senderUid}`);
   };
 
-  const getNotificationIcon = (type, isRead) => {
-    const iconClass = `w-5 h-5 ${isRead ? 'text-gray-400' : 'text-blue-600'}`;
-    
-    switch (type) {
-      case 'like':
-        return isRead ? <HeartIcon className={iconClass} /> : <HeartSolid className={iconClass} />;
-      case 'comment':
-        return isRead ? <ChatBubbleLeftIcon className={iconClass} /> : <ChatBubbleSolid className={iconClass} />;
-      case 'share':
-        return isRead ? <ShareIcon className={iconClass} /> : <ShareSolid className={iconClass} />;
-      case 'follow':
-        return isRead ? <UserPlusIcon className={iconClass} /> : <UserPlusSolid className={iconClass} />;
-      case 'post':
-        return isRead ? <DocumentTextIcon className={iconClass} /> : <DocumentTextSolid className={iconClass} />;
-      case 'movie_activity':
-        return isRead ? <FilmIcon className={iconClass} /> : <FilmSolid className={iconClass} />;
-      default:
-        return <BellIcon className={iconClass} />;
-    }
-  };
-
-  const getNotificationColor = (type) => {
-    switch (type) {
-      case 'like': return 'border-l-red-500';
-      case 'comment': return 'border-l-blue-500';
-      case 'share': return 'border-l-green-500';
-      case 'follow': return 'border-l-purple-500';
-      case 'post': return 'border-l-indigo-500';
-      case 'movie_activity': return 'border-l-yellow-500';
-      default: return 'border-l-gray-400';
-    }
-  };
-
-  const formatTimeAgo = (date) => {
-    const now = new Date();
-    const notificationDate = new Date(date);
-    const diffInSeconds = Math.floor((now - notificationDate) / 1000);
-    
-    if (diffInSeconds < 60) return 'Just now';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
-    return notificationDate.toLocaleDateString();
-  };
-
-  if (loading && notifications.length === 0) {
-    return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="flex justify-center items-center py-20">
-          <div className="w-8 h-8 border-4 border-purple-700 border-t-transparent rounded-full animate-spin"></div>
-        </div>
-      </div>
-    );
-  }
-
-  // If guest, show an inline login prompt instead of notifications
+  // Guest state
   if (!user?.uid || user?.isGuest) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="text-center py-20">
-          <BellIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Notifications</h2>
-          <p className="text-gray-600 mb-6">Please sign in to view your notifications.</p>
+      <div className="max-w-2xl mx-auto px-4 py-12">
+        <div className="text-center">
+          <div className="w-20 h-20 bg-violet-50 rounded-3xl flex items-center justify-center mx-auto mb-5">
+            <BellIcon className="w-10 h-10 text-violet-300" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-800 mb-2">Sign in to see notifications</h2>
+          <p className="text-slate-500 text-sm mb-6">Get notified when people like, comment, or follow you.</p>
           <div className="flex items-center justify-center gap-3">
             <button
               onClick={() => navigate('/login', { state: { from: '/dashboard/notifications' } })}
-              className="px-5 py-2 bg-purple-600 text-white rounded-lg"
+              className="px-5 py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold rounded-xl transition-all"
             >
-              Login
+              Log in
             </button>
-            <button
-              onClick={() => navigate('/signup')}
-              className="px-5 py-2 border border-gray-300 rounded-lg"
-            >
+            <button onClick={() => navigate('/signup')} className="px-5 py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-xl transition-all">
               Sign up
             </button>
           </div>
@@ -237,129 +221,68 @@ export default function Notifications({ user }) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-2xl mx-auto px-4 py-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <BellIcon className="w-8 h-8 text-purple-700" />
+          <div className="w-10 h-10 bg-violet-100 rounded-xl flex items-center justify-center">
+            <BellIcon className="w-5 h-5 text-violet-600" />
+          </div>
           <div>
-            <h1 className="text-3xl font-bold">Notifications</h1>
+            <h1 className="text-xl font-bold text-slate-900">Notifications</h1>
             {unreadCount > 0 && (
-              <p className="text-sm text-gray-600">
-                You have {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
+              <p className="text-sm text-violet-600 font-medium">
+                {unreadCount} unread
               </p>
             )}
           </div>
         </div>
-        
+
         {unreadCount > 0 && (
           <button
             onClick={markAllAsRead}
-            className="px-4 py-2 bg-purple-700 text-white rounded hover:bg-purple-800 text-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-violet-600 bg-violet-50 hover:bg-violet-100 rounded-xl border border-violet-200 transition-all"
           >
-            Mark All Read
+            <CheckIcon className="w-4 h-4" />
+            Mark all read
           </button>
         )}
       </div>
 
-      {/* Notifications List */}
-      {notifications.length === 0 ? (
-        <div className="text-center py-20">
-          <BellIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500 text-lg">No notifications yet</p>
-          <p className="text-gray-400 text-sm mt-2">
-            When people interact with your posts or follow you, you'll see it here
-          </p>
+      {/* Content */}
+      {loading && notifications.length === 0 ? (
+        <div className="space-y-3">
+          {Array(5).fill(0).map((_, i) => <SkeletonNotification key={i} />)}
+        </div>
+      ) : notifications.length === 0 ? (
+        <div className="text-center py-16">
+          <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-5">
+            <BellIcon className="w-10 h-10 text-slate-300" />
+          </div>
+          <h3 className="text-lg font-semibold text-slate-700 mb-2">No notifications yet</h3>
+          <p className="text-slate-400 text-sm">When people interact with your posts, it'll show up here.</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {notifications.map((notification) => (
-            <div
-              key={notification._id}
-              className={`
-                border-l-4 bg-white rounded-r-lg p-4 shadow-sm hover:shadow-md transition-shadow
-                ${getNotificationColor(notification.type)}
-                ${!notification.isRead ? 'bg-blue-50' : 'bg-white'}
-              `}
-            >
-              <div className="flex items-start gap-3">
-                {/* Icon */}
-                <div className="mt-1">
-                  {notification.senderProfilePic ? (
-                    <img src={notification.senderProfilePic} alt={notification.senderName} className="w-8 h-8 rounded-full object-cover" />
-                  ) : (
-                    getNotificationIcon(notification.type, notification.isRead)
-                  )}
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1">
-                      <p className={`text-sm ${!notification.isRead ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
-                        <ProfileLink
-                          uid={notification.senderUid}
-                          className="text-blue-600 font-medium hover:underline"
-                          onClick={() => markAsRead(notification._id)}
-                        >
-                          {notification.senderName}
-                        </ProfileLink>
-                        {' '}{notification.message}
-                      </p>
-                      
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-gray-500">{formatTimeAgo(notification.createdAt)}</span>
-                        {!notification.isRead && <span className="w-2 h-2 bg-blue-600 rounded-full"></span>}
-                      </div>
-
-                      {/* Action buttons */}
-                      <div className="flex justify-end mt-3">
-                        {/* View Profile Button - only for follow notifications */}
-                        {notification.type === 'follow' && (
-                          <button
-                            onClick={() => handleViewProfile(notification.senderUid, notification._id)}
-                            className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs rounded flex items-center gap-1"
-                          >
-                            <UserIcon className="w-3 h-3" />
-                            View Profile
-                          </button>
-                        )}
-
-                        {/* View Post Button - only for post interaction notifications (like, comment, share) */}
-                        {(['like', 'comment', 'share'].includes(notification.type)) && notification.postId && (
-                          <button
-                            onClick={() => handleViewPost(notification.postId, notification._id)}
-                            className="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs rounded flex items-center gap-1"
-                          >
-                            <EyeIcon className="w-3 h-3" />
-                            View Post
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Show post preview if available */}
-                      {notification.post && (
-                        <PostPreviewCard
-                          post={notification.post}
-                          onView={(postId) => handleViewPost(postId, notification._id)}
-                        />
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+        <div className="space-y-2.5">
+          {notifications.map((n) => (
+            <NotificationItem
+              key={n._id}
+              notification={n}
+              onMarkRead={markAsRead}
+              onViewPost={handleViewPost}
+              onViewProfile={handleViewProfile}
+            />
           ))}
 
-          {/* Load More Button */}
+          {/* Load more */}
           {hasMore && (
-            <div className="text-center py-4">
+            <div className="pt-2 text-center">
               <button
                 onClick={loadMore}
                 disabled={loading}
-                className="px-6 py-2 bg-gray-100 hover:bg-gray-200 rounded text-gray-700 disabled:opacity-50"
+                className="px-6 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl text-slate-600 font-medium text-sm transition-all disabled:opacity-50 shadow-sm"
               >
-                {loading ? "Loading..." : "Load More"}
+                {loading ? 'Loading...' : 'Load more'}
               </button>
             </div>
           )}

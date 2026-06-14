@@ -1,6 +1,10 @@
 import dotenv from "dotenv";
 dotenv.config();
 
+import dns from "dns";
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
+dns.setDefaultResultOrder("ipv4first");
+
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
@@ -14,7 +18,9 @@ import notificationRoutes from "./routes/notifications.js";
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  exposedHeaders: ['X-Total-Count']
+}));
 app.use(express.json());
 
 // DB connection

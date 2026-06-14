@@ -1,355 +1,235 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from 'react-router-dom';
 import { API } from "../config";
+import toast from 'react-hot-toast';
+import { EyeIcon, FilmIcon, TrashIcon, StarIcon, XMarkIcon, InformationCircleIcon } from "@heroicons/react/24/outline";
 
-// Genre mapping for TMDB (same as in Search.jsx)
-const genreMap = {
-  28: "Action",
-  12: "Adventure",
-  16: "Animation",
-  35: "Comedy",
-  80: "Crime",
-  18: "Drama",
-  10751: "Family",
-  14: "Fantasy",
-  36: "History",
-  27: "Horror",
-  10402: "Music",
-  9648: "Mystery",
-  10749: "Romance",
-  878: "Sci-Fi",
-  10770: "TV Movie",
-  53: "Thriller",
-  10752: "War",
-  37: "Western"
-};
+function SkeletonCard() {
+  return (
+    <div className="rounded-xl overflow-hidden bg-white border border-slate-200 animate-pulse">
+      <div className="aspect-[2/3] skeleton-light" />
+      <div className="p-3 space-y-2">
+        <div className="h-3.5 skeleton-light rounded" />
+        <div className="h-3 skeleton-light rounded w-2/3" />
+        <div className="h-7 skeleton-light rounded-lg" />
+      </div>
+    </div>
+  );
+}
+
+function MovieModal({ movie, onClose, onRemove }) {
+  if (!movie) return null;
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-end sm:items-center p-0 sm:p-4 z-50 animate-fade-in" onClick={onClose}>
+      <div className="bg-slate-900 border border-slate-800 rounded-t-2xl sm:rounded-2xl w-full max-w-2xl max-h-[92vh] overflow-hidden shadow-dark-lg animate-scale-in" onClick={(e) => e.stopPropagation()}>
+        <div className="relative h-40 sm:h-48">
+          {movie.backdropPath
+            ? <img src={`https://image.tmdb.org/t/p/w780${movie.backdropPath}`} alt={movie.title} className="w-full h-full object-cover" />
+            : <div className="h-full bg-gradient-to-br from-emerald-900 to-slate-900" />
+          }
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
+          <button onClick={onClose} className="absolute top-3 right-3 w-9 h-9 bg-black/40 text-white rounded-full flex items-center justify-center hover:bg-black/60 transition-all">
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+          <div className="absolute top-3 left-3 flex items-center gap-1 bg-emerald-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+            <EyeIcon className="w-3.5 h-3.5" /> Watched
+          </div>
+        </div>
+        <div className="p-5">
+          <div className="flex gap-4">
+            {movie.posterPath
+              ? <img src={`https://image.tmdb.org/t/p/w300${movie.posterPath}`} alt={movie.title} className="w-20 sm:w-28 object-cover rounded-xl shadow-dark flex-shrink-0 -mt-12 sm:-mt-16 ring-2 ring-slate-800" />
+              : <div className="w-20 sm:w-28 bg-slate-800 rounded-xl flex items-center justify-center flex-shrink-0 -mt-12 ring-2 ring-slate-800 min-h-[7rem]"><FilmIcon className="w-8 h-8 text-slate-600" /></div>
+            }
+            <div className="flex-1 min-w-0 pt-2">
+              <h2 className="text-xl font-bold text-white leading-tight mb-1">{movie.title}</h2>
+              {movie.releaseDate && <p className="text-slate-400 text-sm">{new Date(movie.releaseDate).getFullYear()}</p>}
+            </div>
+          </div>
+          {movie.overview && <p className="mt-4 text-slate-400 text-sm leading-relaxed">{movie.overview}</p>}
+          <div className="mt-5">
+            <button onClick={onRemove} className="w-full flex items-center justify-center gap-2 py-2.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 text-sm font-semibold rounded-xl border border-rose-500/30 transition-all">
+              <TrashIcon className="w-4 h-4" /> Remove from Watched
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Watched({ user, onMovieChange }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [movies, setMovies] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const limit = 12;
   const [hasMore, setHasMore] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState(null);
-  const [guestNotice, setGuestNotice] = useState(null);
 
-  const fetchMovies = async () => {
-    if (!user?.uid || user?.isGuest) {
-      setGuestNotice('Sign in to view your watched movies.');
-      setMovies([]);
-      setLoading(false);
-      return;
-    }
-    if (page === 1) setLoading(true);
+  const fetchMovies = async (pageNum = 1) => {
+    if (!user?.uid || user?.isGuest) { setMovies([]); setLoading(false); return; }
+    if (pageNum === 1) setLoading(true);
     try {
-      const res = await fetch(`${API}/api/movies?userId=${user.uid}&status=watched&page=${page}&limit=${limit}`);
+      const res = await fetch(`${API}/api/movies?userId=${user.uid}&status=watched&page=${pageNum}&limit=${limit}`);
       const data = await res.json();
-      if (page === 1) setMovies(Array.isArray(data) ? data : []);
-      else setMovies((prev) => [...prev, ...(Array.isArray(data) ? data : [])]);
+      const xTotal = res.headers.get("X-Total-Count");
+      if (xTotal !== null) setTotalCount(parseInt(xTotal, 10));
+      if (pageNum === 1) setMovies(Array.isArray(data) ? data : []);
+      else setMovies(prev => [...prev, ...(Array.isArray(data) ? data : [])]);
       setHasMore(Array.isArray(data) ? data.length === limit : false);
-    } catch (err) {
-      console.error("Failed to fetch watched movies:", err);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
   };
 
-  useEffect(() => {
-    setPage(1);
-    fetchMovies();
-  }, [user]);
+  useEffect(() => { setPage(1); fetchMovies(1); }, [user]);
+  const loadMore = () => { const next = page + 1; setPage(next); fetchMovies(next); };
 
-  const loadMore = () => {
-    const next = page + 1;
-    setPage(next);
-    fetchMovies(next);
-  };
-
-  const removeMovie = async (id) => {
-    if (!user || user.isGuest) {
-      setGuestNotice('Sign in to manage your watched list.');
-      return;
-    }
-    if (!window.confirm("Are you sure you want to remove this movie from your watched list?")) {
-      return;
-    }
+  const removeMovie = async (id, closeModal = false) => {
+    const movieToRemove = movies.find(m => m._id === id);
     try {
-      const movieToRemove = movies.find((m) => m._id === id);
-      const res = await fetch(`${API}/api/movies/${id}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(`${API}/api/movies/${id}`, { method: "DELETE" });
       if (res.ok) {
-        if (movieToRemove && user) {
+        if (movieToRemove) {
           try {
             const postsRes = await fetch(`${API}/api/posts`);
             const allPosts = await postsRes.json();
-            const associatedPost = allPosts.find(p => 
-              p.userId === user.uid && 
-              p.type === "movie_activity" && 
-              p.movieActivity?.action === "watched" && 
-              String(p.movieActivity?.movie?.tmdbId) === String(movieToRemove.tmdbId)
-            );
-            if (associatedPost) {
-              await fetch(`${API}/api/posts/${associatedPost._id}`, { method: "DELETE" });
-            }
-          } catch (e) {
-            console.error("Cleanup post error:", e);
-          }
+            const ap = allPosts.find(p => p.userId === user.uid && p.type === "movie_activity" && p.movieActivity?.action === "watched" && String(p.movieActivity?.movie?.tmdbId) === String(movieToRemove.tmdbId));
+            if (ap) await fetch(`${API}/api/posts/${ap._id}`, { method: "DELETE" });
+          } catch(e) { console.error(e); }
         }
-        setMovies(movies.filter((m) => m._id !== id));
-        if (onMovieChange) onMovieChange();
-      } else {
-        alert("Failed to remove movie");
-      }
-    } catch {
-      alert("Error removing movie");
-    }
+        setMovies(prev => prev.filter(m => m._id !== id));
+        setTotalCount(prev => Math.max(0, prev - 1));
+        onMovieChange?.();
+        toast.success('Removed from watched');
+        if (closeModal) setSelectedMovie(null);
+      } else { toast.error("Failed to remove movie"); }
+    } catch { toast.error("Error removing movie"); }
   };
 
+  const total = totalCount;
+  const milestones = [10, 25, 50, 100, 250];
+  const nextMilestone = milestones.find(m => m > total);
+  const progress = nextMilestone ? Math.round((total / nextMilestone) * 100) : 100;
+
   return (
-    <div className="max-w-7xl mx-auto p-6">
+    <div className="max-w-7xl mx-auto px-4 py-6">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Watched Movies</h1>
-        <p className="text-gray-600">Movies you've already watched</p>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <EyeIcon className="w-6 h-6 text-emerald-600" />
+          Watched Movies
+        </h1>
+        <p className="text-slate-500 text-sm mt-0.5">Your complete cinema history</p>
       </div>
 
-      {guestNotice && (
-        <div className="mb-6">
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-yellow-800">{guestNotice}</p>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => navigate('/login', { state: { from: location.pathname } })}
-                  className="px-3 py-1 bg-purple-600 text-white rounded text-sm"
-                >
-                  Login
-                </button>
+      {/* Stats banner (only for logged-in users with movies) */}
+      {user?.uid && !user?.isGuest && !loading && movies.length > 0 && (
+        <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-4 mb-6 flex items-center justify-between animate-fade-in">
+          <div>
+            <p className="text-emerald-700 font-semibold">
+              🎬 You've watched <span className="text-2xl font-bold">{total}</span> {total === 1 ? 'movie' : 'movies'}!
+            </p>
+            {nextMilestone && (
+              <p className="text-emerald-600 text-sm mt-0.5">
+                {nextMilestone - total} more to reach {nextMilestone} 🏆
+              </p>
+            )}
+          </div>
+          {nextMilestone && (
+            <div className="hidden sm:block w-24">
+              <div className="w-24 h-24 relative">
+                <svg className="w-24 h-24 -rotate-90" viewBox="0 0 36 36">
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#d1fae5" strokeWidth="3" />
+                  <circle
+                    cx="18" cy="18" r="15.9" fill="none" stroke="#10b981" strokeWidth="3"
+                    strokeDasharray={`${progress} ${100 - progress}`} strokeLinecap="round"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center text-emerald-700 font-bold text-sm">{progress}%</div>
               </div>
             </div>
+          )}
+        </div>
+      )}
+
+      {/* Guest prompt */}
+      {(!user?.uid || user?.isGuest) && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-center mb-6">
+          <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+            <EyeIcon className="w-7 h-7 text-emerald-600" />
           </div>
+          <h3 className="font-semibold text-slate-800 mb-1">Sign in to track watched movies</h3>
+          <p className="text-slate-500 text-sm mb-4">Log every film you've seen and track your progress.</p>
+          <button onClick={() => navigate('/login', { state: { from: location.pathname } })} className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-xl transition-all">
+            Log in
+          </button>
         </div>
       )}
 
       {loading ? (
-        <div className="flex justify-center items-center py-20">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading watched movies...</p>
-          </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          {Array(6).fill(0).map((_, i) => <SkeletonCard key={i} />)}
         </div>
-      ) : movies.length === 0 ? (
+      ) : movies.length === 0 && user?.uid && !user?.isGuest ? (
         <div className="text-center py-20">
-          <div className="mb-4">
-            <svg className="w-16 h-16 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M5 13l4 4L19 7" />
-            </svg>
+          <div className="w-24 h-24 bg-emerald-50 rounded-3xl flex items-center justify-center mx-auto mb-5">
+            <EyeIcon className="w-12 h-12 text-emerald-300" />
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No watched movies yet</h3>
-          <p className="text-gray-600">Movies you mark as watched will appear here</p>
+          <h3 className="text-xl font-bold text-slate-700 mb-2">No movies watched yet</h3>
+          <p className="text-slate-400 text-sm mb-6">Start watching and log your films here.</p>
+          <button onClick={() => navigate('/dashboard/search')} className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-xl transition-all inline-flex items-center gap-2">
+            <FilmIcon className="w-4 h-4" /> Find movies
+          </button>
         </div>
       ) : (
         <>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {movies.map((movie) => (
-            <div
-              key={movie._id}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg hover:scale-105 transition-all duration-200 group"
-            >
-              {/* Movie Poster */}
-              <div className="relative aspect-[2/3] bg-gray-100">
-                {movie.posterPath ? (
-                  <img
-                    src={`https://image.tmdb.org/t/p/w400${movie.posterPath}`}
-                    alt={movie.title}
-                    className="w-full h-full object-cover cursor-pointer"
-                    onClick={() => setSelectedMovie(movie)}
-                  />
-                ) : (
-                  <div
-                    className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center text-gray-500 cursor-pointer"
-                    onClick={() => setSelectedMovie(movie)}
-                  >
-                    <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M7 4V2C7 1.45 7.45 1 8 1H16C16.55 1 17 1.45 17 2V4H20C20.55 4 21 4.45 21 5S20.55 6 20 6H19V19C19 20.1 18.1 21 17 21H7C5.9 21 5 20.1 5 19V6H4C3.45 6 3 5.55 3 5S3.45 4 4 4H7Z" />
-                    </svg>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            {movies.map((movie) => {
+              const year = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : null;
+              return (
+                <div key={movie._id} className="group bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
+                  <div className="relative aspect-[2/3] bg-slate-100 overflow-hidden cursor-pointer" onClick={() => setSelectedMovie(movie)}>
+                    {movie.posterPath
+                      ? <img src={`https://image.tmdb.org/t/p/w400${movie.posterPath}`} alt={movie.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      : <div className="w-full h-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center"><FilmIcon className="w-12 h-12 text-slate-400" /></div>
+                    }
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-end p-3">
+                      <button className="flex items-center gap-1.5 text-white text-xs font-medium bg-white/20 backdrop-blur-sm px-2.5 py-1.5 rounded-full">
+                        <InformationCircleIcon className="w-3.5 h-3.5" /> Details
+                      </button>
+                    </div>
+                    {/* Watched badge */}
+                    <div className="absolute top-2 left-2 bg-emerald-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                      <EyeIcon className="w-3 h-3" />
+                    </div>
                   </div>
-                )}
-
-                {/* Info Button */}
-                <button
-                  onClick={() => setSelectedMovie(movie)}
-                  className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black bg-opacity-60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-opacity-80"
-                  title="View Details"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </button>
-
-                {/* Watched Badge */}
-                <div className="absolute top-3 left-3 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                  Watched
+                  <div className="p-3">
+                    <h3 className="font-semibold text-slate-800 text-sm line-clamp-2 leading-snug mb-1">{movie.title}</h3>
+                    {year && <p className="text-xs text-slate-400 mb-3">{year}</p>}
+                    <button onClick={() => removeMovie(movie._id)} className="w-full flex items-center justify-center gap-1.5 py-1.5 bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 text-xs font-semibold rounded-lg transition-colors">
+                      <TrashIcon className="w-3.5 h-3.5" /> Remove
+                    </button>
+                  </div>
                 </div>
-              </div>
-
-              {/* Movie Info */}
-              <div className="p-4">
-                <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 leading-tight">
-                  {movie.title}
-                </h3>
-                <p className="text-sm text-gray-500 mb-4">
-                  {movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : "N/A"}
-                </p>
-
-                {/* Action Button */}
-                <button
-                  onClick={() => removeMovie(movie._id)}
-                  className="w-full bg-red-600 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                  Remove
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {hasMore && (
-          <div className="text-center py-6">
-            <button
-              onClick={loadMore}
-              disabled={loading}
-              className="px-6 py-2 bg-white border border-gray-200 shadow-sm hover:bg-gray-50 rounded-lg text-green-600 font-medium transition-colors disabled:opacity-50"
-            >
-              {loading ? "Loading..." : "Load More"}
-            </button>
+              );
+            })}
           </div>
-        )}
+          {hasMore && (
+            <div className="text-center mt-8">
+              <button onClick={loadMore} disabled={loading} className="px-6 py-2.5 bg-white border border-slate-200 shadow-sm hover:bg-slate-50 rounded-xl text-emerald-600 font-medium text-sm transition-all disabled:opacity-50">
+                {loading ? 'Loading...' : 'Load more'}
+              </button>
+            </div>
+          )}
         </>
       )}
 
-      {/* Enhanced Movie Details Modal (same style as Search.jsx) */}
       {selectedMovie && (
-  <div
-    className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center p-2 sm:p-4 z-50"
-    onClick={() => setSelectedMovie(null)}
-  >
-    <div
-      className="bg-white rounded-xl sm:rounded-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden shadow-2xl mx-2 sm:mx-0"
-      onClick={(e) => e.stopPropagation()}
-    >
-      {/* Modal Header */}
-      <div className="relative">
-        {selectedMovie.backdropPath ? (
-          <div className="relative h-32 sm:h-48 bg-gradient-to-t from-black/60 to-transparent">
-            <img
-              src={`https://image.tmdb.org/t/p/w780${selectedMovie.backdropPath}`}
-              alt={selectedMovie.title}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-          </div>
-        ) : (
-          <div className="h-32 sm:h-48 bg-gradient-to-br from-green-600 to-blue-600"></div>
-        )}
-        
-        <button
-          onClick={() => setSelectedMovie(null)}
-          className="absolute top-2 right-2 sm:top-4 sm:right-4 w-8 h-8 sm:w-10 sm:h-10 bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all"
-        >
-          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-
-      {/* Modal Content */}
-      <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(95vh-8rem)] sm:max-h-[calc(90vh-12rem)]">
-        <div className="flex gap-4 sm:gap-6 mb-4 sm:mb-6">
-          {/* Poster */}
-          {selectedMovie.posterPath ? (
-            <img
-              src={`https://image.tmdb.org/t/p/w300${selectedMovie.posterPath}`}
-              alt={selectedMovie.title}
-              className="w-24 h-36 sm:w-32 sm:h-48 object-cover rounded-lg sm:rounded-xl shadow-lg flex-shrink-0"
-            />
-          ) : (
-            <div className="w-24 h-36 sm:w-32 sm:h-48 bg-gray-200 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
-              <svg className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M7 4V2C7 1.45 7.45 1 8 1H16C16.55 1 17 1.45 17 2V4H20C20.55 4 21 4.45 21 5S20.55 6 20 6H19V19C19 20.1 18.1 21 17 21H7C5.9 21 5 20.1 5 19V6H4C3.45 6 3 5.55 3 5S3.45 4 4 4H7Z" />
-              </svg>
-            </div>
-          )}
-
-          {/* Movie Info */}
-          <div className="flex-1">
-            <h3 className="text-xl sm:text-2xl font-bold mb-2 leading-tight">{selectedMovie.title}</h3>
-            <p className="text-gray-600 mb-2 text-sm sm:text-base">
-              {selectedMovie.releaseDate ? new Date(selectedMovie.releaseDate).toDateString() : "N/A"}
-            </p>
-            {selectedMovie.genre_ids && (
-              <p className="text-gray-600 mb-2 text-sm sm:text-base">
-                Genres: {selectedMovie.genre_ids.map(id => genreMap[id]).join(", ") || "N/A"}
-              </p>
-            )}
-            {/* Description - Desktop only (hidden on mobile) */}
-            <p className="hidden sm:block text-gray-700 text-sm sm:text-base leading-relaxed mb-4">
-              {selectedMovie.overview || "No description available."}
-            </p>
-
-            {/* Action Button - Desktop only */}
-            <div className="hidden sm:block mt-4">
-              <button
-                onClick={() => {
-                  removeMovie(selectedMovie._id);
-                  setSelectedMovie(null);
-                }}
-                className="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition-all flex items-center justify-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-                Remove from Watched
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Description - Mobile only (hidden on desktop) */}
-        <div className="block sm:hidden mb-6">
-          <p className="text-gray-700 text-sm leading-relaxed">
-            {selectedMovie.overview || "No description available."}
-          </p>
-        </div>
-
-        {/* Action Button - Mobile only */}
-        <div className="block sm:hidden">
-          <button
-            onClick={() => {
-              removeMovie(selectedMovie._id);
-              setSelectedMovie(null);
-            }}
-            className="w-full bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 transition-all flex items-center justify-center gap-2 text-sm"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-            Remove from Watched
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
+        <MovieModal movie={selectedMovie} onClose={() => setSelectedMovie(null)} onRemove={() => removeMovie(selectedMovie._id, true)} />
+      )}
     </div>
   );
 }

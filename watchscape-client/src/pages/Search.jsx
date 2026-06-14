@@ -1,28 +1,199 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from 'react-router-dom';
 import { API } from "../config";
+import toast from 'react-hot-toast';
+import {
+  MagnifyingGlassIcon, XMarkIcon, FireIcon, FilmIcon,
+  BookmarkIcon, EyeIcon, StarIcon, InformationCircleIcon
+} from "@heroicons/react/24/outline";
 
-// Genre mapping for TMDB
 const genreMap = {
-  28: "Action",
-  12: "Adventure",
-  16: "Animation",
-  35: "Comedy",
-  80: "Crime",
-  18: "Drama",
-  10751: "Family",
-  14: "Fantasy",
-  36: "History",
-  27: "Horror",
-  10402: "Music",
-  9648: "Mystery",
-  10749: "Romance",
-  878: "Sci-Fi",
-  10770: "TV Movie",
-  53: "Thriller",
-  10752: "War",
-  37: "Western"
+  28:"Action",12:"Adventure",16:"Animation",35:"Comedy",80:"Crime",
+  18:"Drama",10751:"Family",14:"Fantasy",36:"History",27:"Horror",
+  10402:"Music",9648:"Mystery",10749:"Romance",878:"Sci-Fi",
+  10770:"TV Movie",53:"Thriller",10752:"War",37:"Western"
 };
+
+// Skeleton card
+function SkeletonCard() {
+  return (
+    <div className="rounded-xl overflow-hidden bg-white border border-slate-200 animate-pulse">
+      <div className="aspect-[2/3] bg-slate-200 skeleton-light" />
+      <div className="p-3 space-y-2">
+        <div className="h-3.5 bg-slate-200 rounded skeleton-light" />
+        <div className="h-3 bg-slate-200 rounded w-2/3 skeleton-light" />
+        <div className="h-7 bg-slate-200 rounded-lg skeleton-light" />
+        <div className="h-7 bg-slate-200 rounded-lg skeleton-light" />
+      </div>
+    </div>
+  );
+}
+
+// Movie Details Modal
+function MovieModal({ movie, onClose, onAdd, fieldMap = {} }) {
+  if (!movie) return null;
+  const posterPath = movie.poster_path || movie.posterPath;
+  const backdropPath = movie.backdrop_path || movie.backdropPath;
+  const releaseDate = movie.release_date || movie.releaseDate;
+  const genreIds = movie.genre_ids;
+  const overview = movie.overview;
+  const title = movie.title;
+  const rating = movie.vote_average;
+
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-end sm:items-center p-0 sm:p-4 z-50 animate-fade-in" onClick={onClose}>
+      <div
+        className="bg-slate-900 border border-slate-800 rounded-t-2xl sm:rounded-2xl w-full max-w-2xl max-h-[92vh] overflow-hidden shadow-dark-lg animate-scale-in"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Backdrop */}
+        <div className="relative h-40 sm:h-52">
+          {backdropPath ? (
+            <img src={`https://image.tmdb.org/t/p/w780${backdropPath}`} alt={title} className="w-full h-full object-cover" />
+          ) : (
+            <div className="h-full bg-gradient-to-br from-violet-900 to-slate-900" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
+          <button
+            onClick={onClose}
+            className="absolute top-3 right-3 w-9 h-9 bg-black/40 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-black/60 transition-all"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+          {rating > 0 && (
+            <div className="absolute top-3 left-3 flex items-center gap-1 bg-amber-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+              <StarIcon className="w-3.5 h-3.5 fill-white stroke-none" />
+              {rating.toFixed(1)}
+            </div>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(92vh-10rem)] sm:max-h-[calc(90vh-13rem)]">
+          <div className="flex gap-4 sm:gap-5">
+            {/* Poster */}
+            {posterPath ? (
+              <img
+                src={`https://image.tmdb.org/t/p/w300${posterPath}`}
+                alt={title}
+                className="w-20 h-30 sm:w-28 sm:h-40 object-cover rounded-xl shadow-dark flex-shrink-0 -mt-12 sm:-mt-16 ring-2 ring-slate-800"
+              />
+            ) : (
+              <div className="w-20 h-30 sm:w-28 sm:h-40 bg-slate-800 rounded-xl flex items-center justify-center flex-shrink-0 -mt-12 sm:-mt-16">
+                <FilmIcon className="w-8 h-8 text-slate-600" />
+              </div>
+            )}
+            <div className="flex-1 min-w-0 pt-2">
+              <h2 className="text-xl sm:text-2xl font-bold text-white leading-tight mb-1">{title}</h2>
+              {releaseDate && (
+                <p className="text-slate-400 text-sm">{new Date(releaseDate).getFullYear()}</p>
+              )}
+              {genreIds && genreIds.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {genreIds.slice(0, 3).map(id => genreMap[id] && (
+                    <span key={id} className="px-2 py-0.5 bg-violet-600/20 text-violet-300 text-xs rounded-full border border-violet-600/30">
+                      {genreMap[id]}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {overview && (
+            <p className="mt-4 text-slate-400 text-sm leading-relaxed">{overview}</p>
+          )}
+
+          {/* Actions */}
+          {onAdd && (
+            <div className="flex gap-3 mt-5">
+              <button
+                onClick={() => onAdd(movie, 'watchlist')}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold rounded-xl transition-all duration-200 hover:shadow-brand"
+              >
+                <BookmarkIcon className="w-4 h-4" />
+                Watchlist
+              </button>
+              <button
+                onClick={() => onAdd(movie, 'watched')}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-xl transition-all duration-200"
+              >
+                <EyeIcon className="w-4 h-4" />
+                Watched
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Movie card
+function MovieCard({ movie, onDetails, onAdd, posterKey = 'poster_path' }) {
+  const posterPath = movie[posterKey] || movie.poster_path || movie.posterPath;
+  const rating = movie.vote_average;
+  const year = (movie.release_date || movie.releaseDate)
+    ? new Date(movie.release_date || movie.releaseDate).getFullYear() : null;
+
+  return (
+    <div className="group bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
+      {/* Poster */}
+      <div className="relative aspect-[2/3] bg-slate-100 overflow-hidden cursor-pointer" onClick={() => onDetails(movie)}>
+        {posterPath ? (
+          <img
+            src={`https://image.tmdb.org/t/p/w400${posterPath}`}
+            alt={movie.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center">
+            <FilmIcon className="w-12 h-12 text-slate-400" />
+          </div>
+        )}
+        {/* Overlay on hover */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-end p-3">
+          <button
+            onClick={(e) => { e.stopPropagation(); onDetails(movie); }}
+            className="flex items-center gap-1.5 text-white text-xs font-medium bg-white/20 backdrop-blur-sm px-2.5 py-1.5 rounded-full hover:bg-white/30 transition-colors"
+          >
+            <InformationCircleIcon className="w-3.5 h-3.5" />
+            Details
+          </button>
+        </div>
+        {/* Rating badge */}
+        {rating > 0 && (
+          <div className="absolute top-2 left-2 flex items-center gap-0.5 bg-amber-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
+            <StarIcon className="w-3 h-3 fill-white stroke-none" />
+            {rating.toFixed(1)}
+          </div>
+        )}
+      </div>
+
+      {/* Info */}
+      <div className="p-3">
+        <h3 className="font-semibold text-slate-800 text-sm line-clamp-2 leading-snug mb-1">{movie.title}</h3>
+        {year && <p className="text-xs text-slate-400 mb-3">{year}</p>}
+        <div className="space-y-1.5">
+          <button
+            onClick={() => onAdd(movie, 'watchlist')}
+            className="w-full flex items-center justify-center gap-1.5 py-1.5 bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold rounded-lg transition-colors"
+          >
+            <BookmarkIcon className="w-3.5 h-3.5" />
+            Watchlist
+          </button>
+          <button
+            onClick={() => onAdd(movie, 'watched')}
+            className="w-full flex items-center justify-center gap-1.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition-colors"
+          >
+            <EyeIcon className="w-3.5 h-3.5" />
+            Watched
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Search({ user, onMovieChange }) {
   const navigate = useNavigate();
@@ -33,419 +204,167 @@ export default function Search({ user, onMovieChange }) {
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
 
-  // Fetch popular movies
   const fetchPopular = async () => {
     setLoading(true);
     try {
       const res = await fetch(`${API}/api/movies/popular`);
       const data = await res.json();
-      setResults(data);
-      setIsSearching(false);
-    } catch (err) {
-      console.error("Failed to fetch popular movies:", err);
-      alert("Failed to load popular movies");
-    }
+      setResults(data); setIsSearching(false);
+    } catch (err) { console.error(err); toast.error("Failed to load popular movies"); }
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchPopular();
-  }, []);
+  useEffect(() => { fetchPopular(); }, []);
 
   const searchMovies = async (e) => {
     e.preventDefault();
     if (!query.trim()) return;
-
-    setIsSearching(true);
-    setLoading(true);
+    setIsSearching(true); setLoading(true);
     try {
       const res = await fetch(`${API}/api/movies/search?q=${encodeURIComponent(query)}`);
       const data = await res.json();
       setResults(data);
-    } catch (err) {
-      console.error("Search error:", err);
-      alert("Failed to fetch movies");
-    }
+    } catch (err) { console.error(err); toast.error("Failed to search movies"); }
     setLoading(false);
   };
 
   const addMovie = async (movie, status) => {
     if (!user || user.isGuest) {
-      const goLogin = window.confirm('You must sign in to add movies to lists.\n\nPress OK to go to Login, or Cancel to continue browsing as a guest.');
-      if (goLogin) navigate('/login', { state: { from: location.pathname } });
+      toast.error('Sign in to add movies to your lists');
+      navigate('/login', { state: { from: location.pathname } });
       return;
     }
+    const loadingToast = toast.loading(`Adding to ${status}...`);
     try {
-      // Before adding to the new list, remove it from the other list if it exists
       const otherStatus = status === "watchlist" ? "watched" : "watchlist";
       const checkRes = await fetch(`${API}/api/movies?userId=${user.uid}&status=${otherStatus}`);
-      
       if (checkRes.ok) {
         const otherList = await checkRes.json();
-        const existingMovie = otherList.find(m => String(m.tmdbId) === String(movie.id));
-        
-        if (existingMovie) {
-          await fetch(`${API}/api/movies/${existingMovie._id}`, { method: "DELETE" });
-
-          // Clean up the associated post
+        const existing = otherList.find(m => String(m.tmdbId) === String(movie.id));
+        if (existing) {
+          await fetch(`${API}/api/movies/${existing._id}`, { method: "DELETE" });
           try {
             const postsRes = await fetch(`${API}/api/posts`);
             const allPosts = await postsRes.json();
-            const associatedPost = allPosts.find(p => 
-              p.userId === user.uid && 
-              p.type === "movie_activity" && 
-              p.movieActivity?.action === otherStatus && 
-              String(p.movieActivity?.movie?.tmdbId) === String(movie.id)
-            );
-            if (associatedPost) {
-              await fetch(`${API}/api/posts/${associatedPost._id}`, { method: "DELETE" });
-            }
-          } catch (e) {
-            console.error("Cleanup post error:", e);
-          }
+            const ap = allPosts.find(p => p.userId === user.uid && p.type === "movie_activity" && p.movieActivity?.action === otherStatus && String(p.movieActivity?.movie?.tmdbId) === String(movie.id));
+            if (ap) await fetch(`${API}/api/posts/${ap._id}`, { method: "DELETE" });
+          } catch(e) { console.error(e); }
         }
       }
-
       const res = await fetch(`${API}/api/posts/movie-activity`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tmdbId: movie.id,
-          title: movie.title,
-          posterPath: movie.poster_path,
-          releaseDate: movie.release_date,
-          overview: movie.overview || '',
-          userId: user.uid,
-          status,
-        }),
+        body: JSON.stringify({ tmdbId: movie.id, title: movie.title, posterPath: movie.poster_path, releaseDate: movie.release_date, overview: movie.overview || '', userId: user.uid, status }),
       });
+      toast.dismiss(loadingToast);
       if (res.ok) {
-        alert(`Movie added to your ${status}!`);
+        toast.success(`Added to ${status}! 🎬`);
         onMovieChange?.();
+        setSelectedMovie(null);
       } else {
         const errData = await res.json();
         if (errData.message === 'Movie already in this list') {
-          alert(`Movie is already in your ${status}!`);
-          onMovieChange?.(); // Trigger change to reflect cross-list deletion
-        } else {
-          alert(errData.message || "Failed to add movie");
-        }
+          toast.success(`Already in your ${status}`);
+          onMovieChange?.();
+        } else { toast.error(errData.message || "Failed to add movie"); }
       }
-    } catch (error) {
-      console.error(error);
-      alert("Error adding movie");
-    }
+    } catch (error) { toast.dismiss(loadingToast); toast.error("Error adding movie"); }
   };
 
-  const clearSearch = () => {
-    setQuery("");
-    setIsSearching(false);
-    fetchPopular();
-  };
+  const clearSearch = () => { setQuery(""); setIsSearching(false); fetchPopular(); };
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
+    <div className="max-w-7xl mx-auto px-4 py-6">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Discover Movies</h1>
-        <p className="text-gray-600">Search for movies and add them to your watchlist or mark as watched</p>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-900 mb-1">Discover Movies</h1>
+        <p className="text-slate-500 text-sm">Search for films and add them to your lists</p>
       </div>
 
-      {/* Search Bar */}
-      <div className="mb-8">
-        <div className="flex gap-3 max-w-2xl">
+      {/* Search bar */}
+      <form onSubmit={searchMovies} className="mb-6">
+        <div className="flex gap-2 max-w-2xl">
           <div className="flex-1 relative">
+            <MagnifyingGlassIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400 w-5 h-5 pointer-events-none" />
             <input
               type="text"
               placeholder="Search for movies..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && searchMovies(e)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all text-lg"
+              className="w-full pl-10 pr-10 py-3 bg-white border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400 transition-all shadow-sm"
             />
             {query && (
-              <button
-                type="button"
-                onClick={clearSearch}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+              <button type="button" onClick={clearSearch} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
+                <XMarkIcon className="w-4 h-4" />
               </button>
             )}
           </div>
           <button
-            type="button"
-            onClick={searchMovies}
+            type="submit"
             disabled={loading || !query.trim()}
-            className="px-8 py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+            className="px-6 py-3 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all duration-200 hover:shadow-brand flex items-center gap-2 text-sm"
           >
-            {loading ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                {isSearching ? "Searching..." : "Loading..."}
-              </>
-            ) : (
-              <>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                Search
-              </>
-            )}
+            {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <MagnifyingGlassIcon className="w-4 h-4" />}
+            {loading && isSearching ? 'Searching...' : 'Search'}
           </button>
         </div>
-      </div>
+      </form>
 
-      {/* Results Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">
-            {isSearching ? `Search Results for "${query}"` : "Popular Movies"}
+      {/* Results header */}
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-2">
+          {!isSearching && <FireIcon className="w-5 h-5 text-orange-500" />}
+          <h2 className="text-lg font-bold text-slate-800">
+            {isSearching ? `Results for "${query}"` : "Trending Now"}
           </h2>
-          <p className="text-gray-600 mt-1">
-            {isSearching ? `Found ${results.length} movies` : "Currently trending movies"}
-          </p>
+          {!loading && <span className="text-sm text-slate-400">({results.length})</span>}
         </div>
         {isSearching && (
-          <button
-            onClick={clearSearch}
-            className="text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Back to Popular
+          <button onClick={clearSearch} className="text-sm text-violet-600 hover:text-violet-500 font-medium flex items-center gap-1 transition-colors">
+            ← Popular movies
           </button>
         )}
       </div>
 
-      {/* Loading State */}
+      {/* Grid / Skeletons / Empty */}
       {loading ? (
-        <div className="flex justify-center items-center py-20">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">{isSearching ? "Searching movies..." : "Loading popular movies..."}</p>
-          </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          {Array(12).fill(0).map((_, i) => <SkeletonCard key={i} />)}
         </div>
-      ) : (
-        /* Movie Grid */
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+      ) : results.length > 0 ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {results.map((movie) => (
-            <div
+            <MovieCard
               key={movie.id}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg hover:scale-105 transition-all duration-200 group"
-            >
-              {/* Movie Poster */}
-              <div className="relative aspect-[2/3] bg-gray-100">
-                {movie.poster_path ? (
-                  <img
-                    src={`https://image.tmdb.org/t/p/w400${movie.poster_path}`}
-                    alt={movie.title}
-                    className="w-full h-full object-cover cursor-pointer"
-                    onClick={() => setSelectedMovie(movie)}
-                  />
-                ) : (
-                  <div
-                    className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center text-gray-500 cursor-pointer"
-                    onClick={() => setSelectedMovie(movie)}
-                  >
-                    <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M7 4V2C7 1.45 7.45 1 8 1H16C16.55 1 17 1.45 17 2V4H20C20.55 4 21 4.45 21 5S20.55 6 20 6H19V19C19 20.1 18.1 21 17 21H7C5.9 21 5 20.1 5 19V6H4C3.45 6 3 5.55 3 5S3.45 4 4 4H7Z" />
-                    </svg>
-                  </div>
-                )}
-
-                {/* Info Button */}
-                <button
-                  onClick={() => setSelectedMovie(movie)}
-                  className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black bg-opacity-60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-opacity-80"
-                  title="View Details"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </button>
-
-                {/* Rating Badge */}
-                {movie.vote_average > 0 && (
-                  <div className="absolute top-3 left-3 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                    {movie.vote_average.toFixed(1)}
-                  </div>
-                )}
-              </div>
-
-              {/* Movie Info */}
-              <div className="p-4">
-                <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 leading-tight">
-                  {movie.title}
-                </h3>
-                <p className="text-sm text-gray-500 mb-4">
-                  {movie.release_date ? new Date(movie.release_date).getFullYear() : "N/A"}
-                </p>
-
-                {/* Action Buttons */}
-                <div className="space-y-2">
-                  <button
-                    onClick={() => addMovie(movie, "watchlist")}
-                    className="w-full bg-purple-600 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    Add to Watchlist
-                  </button>
-                  <button
-                    onClick={() => addMovie(movie, "watched")}
-                    className="w-full bg-green-600 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Mark as Watched
-                  </button>
-                </div>
-              </div>
-            </div>
+              movie={movie}
+              onDetails={setSelectedMovie}
+              onAdd={addMovie}
+            />
           ))}
         </div>
-      )}
-
-      {/* Empty State */}
-      {!loading && results.length === 0 && isSearching && (
+      ) : isSearching ? (
         <div className="text-center py-20">
-          <div className="mb-4">
-            <svg className="w-16 h-16 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+          <div className="w-20 h-20 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <MagnifyingGlassIcon className="w-10 h-10 text-slate-300" />
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No movies found</h3>
-          <p className="text-gray-600 mb-4">Try searching with different keywords</p>
-          <button
-            onClick={clearSearch}
-            className="text-purple-600 hover:text-purple-700 font-medium"
-          >
-            Browse popular movies instead
+          <h3 className="text-lg font-semibold text-slate-700 mb-2">No movies found</h3>
+          <p className="text-slate-500 text-sm mb-4">Try different keywords</p>
+          <button onClick={clearSearch} className="text-violet-600 hover:text-violet-500 font-medium text-sm transition-colors">
+            Browse trending instead
           </button>
         </div>
+      ) : null}
+
+      {/* Movie Modal */}
+      {selectedMovie && (
+        <MovieModal
+          movie={selectedMovie}
+          onClose={() => setSelectedMovie(null)}
+          onAdd={(movie, status) => { addMovie(movie, status); }}
+        />
       )}
-
-      {/* Movie Details Modal */}
-{/* Movie Details Modal */}
-{selectedMovie && (
-  <div
-    className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center p-2 sm:p-4 z-50"
-    onClick={() => setSelectedMovie(null)}
-  >
-    <div
-      className="bg-white rounded-xl sm:rounded-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden shadow-2xl mx-2 sm:mx-0"
-      onClick={(e) => e.stopPropagation()}
-    >
-      {/* Modal Header */}
-      <div className="relative">
-        {selectedMovie.backdrop_path ? (
-          <div className="relative h-32 sm:h-48 bg-gradient-to-t from-black/60 to-transparent">
-            <img
-              src={`https://image.tmdb.org/t/p/w780${selectedMovie.backdrop_path}`}
-              alt={selectedMovie.title}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-          </div>
-        ) : (
-          <div className="h-32 sm:h-48 bg-gradient-to-br from-purple-600 to-blue-600"></div>
-        )}
-        
-        <button
-          onClick={() => setSelectedMovie(null)}
-          className="absolute top-2 right-2 sm:top-4 sm:right-4 w-8 h-8 sm:w-10 sm:h-10 bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all"
-        >
-          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-
-      {/* Modal Content */}
-      <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(95vh-8rem)] sm:max-h-[calc(90vh-12rem)]">
-        <div className="flex gap-4 sm:gap-6 mb-4 sm:mb-6">
-          {/* Poster */}
-          {selectedMovie.poster_path ? (
-            <img
-              src={`https://image.tmdb.org/t/p/w300${selectedMovie.poster_path}`}
-              alt={selectedMovie.title}
-              className="w-24 h-36 sm:w-32 sm:h-48 object-cover rounded-lg sm:rounded-xl shadow-lg flex-shrink-0"
-            />
-          ) : (
-            <div className="w-24 h-36 sm:w-32 sm:h-48 bg-gray-200 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
-              <svg className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M7 4V2C7 1.45 7.45 1 8 1H16C16.55 1 17 1.45 17 2V4H20C20.55 4 21 4.45 21 5S20.55 6 20 6H19V19C19 20.1 18.1 21 17 21H7C5.9 21 5 20.1 5 19V6H4C3.45 6 3 5.55 3 5S3.45 4 4 4H7Z" />
-              </svg>
-            </div>
-          )}
-
-          {/* Movie Info */}
-          <div className="flex-1">
-            <h3 className="text-xl sm:text-2xl font-bold mb-2 leading-tight">{selectedMovie.title}</h3>
-            <p className="text-gray-600 mb-2 text-sm sm:text-base">
-              {selectedMovie.release_date ? new Date(selectedMovie.release_date).toDateString() : "N/A"}
-            </p>
-            <p className="text-gray-600 mb-2 text-sm sm:text-base">
-              Genres: {selectedMovie.genre_ids?.map(id => genreMap[id]).join(", ") || "N/A"}
-            </p>
-            {/* Description - Desktop only (hidden on mobile) */}
-            <p className="hidden sm:block text-gray-700 text-sm sm:text-base leading-relaxed mb-4">
-              {selectedMovie.overview || "No description available."}
-            </p>
-
-            {/* Action Buttons - Desktop only */}
-            <div className="hidden sm:flex mt-4 gap-3">
-              <button
-                onClick={() => addMovie(selectedMovie, "watchlist")}
-                className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition-all"
-              >
-                Add to Watchlist
-              </button>
-              <button
-                onClick={() => addMovie(selectedMovie, "watched")}
-                className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-all"
-              >
-                Mark as Watched
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Description - Mobile only (hidden on desktop) */}
-        <div className="block sm:hidden mb-6">
-          <p className="text-gray-700 text-sm leading-relaxed">
-            {selectedMovie.overview || "No description available."}
-          </p>
-        </div>
-
-        {/* Action Buttons - Mobile only */}
-        <div className="block sm:hidden flex flex-col gap-3">
-          <button
-            onClick={() => addMovie(selectedMovie, "watchlist")}
-            className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-all text-sm"
-          >
-            Add to Watchlist
-          </button>
-          <button
-            onClick={() => addMovie(selectedMovie, "watched")}
-            className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-all text-sm"
-          >
-            Mark as Watched
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
     </div>
   );
 }
+
+export { MovieCard, MovieModal, SkeletonCard };

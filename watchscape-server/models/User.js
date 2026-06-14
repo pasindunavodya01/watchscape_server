@@ -5,6 +5,7 @@ const userSchema = new mongoose.Schema({
   email: String,
   name: String,
   profilePic: { type: String, default: "" },
+  coverPic: { type: String, default: "" },
   country: String,
   age: Number,
   followers: { type: [String], default: [] }, // uids of followers

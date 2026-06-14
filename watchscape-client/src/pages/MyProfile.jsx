@@ -15,10 +15,12 @@ import {
   PencilIcon,
   InformationCircleIcon,
   StarIcon,
-  CameraIcon
+  CameraIcon,
+  PowerIcon
 } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartSolid } from "@heroicons/react/24/solid";
 import { API } from "../config";
+import toast from 'react-hot-toast';
 
 // Genre mapping for TMDB
 const genreMap = {
@@ -33,7 +35,7 @@ const ensureAbsoluteUrl = (url) => {
   return url.startsWith("http://") || url.startsWith("https://") ? url : `https://${url}`;
 };
 
-export default function MyProfile({ user }) {
+export default function MyProfile({ user, onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [profile, setProfile] = useState(null);
@@ -64,7 +66,9 @@ export default function MyProfile({ user }) {
   const [showComments, setShowComments] = useState({});
   const [selectedPostMovie, setSelectedPostMovie] = useState(null);
   const fileInputRef = useRef(null);
+  const coverInputRef = useRef(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [showFullProfilePic, setShowFullProfilePic] = useState(null);
   const [editBio, setEditBio] = useState("");
@@ -114,6 +118,48 @@ export default function MyProfile({ user }) {
       alert("Failed to upload image");
     } finally {
       setUploadingImage(false);
+    }
+  };
+
+  const handleCoverUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploadingCover(true);
+    const formData = new FormData();
+
+    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+
+    formData.append("file", file);
+    formData.append("upload_preset", uploadPreset); 
+    formData.append("cloud_name", cloudName); 
+
+    try {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      
+      if (data.secure_url) {
+        await fetch(`${API}/api/users/${user.uid}/cover-pic`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ coverPic: data.secure_url }),
+        });
+        
+        setProfile(prev => ({
+          ...prev,
+          user: { ...prev.user, coverPic: data.secure_url }
+        }));
+        toast.success("Cover picture updated successfully!");
+      }
+    } catch (error) {
+      console.error("Cover upload error:", error);
+      toast.error("Failed to upload cover image");
+    } finally {
+      setUploadingCover(false);
     }
   };
 
@@ -230,44 +276,41 @@ export default function MyProfile({ user }) {
         }),
       });
       if (!res.ok) throw new Error("Failed to pin movie");
-      alert("Movie pinned successfully!");
+      toast.success('Movie pinned to your profile! 📌');
       fetchProfile();
       setSearchQuery("");
       setSearchResults([]);
     } catch (err) {
       console.error("Error pinning movie:", err);
-      alert("Failed to pin movie");
+      toast.error("Failed to pin movie");
     }
   };
 
   // Unpin movie
   const unpinMovie = async (tmdbId) => {
-    if (!window.confirm("Are you sure you want to unpin this movie?")) return;
     try {
       const res = await fetch(`${API}/api/users/${user.uid}/pin-film/${tmdbId}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to unpin movie");
-      alert("Movie unpinned successfully!");
+      toast.success('Movie unpinned');
       fetchProfile();
     } catch (err) {
       console.error("Error unpinning movie:", err);
-      alert("Failed to unpin movie");
+      toast.error("Failed to unpin movie");
     }
   };
 
   // Delete post
   const deletePost = async (postId) => {
-    if (!window.confirm("Are you sure you want to delete this post?")) return;
-    
     try {
       const res = await fetch(`${API}/api/posts/${postId}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete post");
       setPosts((prev) => prev.filter((p) => p._id !== postId));
-      alert("Post deleted successfully!");
+      toast.success('Post deleted');
     } catch (err) {
       console.error(err);
-      alert("Failed to delete post");
+      toast.error("Failed to delete post");
     }
   };
 
@@ -797,7 +840,7 @@ export default function MyProfile({ user }) {
     return (
       <div className="max-w-4xl mx-auto p-4">
         <div className="flex justify-center items-center py-20">
-          <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-4 border-violet-600 border-t-transparent rounded-full animate-spin"></div>
         </div>
       </div>
     );
@@ -814,183 +857,201 @@ export default function MyProfile({ user }) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4 space-y-8">
-      {/* Header */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <div className="flex items-start sm:items-center gap-4 flex-col sm:flex-row">
-          <div className="relative flex-shrink-0 group">
-            <div 
-              className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center cursor-pointer overflow-hidden shadow-inner hover:scale-[1.02] transition-transform"
-              onClick={() => {
-                if (profile.user.profilePic) {
-                  setShowFullProfilePic(profile.user.profilePic);
-                }
-              }}
-              title={profile.user.profilePic ? "Click to view full size" : ""}
-            >
-              {profile.user.profilePic ? (
-                <img src={profile.user.profilePic} alt="Profile" className="w-full h-full object-cover" />
-              ) : (
-                <UserIcon className="w-10 h-10 sm:w-12 sm:h-12 text-white" />
+    <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+      {/* Profile Header Card */}
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+        {/* Cover banner with upload trigger */}
+        <div className="relative h-32 sm:h-40 bg-slate-800 overflow-hidden group/cover">
+          {profile.user.coverPic ? (
+            <img src={profile.user.coverPic} alt="Cover" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-r from-violet-600 via-fuchsia-600 to-blue-600" />
+          )}
+          <button
+            onClick={() => coverInputRef.current?.click()}
+            className="absolute bottom-3 right-3 p-2 bg-black/50 hover:bg-black/70 text-white rounded-xl shadow-md backdrop-blur-sm transition-all flex items-center gap-1 text-xs font-semibold border border-white/20 opacity-0 group-hover/cover:opacity-100"
+            title="Change Cover Picture"
+          >
+            {uploadingCover ? (
+              <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <>
+                <CameraIcon className="w-3.5 h-3.5" />
+                <span>Change Cover</span>
+              </>
+            )}
+          </button>
+          <input type="file" ref={coverInputRef} className="hidden" accept="image/*" onChange={handleCoverUpload} />
+        </div>
+        <div className="px-5 pb-5">
+          <div className="flex items-end justify-between -mt-12 mb-4">
+            {/* Avatar with camera button */}
+            <div className="relative flex-shrink-0 group">
+              <div
+                className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl flex items-center justify-center cursor-pointer overflow-hidden ring-4 ring-white shadow-lg hover:scale-[1.02] transition-transform"
+                onClick={() => { if (profile.user.profilePic) setShowFullProfilePic(profile.user.profilePic); }}
+                title={profile.user.profilePic ? "Click to view full size" : ""}
+              >
+                {profile.user.profilePic ? (
+                  <img src={profile.user.profilePic} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <UserIcon className="w-10 h-10 sm:w-12 sm:h-12 text-white" />
+                )}
+              </div>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute bottom-0 right-0 p-1.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl shadow-md border-2 border-white transition-colors"
+                title="Change Profile Picture"
+              >
+                {uploadingImage ? (
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <CameraIcon className="w-3.5 h-3.5" />
+                )}
+              </button>
+              <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
+            </div>
+            {/* Action buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsEditingProfile(true)}
+                className="flex items-center gap-1.5 px-4 py-2 bg-violet-50 text-violet-700 hover:bg-violet-100 rounded-xl text-sm font-semibold border border-violet-200 transition-all"
+              >
+                <PencilIcon className="w-4 h-4" />
+                <span>Edit Profile</span>
+              </button>
+              {onLogout && (
+                <button
+                  onClick={onLogout}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-xl text-sm font-semibold transition-all"
+                >
+                  <PowerIcon className="w-4 h-4" />
+                  <span>Log out</span>
+                </button>
               )}
             </div>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="absolute bottom-0 right-0 p-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-md border-2 border-white transition-colors"
-              title="Change Profile Picture"
-            >
-              {uploadingImage ? (
-                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              ) : (
-                <CameraIcon className="w-3.5 h-3.5" />
-              )}
-            </button>
-            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
           </div>
-          <div className="flex-1 w-full">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-              {profile.user.name || profile.user.username || "My Profile"}
-            </h1>
-            
-            {profile.user.bio && (
-              <p className="text-gray-600 mt-2 text-sm sm:text-base max-w-2xl whitespace-pre-wrap">{profile.user.bio}</p>
-            )}
 
+          {/* Name & bio */}
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
+            {profile.user.name || profile.user.username || "My Profile"}
+          </h1>
+          {profile.user.bio && (
+            <p className="text-slate-500 mt-1 text-sm max-w-2xl leading-relaxed">{profile.user.bio}</p>
+          )}
+
+          {/* Social links */}
           {(profile.user.socialLinks?.facebook || profile.user.socialLinks?.instagram || profile.user.socialLinks?.github || profile.user.socialLinks?.website || profile.user.socialLinks?.custom?.length > 0) && (
-            <div className="flex items-center gap-4 mt-3 flex-wrap">
-                {profile.user.socialLinks.instagram && (
-                  <a href={ensureAbsoluteUrl(profile.user.socialLinks.instagram)} target="_blank" rel="noopener noreferrer" className="text-pink-600 hover:text-pink-700 transition-colors">
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
-                  </a>
-                )}
+            <div className="flex items-center gap-3 mt-3 flex-wrap">
+              {profile.user.socialLinks.instagram && (
+                <a href={ensureAbsoluteUrl(profile.user.socialLinks.instagram)} target="_blank" rel="noopener noreferrer" className="text-pink-500 hover:text-pink-600 transition-colors">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+                </a>
+              )}
               {profile.user.socialLinks.facebook && (
                 <a href={ensureAbsoluteUrl(profile.user.socialLinks.facebook)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 transition-colors">
-                  <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.351c0 .731.593 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.312h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z"/></svg>
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.351c0 .731.593 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.312h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z"/></svg>
                 </a>
               )}
-                {profile.user.socialLinks.github && (
-                  <a href={ensureAbsoluteUrl(profile.user.socialLinks.github)} target="_blank" rel="noopener noreferrer" className="text-gray-800 hover:text-black transition-colors">
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24"><path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.379.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.161 22 16.416 22 12c0-5.523-4.477-10-10-10z"/></svg>
-                  </a>
-                )}
-                {profile.user.socialLinks.website && (
-                  <a href={ensureAbsoluteUrl(profile.user.socialLinks.website)} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-800 transition-colors">
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
-                  </a>
-                )}
+              {profile.user.socialLinks.github && (
+                <a href={ensureAbsoluteUrl(profile.user.socialLinks.github)} target="_blank" rel="noopener noreferrer" className="text-slate-700 hover:text-slate-900 transition-colors">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.379.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.161 22 16.416 22 12c0-5.523-4.477-10-10-10z"/></svg>
+                </a>
+              )}
+              {profile.user.socialLinks.website && (
+                <a href={ensureAbsoluteUrl(profile.user.socialLinks.website)} target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-slate-700 transition-colors flex items-center gap-1 text-sm">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                  Website
+                </a>
+              )}
               {profile.user.socialLinks.custom?.map((link, idx) => (
-                <a key={idx} href={ensureAbsoluteUrl(link.url)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-gray-500 hover:text-gray-800 transition-colors" title={link.name}>
-                  <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
-                  {link.name && <span className="text-sm font-medium">{link.name}</span>}
+                <a key={idx} href={ensureAbsoluteUrl(link.url)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-slate-500 hover:text-slate-700 transition-colors text-sm">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                  {link.name}
                 </a>
               ))}
-              </div>
-            )}
-            
-            <div className="flex items-center gap-4 sm:gap-6 mt-4 text-sm text-gray-600 border-t border-gray-100 pt-4">
-              <button 
-                className="hover:text-purple-600 transition-colors"
-                onClick={() => { setShowFollowers(true); fetchFollowers(); }}
-              >
-                <span className="font-semibold text-gray-900 text-base">{profile.followersCount}</span> followers
-              </button>
-              <button 
-                className="hover:text-purple-600 transition-colors"
-                onClick={() => { setShowFollowing(true); fetchFollowing(); }}
-              >
-                <span className="font-semibold text-gray-900 text-base">{profile.followingCount}</span> following
-              </button>
-              
-              <button 
-                onClick={() => setIsEditingProfile(true)}
-                className="ml-auto px-4 py-2 bg-purple-50 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-100 flex items-center gap-2 transition-colors"
-              >
-                <PencilIcon className="w-4 h-4" /> 
-                <span className="hidden sm:inline">Edit Profile</span>
-              </button>
+            </div>
+          )}
+
+          {/* Stats bar */}
+          <div className="flex items-center gap-6 mt-4 pt-4 border-t border-slate-100">
+            <button
+              className="text-center hover:text-violet-600 transition-colors"
+              onClick={() => { setShowFollowers(true); fetchFollowers(); }}
+            >
+              <p className="text-xl font-bold text-slate-900">{profile.followersCount}</p>
+              <p className="text-xs text-slate-500">Followers</p>
+            </button>
+            <button
+              className="text-center hover:text-violet-600 transition-colors"
+              onClick={() => { setShowFollowing(true); fetchFollowing(); }}
+            >
+              <p className="text-xl font-bold text-slate-900">{profile.followingCount}</p>
+              <p className="text-xs text-slate-500">Following</p>
+            </button>
+            <div className="text-center">
+              <p className="text-xl font-bold text-slate-900">{posts.length}</p>
+              <p className="text-xs text-slate-500">Posts</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Movie Search & Pin */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <MagnifyingGlassIcon className="w-6 h-6 text-purple-600" />
-          Search Movies to Pin
+      <div className="bg-white rounded-2xl border border-slate-200 p-5">
+        <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+          <MagnifyingGlassIcon className="w-5 h-5 text-violet-600" />
+          Pin Favourite Films
         </h2>
         
-        <div className="flex gap-3 mb-4">
-          <div className="flex-1">
+        <div className="flex gap-2 mb-4">
+          <div className="flex-1 relative">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search movies..."
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
+              placeholder="Search movies to pin..."
+              className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400 outline-none transition-all text-sm"
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             />
           </div>
-          <button 
-            onClick={handleSearch} 
-            className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 font-medium"
+          <button
+            onClick={handleSearch}
+            className="px-5 py-2.5 bg-violet-600 text-white rounded-xl hover:bg-violet-500 transition-colors flex items-center gap-2 font-semibold text-sm disabled:opacity-50"
             disabled={searchLoading}
           >
-            {searchLoading ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              <MagnifyingGlassIcon className="w-4 h-4" />
-            )}
+            {searchLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <MagnifyingGlassIcon className="w-4 h-4" />}
             {searchLoading ? "Searching..." : "Search"}
           </button>
         </div>
 
         {searchResults.length > 0 && (
-          <div className="border-t border-gray-200 pt-4">
-            <p className="text-sm text-gray-600 mb-3">Search Results:</p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
-              {searchResults.slice(0, 12).map((movie) => (
+          <div className="border-t border-slate-100 pt-4">
+            <p className="text-sm font-medium text-slate-500 mb-3">Click the + button to pin a film</p>
+            <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-7 gap-3">
+              {searchResults.slice(0, 14).map((movie) => (
                 <div key={movie.id} className="group">
                   <div className="relative">
                     {movie.poster_path ? (
                       <img
                         src={`https://image.tmdb.org/t/p/w200${movie.poster_path}`}
                         alt={movie.title}
-                        className="w-full aspect-[2/3] object-cover rounded-lg shadow-md group-hover:shadow-lg transition-all duration-200"
+                        className="w-full aspect-[2/3] object-cover rounded-xl shadow-sm group-hover:shadow-md transition-all duration-200"
                       />
                     ) : (
-                      <div className="w-full aspect-[2/3] bg-gray-200 rounded-lg flex items-center justify-center shadow-md">
-                        <FilmIcon className="w-8 h-8 text-gray-400" />
+                      <div className="w-full aspect-[2/3] bg-slate-200 rounded-xl flex items-center justify-center">
+                        <FilmIcon className="w-8 h-8 text-slate-400" />
                       </div>
                     )}
-                    <button 
-                      onClick={() => pinMovie(movie)} 
-                      className="absolute top-2 right-2 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-purple-700"
+                    <button
+                      onClick={() => pinMovie(movie)}
+                      className="absolute top-1.5 right-1.5 w-7 h-7 bg-violet-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-violet-500 hover:scale-110"
                     >
                       <PlusIcon className="w-4 h-4" />
                     </button>
-                    <button 
-                      onClick={() => setSelectedPostMovie({
-                        id: movie.id,
-                        title: movie.title,
-                        poster_path: movie.poster_path,
-                        release_date: movie.release_date,
-                        overview: movie.overview,
-                        backdrop_path: movie.backdrop_path,
-                        genre_ids: movie.genre_ids,
-                        vote_average: movie.vote_average,
-                      })}
-                      className="absolute top-2 left-2 w-8 h-8 bg-black bg-opacity-60 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-opacity-80"
-                    >
-                      <InformationCircleIcon className="w-4 h-4" />
-                    </button>
                   </div>
-                  <p className="text-xs mt-2 font-medium text-gray-800 line-clamp-2">{movie.title}</p>
-                  {movie.release_date && (
-                    <p className="text-xs text-gray-500">
-                      {new Date(movie.release_date).getFullYear()}
-                    </p>
-                  )}
+                  <p className="text-xs mt-1.5 font-medium text-slate-700 line-clamp-2 leading-tight">{movie.title}</p>
                 </div>
               ))}
             </div>
