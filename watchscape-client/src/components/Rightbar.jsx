@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import ProfileLink from "./ProfileLink";
 import {
   XMarkIcon,
   BookmarkIcon,
@@ -133,9 +134,9 @@ export default function Rightbar({
               </div>
             ) : userResults.length > 0 ? (
               userResults.map((u) => (
-                <Link
+                <ProfileLink
                   key={u.uid}
-                  to={`/dashboard/profile/${u.uid}`}
+                  uid={u.uid}
                   onClick={handleUserClick}
                   className="flex items-center gap-3 px-3 py-3 hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-100 last:border-b-0"
                 >
@@ -150,7 +151,7 @@ export default function Rightbar({
                       <p className="text-xs text-gray-500 truncate">@{u.username}</p>
                     )}
                   </div>
-                </Link>
+                </ProfileLink>
               ))
             ) : (
               <div className="p-3 text-sm text-gray-500 text-center">

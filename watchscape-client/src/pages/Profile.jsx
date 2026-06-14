@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
+import ProfileLink from "../components/ProfileLink";
 import {
   UserIcon,
   FilmIcon,
@@ -68,6 +69,7 @@ export default function Profile({ user }) {
   const [commentTexts, setCommentTexts] = useState({});
   const [submittingComments, setSubmittingComments] = useState({});
   const [selectedPostMovie, setSelectedPostMovie] = useState(null);
+  const [showFullProfilePic, setShowFullProfilePic] = useState(null);
 
   const fetchFollowers = async () => {
     setLoadingList(true);
@@ -321,6 +323,16 @@ export default function Profile({ user }) {
     const next = watchedPage + 1;
     setWatchedPage(next);
     fetchWatched(next);
+  };
+
+  const collapseWatchlist = () => {
+    setWatchlistPage(1);
+    fetchWatchlist(1);
+  };
+
+  const collapseWatched = () => {
+    setWatchedPage(1);
+    fetchWatched(1);
   };
 
   const loadMorePosts = () => {
@@ -633,7 +645,15 @@ export default function Profile({ user }) {
       <div className="bg-white rounded-xl shadow-sm p-6">
         <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
           <div className="flex items-start sm:items-center gap-4 flex-col sm:flex-row w-full sm:w-auto">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
+            <div 
+              className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0 cursor-pointer hover:scale-[1.02] transition-transform shadow-inner"
+              onClick={() => {
+                if (profile.user.profilePic) {
+                  setShowFullProfilePic(profile.user.profilePic);
+                }
+              }}
+              title={profile.user.profilePic ? "Click to view full size" : ""}
+            >
               {profile.user.profilePic ? (
                 <img src={profile.user.profilePic} alt="Profile" className="w-full h-full object-cover" />
               ) : (
@@ -774,9 +794,14 @@ export default function Profile({ user }) {
               {watchlistMovies.map(renderMovieCard)}
             </div>
 
-            {watchlistHasMore && (
-              <div className="text-center mt-4">
-                <button onClick={loadMoreWatchlist} className="px-4 py-2 bg-white border border-gray-200 rounded text-purple-600 font-medium">Load More</button>
+            {(watchlistHasMore || watchlistPage > 1) && (
+              <div className="flex justify-center gap-4 mt-4">
+                {watchlistHasMore && (
+                  <button onClick={loadMoreWatchlist} className="px-4 py-2 bg-white border border-gray-200 rounded text-purple-600 font-medium">Load More</button>
+                )}
+                {watchlistPage > 1 && (
+                  <button onClick={collapseWatchlist} className="px-4 py-2 bg-white border border-gray-200 rounded text-gray-600 font-medium">Collapse</button>
+                )}
               </div>
             )}
             </>
@@ -807,9 +832,14 @@ export default function Profile({ user }) {
               {watchedMovies.map(renderMovieCard)}
             </div>
 
-            {watchedHasMore && (
-              <div className="text-center mt-4">
-                <button onClick={loadMoreWatched} className="px-4 py-2 bg-white border border-gray-200 rounded text-green-600 font-medium">Load More</button>
+            {(watchedHasMore || watchedPage > 1) && (
+              <div className="flex justify-center gap-4 mt-4">
+                {watchedHasMore && (
+                  <button onClick={loadMoreWatched} className="px-4 py-2 bg-white border border-gray-200 rounded text-green-600 font-medium">Load More</button>
+                )}
+                {watchedPage > 1 && (
+                  <button onClick={collapseWatched} className="px-4 py-2 bg-white border border-gray-200 rounded text-gray-600 font-medium">Collapse</button>
+                )}
               </div>
             )}
             </>
@@ -835,8 +865,12 @@ export default function Profile({ user }) {
           </div>
         ) : (
           <>
-          <div className="grid sm:grid-cols-2 gap-6">
-            {posts.map(renderPost)}
+          <div className="columns-1 sm:columns-2 gap-6">
+            {posts.map((post) => (
+              <div key={post._id} className="break-inside-avoid mb-6">
+                {renderPost(post)}
+              </div>
+            ))}
           </div>
 
           {postsHasMore && (
@@ -874,9 +908,9 @@ export default function Profile({ user }) {
               ) : (
                 <div className="space-y-2">
                   {followersList.map((f) => (
-                    <Link
+                    <ProfileLink
                       key={f.uid}
-                      to={`/dashboard/profile/${f.uid}`}
+                      uid={f.uid}
                       className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
                       onClick={() => setShowFollowers(false)}
                     >
@@ -888,7 +922,7 @@ export default function Profile({ user }) {
                         )}
                       </div>
                       <span className="font-medium text-gray-900">{f.name}</span>
-                    </Link>
+                    </ProfileLink>
                   ))}
                 </div>
               )}
@@ -923,9 +957,9 @@ export default function Profile({ user }) {
               ) : (
                 <div className="space-y-2">
                   {followingList.map((f) => (
-                    <Link
+                    <ProfileLink
                       key={f.uid}
-                      to={`/dashboard/profile/${f.uid}`}
+                      uid={f.uid}
                       className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
                       onClick={() => setShowFollowing(false)}
                     >
@@ -937,7 +971,7 @@ export default function Profile({ user }) {
                         )}
                       </div>
                       <span className="font-medium text-gray-900">{f.name}</span>
-                    </Link>
+                    </ProfileLink>
                   ))}
                 </div>
               )}
@@ -1048,6 +1082,31 @@ export default function Profile({ user }) {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Full Size Profile Picture Modal */}
+      {showFullProfilePic && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-50 p-4"
+          onClick={() => setShowFullProfilePic(null)}
+        >
+          <div 
+            className="relative max-w-2xl max-h-[90vh] bg-white p-2 rounded-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowFullProfilePic(null)}
+              className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors flex items-center gap-1 font-medium bg-black/40 px-3 py-1.5 rounded-full"
+            >
+              <XMarkIcon className="w-5 h-5" />
+              Close
+            </button>
+            <img
+              src={showFullProfilePic}
+              alt="Profile Full Size"
+              className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
+            />
           </div>
         </div>
       )}

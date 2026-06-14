@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import ProfileLink from "../components/ProfileLink";
 import { 
   HeartIcon as HeartOutline,
   ChatBubbleLeftIcon,
@@ -397,9 +398,9 @@ export default function Home({ user, onMovieChange }) {
                   <div className="px-4 py-3 text-sm text-gray-500">No users found</div>
                 )}
                 {userResults.map((u) => (
-                  <Link
+                  <ProfileLink
                     key={u.uid}
-                    to={`/dashboard/profile/${u.uid}`}
+                    uid={u.uid}
                     className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
                     onClick={() => setShowUserResults(false)}
                   >
@@ -411,7 +412,7 @@ export default function Home({ user, onMovieChange }) {
                       )}
                     </div>
                     <div className="font-medium text-gray-900">{u.name || u.username || "Unknown"}</div>
-                  </Link>
+                  </ProfileLink>
                 ))}
               </div>
             )}
@@ -909,12 +910,12 @@ function PostCard({ post, currentUid, onAddMovie, onToggleLike, onAddComment, on
               )}
             </div>
             <div>
-              <Link 
-                to={`/dashboard/profile/${post.userId}`} 
+              <ProfileLink 
+                uid={post.userId}
                 className="font-semibold text-gray-900 hover:text-purple-600 transition-colors"
               >
                 {post.userName || post.username || post.userId}
-              </Link>
+              </ProfileLink>
               <p className="text-sm text-gray-500">
                 {new Date(post.createdAt).toLocaleDateString()} • {new Date(post.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
               </p>
@@ -1007,12 +1008,12 @@ function PostCard({ post, currentUid, onAddMovie, onToggleLike, onAddComment, on
         <div className="px-4 pb-4 border-t border-gray-100">
           <div className="mt-3">
             <p className="text-sm text-gray-800">
-              <Link 
-                to={`/dashboard/profile/${latestComment.userId}`} 
+              <ProfileLink 
+                uid={latestComment.userId}
                 className="font-semibold text-purple-600 hover:text-purple-700"
               >
                 {latestComment.userName}
-              </Link>
+              </ProfileLink>
               {" "}{latestComment.text}
             </p>
             {comments.length > 1 && (
@@ -1043,12 +1044,12 @@ function PostCard({ post, currentUid, onAddMovie, onToggleLike, onAddComment, on
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm">
-                      <Link 
-                        to={`/dashboard/profile/${c.userId}`} 
+                      <ProfileLink 
+                        uid={c.userId}
                         className="font-semibold text-purple-600 hover:text-purple-700"
                       >
                         {c.userName}
-                      </Link>
+                      </ProfileLink>
                       {" "}{c.text}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
@@ -1250,12 +1251,12 @@ function MovieActivityCard({ post, currentUid, onAddMovie, onToggleLike, onAddCo
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <Link 
-                  to={`/dashboard/profile/${post.userId}`} 
+                <ProfileLink 
+                  uid={post.userId}
                   className="font-semibold text-gray-900 hover:text-purple-600 transition-colors truncate max-w-full"
                 >
                   {post.userName || post.username || post.userId}
-                </Link>
+                </ProfileLink>
                 <span className="flex items-center gap-1 text-sm text-gray-600">
                   {actionIcon}
                   {actionText}
@@ -1350,12 +1351,12 @@ function MovieActivityCard({ post, currentUid, onAddMovie, onToggleLike, onAddCo
         <div className="px-4 pb-4 border-t border-gray-100">
           <div className="mt-3">
             <p className="text-sm text-gray-800">
-              <Link 
-                to={`/dashboard/profile/${latestComment.userId}`} 
+              <ProfileLink 
+                uid={latestComment.userId}
                 className="font-semibold text-purple-600 hover:text-purple-700"
               >
                 {latestComment.userName}
-              </Link>
+              </ProfileLink>
               {" "}{latestComment.text}
             </p>
             {comments.length > 1 && (
@@ -1386,12 +1387,12 @@ function MovieActivityCard({ post, currentUid, onAddMovie, onToggleLike, onAddCo
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm">
-                      <Link 
-                        to={`/dashboard/profile/${c.userId}`} 
+                      <ProfileLink 
+                        uid={c.userId}
                         className="font-semibold text-purple-600 hover:text-purple-700"
                       >
                         {c.userName}
-                      </Link>
+                      </ProfileLink>
                       {" "}{c.text}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">

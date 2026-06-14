@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import ProfileLink from "../components/ProfileLink";
 import {
   HeartIcon,
   ChatBubbleLeftIcon,
@@ -128,12 +129,12 @@ export default function PostDetail({ user }) {
               </div>
               <div>
                 {/* Clickable username that links to profile */}
-                <Link 
-                  to={`/dashboard/profile/${post.userId}`}
+                <ProfileLink 
+                  uid={post.userId}
                   className="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors break-words cursor-pointer"
                 >
                   {post.username || post.userName || 'Anonymous'}
-                </Link>
+                </ProfileLink>
               {post.createdAt && (
                 <p className="text-sm text-gray-500 mt-1">
                   {new Date(post.createdAt).toLocaleDateString()} • {new Date(post.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -225,12 +226,12 @@ export default function PostDetail({ user }) {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
-                          <Link 
-                            to={`/dashboard/profile/${comment.userId}`}
+                          <ProfileLink 
+                            uid={comment.userId}
                             className="font-medium text-gray-900 hover:text-blue-600 transition-colors cursor-pointer"
                           >
                             {comment.userName || comment.username || "Anonymous"}
-                          </Link>
+                          </ProfileLink>
                           <span className="text-sm text-gray-500">{comment.createdAt && new Date(comment.createdAt).toLocaleDateString()}</span>
                         </div>
                         <p className="text-gray-700 whitespace-pre-wrap break-words mt-1">{comment.text}</p>

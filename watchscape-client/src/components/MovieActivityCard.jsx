@@ -1,3 +1,5 @@
+import ProfileLink from "./ProfileLink";
+
 function MovieActivityCard({ post, currentUid, onToggleLike, onAddComment, onToggleFollow, onShare }) {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
@@ -20,9 +22,9 @@ function MovieActivityCard({ post, currentUid, onToggleLike, onAddComment, onTog
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <Link to={`/dashboard/profile/${post.userId}`} className="text-blue-600 hover:underline font-semibold">
+          <ProfileLink uid={post.userId} className="text-blue-600 hover:underline font-semibold">
             {post.userName || post.username || post.userId}
-          </Link>
+          </ProfileLink>
           <span className="text-gray-600">{actionText}</span>
         </div>
         <div className="text-xs text-gray-500">{new Date(post.createdAt).toLocaleString()}</div>
@@ -90,9 +92,9 @@ function MovieActivityCard({ post, currentUid, onToggleLike, onAddComment, onTog
       {latestComment && !showComments && (
         <>
           <div className="mt-2 text-sm">
-            <Link to={`/dashboard/profile/${latestComment.userId}`} className="font-medium text-blue-600 hover:underline">
+            <ProfileLink uid={latestComment.userId} className="font-medium text-blue-600 hover:underline">
               {latestComment.userName}
-            </Link>
+            </ProfileLink>
             : {latestComment.text}
           </div>
           {comments.length > 1 && (
@@ -109,9 +111,9 @@ function MovieActivityCard({ post, currentUid, onToggleLike, onAddComment, onTog
           <div className="space-y-2 mb-3">
             {commentsSorted.map((c, idx) => (
               <div key={idx} className="text-sm">
-                <Link to={`/dashboard/profile/${c.userId}`} className="font-medium text-blue-600 hover:underline">
+                <ProfileLink uid={c.userId} className="font-medium text-blue-600 hover:underline">
                   {c.userName}
-                </Link>
+                </ProfileLink>
                 : {c.text}
                 <span className="text-xs text-gray-500 ml-2">{new Date(c.createdAt).toLocaleString()}</span>
               </div>

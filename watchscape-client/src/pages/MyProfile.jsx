@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import ProfileLink from "../components/ProfileLink";
 import {
   UserIcon,
   FilmIcon,
@@ -13,7 +14,8 @@ import {
   TrashIcon,
   PencilIcon,
   InformationCircleIcon,
-  StarIcon
+  StarIcon,
+  CameraIcon
 } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartSolid } from "@heroicons/react/24/solid";
 import { API } from "../config";
@@ -64,6 +66,7 @@ export default function MyProfile({ user }) {
   const fileInputRef = useRef(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [showFullProfilePic, setShowFullProfilePic] = useState(null);
   const [editBio, setEditBio] = useState("");
   const [editSocialLinks, setEditSocialLinks] = useState({
     instagram: "",
@@ -815,22 +818,33 @@ export default function MyProfile({ user }) {
       {/* Header */}
       <div className="bg-white rounded-xl shadow-sm p-6">
         <div className="flex items-start sm:items-center gap-4 flex-col sm:flex-row">
-          <div 
-            className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center relative group cursor-pointer overflow-hidden flex-shrink-0"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            {profile.user.profilePic ? (
-              <img src={profile.user.profilePic} alt="Profile" className="w-full h-full object-cover" />
-            ) : (
-              <UserIcon className="w-10 h-10 sm:w-12 sm:h-12 text-white" />
-            )}
-            <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-              {uploadingImage ? (
-                <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          <div className="relative flex-shrink-0 group">
+            <div 
+              className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center cursor-pointer overflow-hidden shadow-inner hover:scale-[1.02] transition-transform"
+              onClick={() => {
+                if (profile.user.profilePic) {
+                  setShowFullProfilePic(profile.user.profilePic);
+                }
+              }}
+              title={profile.user.profilePic ? "Click to view full size" : ""}
+            >
+              {profile.user.profilePic ? (
+                <img src={profile.user.profilePic} alt="Profile" className="w-full h-full object-cover" />
               ) : (
-                <span className="text-white text-xs sm:text-sm font-medium">Edit</span>
+                <UserIcon className="w-10 h-10 sm:w-12 sm:h-12 text-white" />
               )}
             </div>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="absolute bottom-0 right-0 p-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-md border-2 border-white transition-colors"
+              title="Change Profile Picture"
+            >
+              {uploadingImage ? (
+                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <CameraIcon className="w-3.5 h-3.5" />
+              )}
+            </button>
             <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
           </div>
           <div className="flex-1 w-full">
@@ -1071,8 +1085,12 @@ export default function MyProfile({ user }) {
           </div>
         ) : (
           <>
-            <div className="grid sm:grid-cols-2 gap-6">
-              {posts.map(renderPost)}
+            <div className="columns-1 sm:columns-2 gap-6">
+              {posts.map((post) => (
+                <div key={post._id} className="break-inside-avoid mb-6">
+                  {renderPost(post)}
+                </div>
+              ))}
             </div>
             {postsHasMore && (
               <div className="text-center mt-6">
@@ -1119,9 +1137,9 @@ export default function MyProfile({ user }) {
               ) : (
                 <div className="space-y-2">
                   {followersList.map((f) => (
-                    <Link
+                    <ProfileLink
                       key={f.uid}
-                      to={`/dashboard/profile/${f.uid}`}
+                      uid={f.uid}
                       className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
                       onClick={() => setShowFollowers(false)}
                     >
@@ -1133,7 +1151,7 @@ export default function MyProfile({ user }) {
                         )}
                       </div>
                       <span className="font-medium text-gray-900">{f.name}</span>
-                    </Link>
+                    </ProfileLink>
                   ))}
                 </div>
               )}
@@ -1168,9 +1186,9 @@ export default function MyProfile({ user }) {
               ) : (
                 <div className="space-y-2">
                   {followingList.map((f) => (
-                    <Link
+                    <ProfileLink
                       key={f.uid}
-                      to={`/dashboard/profile/${f.uid}`}
+                      uid={f.uid}
                       className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
                       onClick={() => setShowFollowing(false)}
                     >
@@ -1182,7 +1200,7 @@ export default function MyProfile({ user }) {
                         )}
                       </div>
                       <span className="font-medium text-gray-900">{f.name}</span>
-                    </Link>
+                    </ProfileLink>
                   ))}
                 </div>
               )}
@@ -1417,6 +1435,32 @@ export default function MyProfile({ user }) {
                 Save Changes
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Full Size Profile Picture Modal */}
+      {showFullProfilePic && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-50 p-4"
+          onClick={() => setShowFullProfilePic(null)}
+        >
+          <div 
+            className="relative max-w-2xl max-h-[90vh] bg-white p-2 rounded-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowFullProfilePic(null)}
+              className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors flex items-center gap-1 font-medium bg-black/40 px-3 py-1.5 rounded-full"
+            >
+              <XMarkIcon className="w-5 h-5" />
+              Close
+            </button>
+            <img
+              src={showFullProfilePic}
+              alt="Profile Full Size"
+              className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
+            />
           </div>
         </div>
       )}

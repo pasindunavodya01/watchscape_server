@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import ProfileLink from "../components/ProfileLink";
 import {
   BellIcon, 
   HeartIcon, 
@@ -149,7 +150,8 @@ export default function Notifications({ user }) {
     if (notificationId) {
       markAsRead(notificationId);
     }
-    navigate(`/dashboard/profile/${senderUid}`);
+    const isMe = user?.uid === senderUid;
+    navigate(isMe ? "/dashboard/my-profile" : `/dashboard/profile/${senderUid}`);
   };
 
   const getNotificationIcon = (type, isRead) => {
@@ -295,13 +297,13 @@ export default function Notifications({ user }) {
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1">
                       <p className={`text-sm ${!notification.isRead ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
-                        <Link
-                          to={`/dashboard/profile/${notification.senderUid}`}
+                        <ProfileLink
+                          uid={notification.senderUid}
                           className="text-blue-600 font-medium hover:underline"
                           onClick={() => markAsRead(notification._id)}
                         >
                           {notification.senderName}
-                        </Link>
+                        </ProfileLink>
                         {' '}{notification.message}
                       </p>
                       
