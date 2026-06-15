@@ -1091,7 +1091,7 @@ export default function Home({ user, onMovieChange }) {
 
         {/* Global results */}
         {!globalMovieLoading && globalMovieResults.length > 0 && (
-          <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 gap-3">
+          <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
             {globalMovieResults.map((movie) => (
               <div key={movie.id} className="group bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
                 <div
@@ -1112,20 +1112,20 @@ export default function Home({ user, onMovieChange }) {
                     </div>
                   )}
                 </div>
-                <div className="p-2">
-                  <p className="text-xs font-semibold text-slate-700 line-clamp-2 leading-tight mb-1.5">{movie.title}</p>
-                  <div className="flex gap-1">
+                <div className="p-3">
+                  <p className="text-xs font-semibold text-slate-700 line-clamp-2 leading-tight mb-2">{movie.title}</p>
+                  <div className="space-y-1.5">
                     <button
                       onClick={() => addMovie(movie, "watchlist")}
-                      className="flex-1 flex items-center justify-center gap-0.5 py-1 bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold rounded-lg transition-colors"
+                      className="w-full flex items-center justify-center gap-1.5 py-1.5 bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold rounded-lg transition-colors"
                     >
-                      <BookmarkIcon className="w-3 h-3" />
+                      <BookmarkIcon className="w-3.5 h-3.5" /> Watchlist
                     </button>
                     <button
                       onClick={() => addMovie(movie, "watched")}
-                      className="flex-1 flex items-center justify-center gap-0.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition-colors"
+                      className="w-full flex items-center justify-center gap-1.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition-colors"
                     >
-                      <EyeIcon className="w-3 h-3" />
+                      <EyeIcon className="w-3.5 h-3.5" /> Watched
                     </button>
                   </div>
                 </div>

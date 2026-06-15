@@ -14,6 +14,7 @@ import {
   StarIcon,
   PlusIcon,
   InformationCircleIcon,
+  BookmarkIcon,
 } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartSolid } from "@heroicons/react/24/solid";
 import { API } from "../config";
@@ -30,6 +31,101 @@ const ensureAbsoluteUrl = (url) => {
   if (!url) return "";
   return url.startsWith("http://") || url.startsWith("https://") ? url : `https://${url}`;
 };
+
+// ─── Dark cinematic movie modal ───────────────────────────────────────────
+function MovieModal({ movie, onClose, onAdd }) {
+  if (!movie) return null;
+  const posterPath = movie.poster_path || movie.posterPath;
+  const backdropPath = movie.backdrop_path || movie.backdropPath;
+  const releaseDate = movie.release_date || movie.releaseDate;
+  const rating = movie.vote_average;
+  const genreIds = movie.genre_ids;
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center p-4 z-50 animate-fade-in"
+      onClick={onClose}
+    >
+      <div
+        className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-dark-lg flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Backdrop */}
+        <div className="relative h-40 sm:h-52 flex-shrink-0 bg-slate-950">
+          {backdropPath ? (
+            <img src={`https://image.tmdb.org/t/p/w780${backdropPath}`} alt={movie.title} className="w-full h-full object-cover" />
+          ) : (
+            <div className="h-full bg-gradient-to-br from-violet-900 to-slate-900" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
+          <button
+            onClick={onClose}
+            className="absolute top-3 right-3 w-9 h-9 bg-black/40 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-black/60 transition-all"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+          {rating > 0 && (
+            <div className="absolute top-3 left-3 flex items-center gap-1 bg-amber-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+              <StarIcon className="w-3.5 h-3.5 fill-white stroke-none" />
+              {rating.toFixed(1)}
+            </div>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="p-4 sm:p-6">
+          <div className="flex gap-4">
+            {posterPath ? (
+              <img
+                src={`https://image.tmdb.org/t/p/w300${posterPath}`}
+                alt={movie.title}
+                className="w-20 sm:w-28 aspect-[2/3] object-contain bg-slate-800 rounded-xl shadow-dark flex-shrink-0 relative z-10 -mt-14 sm:-mt-16 ring-2 ring-slate-800"
+              />
+            ) : (
+              <div className="w-20 sm:w-28 aspect-[2/3] bg-slate-800 rounded-xl flex items-center justify-center flex-shrink-0 relative z-10 -mt-14 sm:-mt-16 ring-2 ring-slate-800">
+                <FilmIcon className="w-8 h-8 text-slate-600" />
+              </div>
+            )}
+            <div className="flex-1 min-w-0 pt-2">
+              <h2 className="text-xl font-bold text-white leading-tight mb-1">{movie.title}</h2>
+              {releaseDate && <p className="text-slate-400 text-sm">{new Date(releaseDate).getFullYear()}</p>}
+              {genreIds && genreIds.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {genreIds.slice(0, 3).map((id) => genreMap[id] && (
+                    <span key={id} className="px-2 py-0.5 bg-violet-600/20 text-violet-300 text-xs rounded-full border border-violet-600/30">
+                      {genreMap[id]}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {movie.overview && (
+            <p className="mt-4 text-slate-400 text-sm leading-relaxed">{movie.overview}</p>
+          )}
+
+          {onAdd && (
+            <div className="flex gap-3 mt-5">
+              <button
+                onClick={() => onAdd(movie, "watchlist")}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold rounded-xl transition-all"
+              >
+                <BookmarkIcon className="w-4 h-4" /> Watchlist
+              </button>
+              <button
+                onClick={() => onAdd(movie, "watched")}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-xl transition-all"
+              >
+                <EyeIcon className="w-4 h-4" /> Watched
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Profile({ user }) {
   const { userId } = useParams();
@@ -1050,108 +1146,11 @@ export default function Profile({ user }) {
 
       {/* Enhanced Movie Details Modal */}
       {selectedPostMovie && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center p-2 sm:p-4 z-50"
-          onClick={() => setSelectedPostMovie(null)}
-        >
-          <div
-            className="bg-white rounded-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden shadow-2xl flex flex-col mx-2 sm:mx-0"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="relative">
-              {selectedPostMovie.backdrop_path ? (
-                <div className="relative h-32 sm:h-48 bg-slate-950 flex-shrink-0">
-                  <img
-                    src={`https://image.tmdb.org/t/p/w780${selectedPostMovie.backdrop_path}`}
-                    alt={selectedPostMovie.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                </div>
-              ) : (
-                <div className="h-32 sm:h-48 bg-gradient-to-br from-purple-600 to-blue-600 flex-shrink-0"></div>
-              )}
-              <button
-                onClick={() => setSelectedPostMovie(null)}
-                className="absolute top-2 right-2 sm:top-4 sm:right-4 w-8 h-8 sm:w-10 sm:h-10 bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all"
-              >
-                <XMarkIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
-            </div>
-            <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(95vh-8rem)] sm:max-h-[calc(90vh-12rem)]">
-              <div className="flex gap-4 sm:gap-6 mb-4 sm:mb-6">
-                {selectedPostMovie.poster_path ? (
-                  <img
-                    src={`https://image.tmdb.org/t/p/w300${selectedPostMovie.poster_path}`}
-                    alt={selectedPostMovie.title}
-                    className="w-24 h-36 sm:w-32 sm:h-48 aspect-[2/3] object-contain bg-slate-800 rounded-lg sm:rounded-xl shadow-lg flex-shrink-0 relative z-10 -mt-12 sm:-mt-16"
-                  />
-                ) : (
-                  <div className="w-24 h-36 sm:w-32 sm:h-48 bg-gray-200 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0 relative z-10 -mt-12 sm:-mt-16">
-                    <FilmIcon className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400" />
-                  </div>
-                )}
-                <div className="flex-1">
-                  <h3 className="text-xl sm:text-2xl font-bold mb-2 leading-tight">{selectedPostMovie.title}</h3>
-                  <p className="text-gray-600 mb-2 text-sm sm:text-base">
-                    {selectedPostMovie.release_date ? new Date(selectedPostMovie.release_date).toDateString() : "N/A"}
-                  </p>
-                  {selectedPostMovie.genre_ids && selectedPostMovie.genre_ids.length > 0 && (
-                    <p className="text-gray-600 mb-2 text-sm sm:text-base">
-                      Genres: {selectedPostMovie.genre_ids.map(id => genreMap[id]).join(", ") || "N/A"}
-                    </p>
-                  )}
-                  {selectedPostMovie.vote_average && (
-                    <p className="text-gray-600 mb-2 flex items-center gap-1 text-sm sm:text-base">
-                      <StarIcon className="w-4 h-4 text-yellow-500" />
-                      {selectedPostMovie.vote_average.toFixed(1)}/10
-                    </p>
-                  )}
-                  <p className="hidden sm:block text-gray-700 text-sm sm:text-base leading-relaxed mb-4">
-                    {selectedPostMovie.overview || "No description available."}
-                  </p>
-                  <div className="hidden sm:flex mt-4 gap-3">
-                    <button
-                      onClick={() => { addMovie(selectedPostMovie, "watchlist"); setSelectedPostMovie(null); }}
-                      className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition-all flex items-center justify-center gap-2"
-                    >
-                      <PlusIcon className="w-4 h-4" />
-                      Watchlist
-                    </button>
-                    <button
-                      onClick={() => { addMovie(selectedPostMovie, "watched"); setSelectedPostMovie(null); }}
-                      className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-all flex items-center justify-center gap-2"
-                    >
-                      <FilmIcon className="w-4 h-4" />
-                      Watched
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div className="block sm:hidden mb-6">
-                <p className="text-gray-700 text-sm leading-relaxed">
-                  {selectedPostMovie.overview || "No description available."}
-                </p>
-              </div>
-              <div className="block sm:hidden flex flex-col gap-3 mt-4">
-                <button
-                  onClick={() => { addMovie(selectedPostMovie, "watchlist"); setSelectedPostMovie(null); }}
-                  className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-all text-sm flex items-center justify-center gap-2"
-                >
-                  <PlusIcon className="w-4 h-4" />
-                  Watchlist
-                </button>
-                <button
-                  onClick={() => { addMovie(selectedPostMovie, "watched"); setSelectedPostMovie(null); }}
-                  className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-all text-sm flex items-center justify-center gap-2"
-                >
-                  <FilmIcon className="w-4 h-4" />
-                  Watched
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <MovieModal
+          movie={selectedPostMovie}
+          onClose={() => setSelectedPostMovie(null)}
+          onAdd={(movie, status) => { addMovie(movie, status); setSelectedPostMovie(null); }}
+        />
       )}
       {/* Full Size Profile Picture Modal */}
       {showFullProfilePic && (
