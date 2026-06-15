@@ -35,9 +35,9 @@ function MovieModal({ movie, onClose, onMarkWatched, onRemove }) {
   const rating = movie.vote_average;
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-end sm:items-center p-0 sm:p-4 z-50 animate-fade-in" onClick={onClose}>
-      <div className="bg-slate-900 border border-slate-800 rounded-t-2xl sm:rounded-2xl w-full max-w-2xl max-h-[92vh] overflow-hidden shadow-dark-lg animate-scale-in" onClick={(e) => e.stopPropagation()}>
-        <div className="relative h-40 sm:h-48">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center p-4 z-50 animate-fade-in" onClick={onClose}>
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-dark-lg flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div className="relative h-40 sm:h-48 bg-slate-950 flex-shrink-0">
           {backdropPath
             ? <img src={`https://image.tmdb.org/t/p/w780${backdropPath}`} alt={movie.title} className="w-full h-full object-cover" />
             : <div className="h-full bg-gradient-to-br from-violet-900 to-slate-900" />
@@ -53,11 +53,11 @@ function MovieModal({ movie, onClose, onMarkWatched, onRemove }) {
             </div>
           )}
         </div>
-        <div className="p-5 overflow-y-auto max-h-[calc(92vh-10rem)]">
+        <div className="p-5">
           <div className="flex gap-4">
             {posterPath
-              ? <img src={`https://image.tmdb.org/t/p/w300${posterPath}`} alt={movie.title} className="w-20 sm:w-28 object-cover rounded-xl shadow-dark flex-shrink-0 -mt-12 sm:-mt-16 ring-2 ring-slate-800" />
-              : <div className="w-20 sm:w-28 bg-slate-800 rounded-xl flex items-center justify-center flex-shrink-0 -mt-12 ring-2 ring-slate-800 min-h-[7rem]"><FilmIcon className="w-8 h-8 text-slate-600" /></div>
+              ? <img src={`https://image.tmdb.org/t/p/w300${posterPath}`} alt={movie.title} className="w-20 sm:w-28 aspect-[2/3] object-contain bg-slate-800 rounded-xl shadow-dark flex-shrink-0 relative z-10 -mt-12 sm:-mt-16 ring-2 ring-slate-800" />
+              : <div className="w-20 sm:w-28 aspect-[2/3] bg-slate-800 rounded-xl flex items-center justify-center flex-shrink-0 relative z-10 -mt-12 sm:-mt-16 ring-2 ring-slate-800"><FilmIcon className="w-8 h-8 text-slate-600" /></div>
             }
             <div className="flex-1 min-w-0 pt-2">
               <h2 className="text-xl font-bold text-white leading-tight mb-1">{movie.title}</h2>

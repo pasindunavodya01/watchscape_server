@@ -65,6 +65,7 @@ export default function Profile({ user }) {
   const [postsPage, setPostsPage] = useState(1);
   const postsLimit = 6;
   const [postsHasMore, setPostsHasMore] = useState(false);
+  const [postFilter, setPostFilter] = useState("all");
 
   // New states for interactions
   const [likingPosts, setLikingPosts] = useState({});
@@ -655,8 +656,8 @@ export default function Profile({ user }) {
         ) : (
           <div className="h-28 bg-gradient-to-r from-violet-600 via-fuchsia-600 to-blue-600" />
         )}
-        <div className="px-5 pb-5">
-          <div className="flex items-end justify-between -mt-12 mb-4">
+        <div className="px-5 pb-5 relative z-10">
+          <div className="relative z-10 flex items-end justify-between -mt-12 mb-4">
             <div 
               className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0 cursor-pointer hover:scale-[1.02] transition-transform shadow-inner ring-4 ring-white"
               onClick={() => {
@@ -862,11 +863,45 @@ export default function Profile({ user }) {
 
       {/* Posts */}
       <div className="bg-white rounded-xl shadow-sm p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-6">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">
           Posts ({posts.length})
         </h2>
 
-        {postsLoading ? (
+        {/* Post Filter Tabs */}
+        <div className="flex gap-2 mb-6 border-b border-slate-100 pb-4">
+          <button
+            onClick={() => setPostFilter("all")}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+              postFilter === "all"
+                ? "bg-violet-600 text-white shadow-sm"
+                : "bg-slate-50 text-slate-600 hover:bg-slate-100"
+            }`}
+          >
+            All ({posts.length})
+          </button>
+          <button
+            onClick={() => setPostFilter("posts")}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+              postFilter === "posts"
+                ? "bg-violet-600 text-white shadow-sm"
+                : "bg-slate-50 text-slate-600 hover:bg-slate-100"
+            }`}
+          >
+            Thoughts ({posts.filter(p => p.type !== 'movie_activity').length})
+          </button>
+          <button
+            onClick={() => setPostFilter("activity")}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+              postFilter === "activity"
+                ? "bg-violet-600 text-white shadow-sm"
+                : "bg-slate-50 text-slate-600 hover:bg-slate-100"
+            }`}
+          >
+            Movie Activity ({posts.filter(p => p.type === 'movie_activity').length})
+          </button>
+        </div>
+
+        {postsLoading && posts.length === 0 ? (
           <div className="flex justify-center items-center py-12">
             <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
           </div>
@@ -876,23 +911,43 @@ export default function Profile({ user }) {
             <p className="text-lg">No posts yet</p>
             <p className="text-sm mt-1">Start sharing your movie thoughts!</p>
           </div>
-        ) : (
-          <>
-          <div className="columns-1 sm:columns-2 gap-6">
-            {posts.map((post) => (
-              <div key={post._id} className="break-inside-avoid mb-6">
-                {renderPost(post)}
-              </div>
-            ))}
-          </div>
+        ) : (() => {
+          const filteredPosts = posts.filter((post) => {
+            if (postFilter === "posts") return post.type !== "movie_activity";
+            if (postFilter === "activity") return post.type === "movie_activity";
+            return true;
+          });
 
-          {postsHasMore && (
-            <div className="text-center mt-6">
-              <button onClick={loadMorePosts} className="px-6 py-2 bg-white border border-gray-200 rounded text-purple-600 font-medium">Load More Posts</button>
-            </div>
-          )}
-          </>
-        )}
+          if (filteredPosts.length === 0) {
+            return (
+              <div className="text-center py-12 text-gray-500">
+                <ChatBubbleLeftIcon className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                <p className="text-lg font-medium">No matching posts</p>
+                <p className="text-sm mt-1">
+                  {postFilter === "posts" ? "No movie thoughts shared yet." : "No movie watchlist or watched activity yet."}
+                </p>
+              </div>
+            );
+          }
+
+          return (
+            <>
+              <div className="columns-1 sm:columns-2 gap-6">
+                {filteredPosts.map((post) => (
+                  <div key={post._id} className="break-inside-avoid mb-6">
+                    {renderPost(post)}
+                  </div>
+                ))}
+              </div>
+
+              {postsHasMore && (
+                <div className="text-center mt-6">
+                  <button onClick={loadMorePosts} className="px-6 py-2 bg-white border border-gray-200 rounded text-purple-600 font-medium">Load More Posts</button>
+                </div>
+              )}
+            </>
+          );
+        })()}
       </div>
 
       {/* Followers Modal */}
@@ -1000,12 +1055,12 @@ export default function Profile({ user }) {
           onClick={() => setSelectedPostMovie(null)}
         >
           <div
-            className="bg-white rounded-xl sm:rounded-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden shadow-2xl mx-2 sm:mx-0"
+            className="bg-white rounded-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden shadow-2xl flex flex-col mx-2 sm:mx-0"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="relative">
               {selectedPostMovie.backdrop_path ? (
-                <div className="relative h-32 sm:h-48 bg-gradient-to-t from-black/60 to-transparent">
+                <div className="relative h-32 sm:h-48 bg-slate-950 flex-shrink-0">
                   <img
                     src={`https://image.tmdb.org/t/p/w780${selectedPostMovie.backdrop_path}`}
                     alt={selectedPostMovie.title}
@@ -1014,7 +1069,7 @@ export default function Profile({ user }) {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                 </div>
               ) : (
-                <div className="h-32 sm:h-48 bg-gradient-to-br from-purple-600 to-blue-600"></div>
+                <div className="h-32 sm:h-48 bg-gradient-to-br from-purple-600 to-blue-600 flex-shrink-0"></div>
               )}
               <button
                 onClick={() => setSelectedPostMovie(null)}
@@ -1029,10 +1084,10 @@ export default function Profile({ user }) {
                   <img
                     src={`https://image.tmdb.org/t/p/w300${selectedPostMovie.poster_path}`}
                     alt={selectedPostMovie.title}
-                    className="w-24 h-36 sm:w-32 sm:h-48 object-cover rounded-lg sm:rounded-xl shadow-lg flex-shrink-0"
+                    className="w-24 h-36 sm:w-32 sm:h-48 aspect-[2/3] object-contain bg-slate-800 rounded-lg sm:rounded-xl shadow-lg flex-shrink-0 relative z-10 -mt-12 sm:-mt-16"
                   />
                 ) : (
-                  <div className="w-24 h-36 sm:w-32 sm:h-48 bg-gray-200 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
+                  <div className="w-24 h-36 sm:w-32 sm:h-48 bg-gray-200 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0 relative z-10 -mt-12 sm:-mt-16">
                     <FilmIcon className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400" />
                   </div>
                 )}

@@ -131,7 +131,7 @@ export default function Dashboard({ user, onLogout }) {
         )}
 
         {/* Mobile bottom nav */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 flex justify-around items-center h-16 z-50 safe-area-bottom">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 flex justify-around items-center h-20 z-50 safe-area-bottom pb-2">
           {mobileNav.map(({ to, icon: Icon, iconA: IconA, label, end }) => (
             <NavLink
               key={to}

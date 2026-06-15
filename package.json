@@ -1,0 +1,5 @@
+{
+  "scripts": {
+    "dev": "concurrently \"cd watchscape-client && npm run dev\" \"cd watchscape-server && npm start\""
+  }
+}

@@ -48,7 +48,7 @@ export default function Navbar({ user, onToggleSidebar, onToggleRightbar, onOpen
               <path strokeLinecap="round" d="M2 10h20M7 6V4M17 6V4M7 10v9M17 10v9M12 10v9" />
             </svg>
           </div>
-          <span className="text-white font-bold text-base tracking-tight hidden sm:block">
+          <span className="text-white font-bold text-base tracking-tight block">
             Watch<span className="text-violet-400">scape</span>
           </span>
         </Link>

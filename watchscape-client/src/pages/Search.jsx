@@ -41,13 +41,13 @@ function MovieModal({ movie, onClose, onAdd, fieldMap = {} }) {
   const rating = movie.vote_average;
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-end sm:items-center p-0 sm:p-4 z-50 animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center p-4 z-50 animate-fade-in" onClick={onClose}>
       <div
-        className="bg-slate-900 border border-slate-800 rounded-t-2xl sm:rounded-2xl w-full max-w-2xl max-h-[92vh] overflow-hidden shadow-dark-lg animate-scale-in"
+        className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-dark-lg flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Backdrop */}
-        <div className="relative h-40 sm:h-52">
+        <div className="relative h-40 sm:h-52 bg-slate-950 flex-shrink-0">
           {backdropPath ? (
             <img src={`https://image.tmdb.org/t/p/w780${backdropPath}`} alt={title} className="w-full h-full object-cover" />
           ) : (
@@ -69,17 +69,17 @@ function MovieModal({ movie, onClose, onAdd, fieldMap = {} }) {
         </div>
 
         {/* Content */}
-        <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(92vh-10rem)] sm:max-h-[calc(90vh-13rem)]">
+        <div className="p-4 sm:p-6">
           <div className="flex gap-4 sm:gap-5">
             {/* Poster */}
             {posterPath ? (
               <img
                 src={`https://image.tmdb.org/t/p/w300${posterPath}`}
                 alt={title}
-                className="w-20 h-30 sm:w-28 sm:h-40 object-cover rounded-xl shadow-dark flex-shrink-0 -mt-12 sm:-mt-16 ring-2 ring-slate-800"
+                className="w-20 sm:w-28 aspect-[2/3] object-contain bg-slate-800 rounded-xl shadow-dark flex-shrink-0 relative z-10 -mt-12 sm:-mt-16 ring-2 ring-slate-800"
               />
             ) : (
-              <div className="w-20 h-30 sm:w-28 sm:h-40 bg-slate-800 rounded-xl flex items-center justify-center flex-shrink-0 -mt-12 sm:-mt-16">
+              <div className="w-20 sm:w-28 aspect-[2/3] bg-slate-800 rounded-xl flex items-center justify-center flex-shrink-0 relative z-10 -mt-12 sm:-mt-16 ring-2 ring-slate-800">
                 <FilmIcon className="w-8 h-8 text-slate-600" />
               </div>
             )}
