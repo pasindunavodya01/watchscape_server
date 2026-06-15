@@ -416,6 +416,20 @@ export default function Profile({ user }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
+  // Auto-load more posts if a filter leaves us with too few posts
+  useEffect(() => {
+    const currentFiltered = posts.filter((post) => {
+      if (postFilter === "posts") return post.type !== "movie_activity";
+      if (postFilter === "activity") return post.type === "movie_activity";
+      return true;
+    });
+
+    if (currentFiltered.length < 5 && postsHasMore && !postsLoading) {
+      loadMorePosts();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [postFilter, posts.length, postsHasMore, postsLoading]);
+
   const loadMoreWatchlist = () => {
     const next = watchlistPage + 1;
     setWatchlistPage(next);
@@ -438,10 +452,78 @@ export default function Profile({ user }) {
     fetchWatched(1);
   };
 
-  const loadMorePosts = () => {
-    const next = postsPage + 1;
-    setPostsPage(next);
-    fetchUserPosts(next);
+  const loadMorePosts = async () => {
+    if (postsLoading || !postsHasMore) return;
+    setPostsLoading(true);
+
+    let nextPage = postsPage + 1;
+    let newlyFetched = [];
+    let newlyFetchedMatchingCount = 0;
+    let moreAvailable = postsHasMore;
+
+    try {
+      while (moreAvailable && newlyFetchedMatchingCount < 5) {
+        const res = await fetch(`${API}/api/posts?userId=${userId}&page=${nextPage}&limit=${postsLimit}`);
+        const data = await res.json();
+        const postsArray = Array.isArray(data) ? data : [];
+        
+        newlyFetched = [...newlyFetched, ...postsArray];
+        moreAvailable = postsArray.length === postsLimit;
+        
+        const matches = postsArray.filter((post) => {
+          if (postFilter === "posts") return post.type !== "movie_activity";
+          if (postFilter === "activity") return post.type === "movie_activity";
+          return true;
+        });
+        
+        newlyFetchedMatchingCount += matches.length;
+        
+        if (moreAvailable && newlyFetchedMatchingCount < 5) {
+          nextPage++;
+        }
+      }
+
+      setPosts((prev) => [...prev, ...newlyFetched]);
+      setPostsPage(nextPage);
+      setPostsHasMore(moreAvailable);
+    } catch (err) {
+      console.error("Failed to fetch posts:", err);
+      setPostsHasMore(false);
+    } finally {
+      setPostsLoading(false);
+    }
+  };
+
+  const handleViewMovieDetails = async (movie) => {
+    const movieId = movie.tmdbId || movie.id;
+    
+    // Show modal immediately with basic info
+    setSelectedPostMovie({
+      id: movieId,
+      title: movie.title,
+      poster_path: movie.posterPath || movie.poster_path,
+      release_date: movie.releaseDate || movie.release_date,
+      overview: movie.overview,
+      backdrop_path: movie.backdropPath || movie.backdrop_path,
+      genre_ids: movie.genre_ids,
+      vote_average: movie.vote_average,
+    });
+
+    // If overview is missing, try to fetch full details via search
+    if (!movie.overview && movie.title) {
+      try {
+        const res = await fetch(`${API}/api/movies/search?q=${encodeURIComponent(movie.title)}`);
+        if (res.ok) {
+          const searchResults = await res.json();
+          const match = searchResults.find(m => String(m.id) === String(movieId));
+          if (match) {
+            setSelectedPostMovie((prev) => String(prev?.id) === String(match.id) ? match : prev);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch full movie details:", err);
+      }
+    }
   };
 
   // Helper function to render a movie card
@@ -457,9 +539,13 @@ export default function Profile({ user }) {
             src={`https://image.tmdb.org/t/p/w200${movie.posterPath}`}
             alt={movie.title}
             className={`${sizeClasses} aspect-[2/3] object-cover rounded-lg shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer hover:scale-105`}
+                onClick={() => handleViewMovieDetails(movie)}
           />
         ) : (
-          <div className={`${sizeClasses} aspect-[2/3] bg-gray-200 rounded-lg flex items-center justify-center text-xs text-gray-500 shadow-md`}>
+              <div 
+                className={`${sizeClasses} aspect-[2/3] bg-gray-200 rounded-lg flex items-center justify-center text-xs text-gray-500 shadow-md cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200`}
+                onClick={() => handleViewMovieDetails(movie)}
+              >
             <FilmIcon className="w-6 h-6" />
           </div>
         )}
@@ -515,16 +601,7 @@ export default function Profile({ user }) {
                 <button
                   className="absolute top-0 right-0 w-8 h-8 rounded-full bg-black bg-opacity-60 text-white flex items-center justify-center hover:bg-opacity-80 transition-all"
                   title="View Movie Details"
-                  onClick={() => setSelectedPostMovie({
-                    id: movie.tmdbId,
-                    title: movie.title,
-                    poster_path: movie.posterPath,
-                    release_date: movie.releaseDate,
-                    overview: movie.overview,
-                    backdrop_path: movie.backdropPath,
-                    genre_ids: movie.genre_ids,
-                    vote_average: movie.vote_average,
-                  })}
+                  onClick={() => handleViewMovieDetails(movie)}
                 >
                   <InformationCircleIcon className="w-4 h-4" />
                 </button>
@@ -629,16 +706,7 @@ export default function Profile({ user }) {
             <button
               className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black bg-opacity-60 text-white flex items-center justify-center hover:bg-opacity-80 transition-all"
               title="View Movie Details"
-              onClick={() => setSelectedPostMovie({
-                id: post.movie.tmdbId,
-                title: post.movie.title,
-                poster_path: post.movie.posterPath,
-                release_date: post.movie.releaseDate,
-                overview: post.movie.overview,
-                backdrop_path: post.movie.backdropPath,
-                genre_ids: post.movie.genre_ids,
-                vote_average: post.movie.vote_average,
-              })}
+              onClick={() => handleViewMovieDetails(post.movie)}
             >
               <InformationCircleIcon className="w-4 h-4" />
             </button>
@@ -960,7 +1028,7 @@ export default function Profile({ user }) {
       {/* Posts */}
       <div className="bg-white rounded-xl shadow-sm p-6">
         <h2 className="text-xl font-bold text-gray-900 mb-4">
-          Posts ({posts.length})
+          Posts ({profile?.posts?.length || 0})
         </h2>
 
         {/* Post Filter Tabs */}
@@ -973,7 +1041,7 @@ export default function Profile({ user }) {
                 : "bg-slate-50 text-slate-600 hover:bg-slate-100"
             }`}
           >
-            All ({posts.length})
+            All ({profile?.posts?.length || 0})
           </button>
           <button
             onClick={() => setPostFilter("posts")}
@@ -983,7 +1051,7 @@ export default function Profile({ user }) {
                 : "bg-slate-50 text-slate-600 hover:bg-slate-100"
             }`}
           >
-            Thoughts ({posts.filter(p => p.type !== 'movie_activity').length})
+            Thoughts ({profile?.posts?.filter(p => p.type !== 'movie_activity').length || 0})
           </button>
           <button
             onClick={() => setPostFilter("activity")}
@@ -993,7 +1061,7 @@ export default function Profile({ user }) {
                 : "bg-slate-50 text-slate-600 hover:bg-slate-100"
             }`}
           >
-            Movie Activity ({posts.filter(p => p.type === 'movie_activity').length})
+            Movie Activity ({profile?.posts?.filter(p => p.type === 'movie_activity').length || 0})
           </button>
         </div>
 
@@ -1014,31 +1082,31 @@ export default function Profile({ user }) {
             return true;
           });
 
-          if (filteredPosts.length === 0) {
-            return (
-              <div className="text-center py-12 text-gray-500">
-                <ChatBubbleLeftIcon className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                <p className="text-lg font-medium">No matching posts</p>
-                <p className="text-sm mt-1">
-                  {postFilter === "posts" ? "No movie thoughts shared yet." : "No movie watchlist or watched activity yet."}
-                </p>
-              </div>
-            );
-          }
-
           return (
             <>
-              <div className="columns-1 sm:columns-2 gap-6">
-                {filteredPosts.map((post) => (
-                  <div key={post._id} className="break-inside-avoid mb-6">
-                    {renderPost(post)}
-                  </div>
-                ))}
-              </div>
+              {filteredPosts.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <ChatBubbleLeftIcon className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                  <p className="text-lg font-medium">No matching posts</p>
+                  <p className="text-sm mt-1">
+                    {postFilter === "posts" ? "No movie thoughts shared yet." : "No movie watchlist or watched activity yet."}
+                  </p>
+                </div>
+              ) : (
+                <div className="columns-1 sm:columns-2 gap-6">
+                  {filteredPosts.map((post) => (
+                    <div key={post._id} className="break-inside-avoid mb-6">
+                      {renderPost(post)}
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {postsHasMore && (
                 <div className="text-center mt-6">
-                  <button onClick={loadMorePosts} className="px-6 py-2 bg-white border border-gray-200 rounded text-purple-600 font-medium">Load More Posts</button>
+                  <button onClick={loadMorePosts} disabled={postsLoading} className="px-6 py-2 bg-white border border-gray-200 rounded-lg text-purple-600 font-medium hover:bg-gray-50 transition-colors">
+                    {postsLoading ? "Loading..." : "Load More Posts"}
+                  </button>
                 </div>
               )}
             </>

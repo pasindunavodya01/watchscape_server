@@ -404,6 +404,10 @@ export default function MyProfile({ user, onLogout }) {
       const res = await fetch(`${API}/api/posts/${postId}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete post");
       setPosts((prev) => prev.filter((p) => p._id !== postId));
+      setProfile((prev) => prev ? {
+        ...prev,
+        posts: prev.posts?.filter((p) => p._id !== postId)
+      } : prev);
       toast.success('Post deleted');
     } catch (err) {
       console.error(err);
@@ -425,6 +429,48 @@ export default function MyProfile({ user, onLogout }) {
     } catch (err) {
       console.error(err);
       alert("Failed to edit post");
+    }
+  };
+
+  const handleLoadMorePosts = async () => {
+    if (postsLoading || !postsHasMore) return;
+    setPostsLoading(true);
+
+    let nextPage = postsPage + 1;
+    let newlyFetched = [];
+    let newlyFetchedMatchingCount = 0;
+    let moreAvailable = postsHasMore;
+
+    try {
+      while (moreAvailable && newlyFetchedMatchingCount < 5) {
+        const res = await fetch(`${API}/api/posts?userId=${user.uid}&page=${nextPage}&limit=${postsLimit}`);
+        const data = await res.json();
+        const postsArray = Array.isArray(data) ? data : [];
+        
+        newlyFetched = [...newlyFetched, ...postsArray];
+        moreAvailable = postsArray.length === postsLimit;
+        
+        const matches = postsArray.filter((post) => {
+          if (postFilter === "posts") return post.type !== "movie_activity";
+          if (postFilter === "activity") return post.type === "movie_activity";
+          return true;
+        });
+        
+        newlyFetchedMatchingCount += matches.length;
+        
+        if (moreAvailable && newlyFetchedMatchingCount < 5) {
+          nextPage++;
+        }
+      }
+
+      setPosts((prev) => [...prev, ...newlyFetched]);
+      setPostsPage(nextPage);
+      setPostsHasMore(moreAvailable);
+    } catch (err) {
+      console.error(err);
+      setPostsHasMore(false);
+    } finally {
+      setPostsLoading(false);
     }
   };
 
@@ -580,6 +626,38 @@ export default function MyProfile({ user, onLogout }) {
     setEditSocialLinks({ ...editSocialLinks, custom: newCustom });
   };
 
+  const handleViewMovieDetails = async (movie) => {
+    const movieId = movie.tmdbId || movie.id;
+    
+    // Show modal immediately with basic info
+    setSelectedPostMovie({
+      id: movieId,
+      title: movie.title,
+      poster_path: movie.posterPath || movie.poster_path,
+      release_date: movie.releaseDate || movie.release_date,
+      overview: movie.overview,
+      backdrop_path: movie.backdropPath || movie.backdrop_path,
+      genre_ids: movie.genre_ids,
+      vote_average: movie.vote_average,
+    });
+
+    // If overview is missing, try to fetch full details via search
+    if (!movie.overview && movie.title) {
+      try {
+        const res = await fetch(`${API}/api/movies/search?q=${encodeURIComponent(movie.title)}`);
+        if (res.ok) {
+          const searchResults = await res.json();
+          const match = searchResults.find(m => String(m.id) === String(movieId));
+          if (match) {
+              setSelectedPostMovie((prev) => String(prev?.id) === String(match.id) ? match : prev);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch full movie details:", err);
+      }
+    }
+  };
+
   // Helper functions
   const getMoviePoster = (post) => {
     if (post.type === 'movie_activity' && post.movieActivity?.movie?.posterPath) {
@@ -651,16 +729,7 @@ export default function MyProfile({ user, onLogout }) {
                 <button
                   className="absolute top-0 right-0 w-8 h-8 rounded-full bg-black bg-opacity-60 text-white flex items-center justify-center hover:bg-opacity-80 transition-all"
                   title="View Movie Details"
-                  onClick={() => setSelectedPostMovie({
-                    id: movie.tmdbId,
-                    title: movie.title,
-                    poster_path: movie.posterPath,
-                    release_date: movie.releaseDate,
-                    overview: movie.overview,
-                    backdrop_path: movie.backdropPath,
-                    genre_ids: movie.genre_ids,
-                    vote_average: movie.vote_average,
-                  })}
+                  onClick={() => handleViewMovieDetails(movie)}
                 >
                   <InformationCircleIcon className="w-4 h-4" />
                 </button>
@@ -770,16 +839,7 @@ export default function MyProfile({ user, onLogout }) {
             <button
               className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black bg-opacity-60 text-white flex items-center justify-center hover:bg-opacity-80 transition-all"
               title="View Movie Details"
-              onClick={() => setSelectedPostMovie({
-                id: post.movie.tmdbId,
-                title: post.movie.title,
-                poster_path: post.movie.posterPath,
-                release_date: post.movie.releaseDate,
-                overview: post.movie.overview,
-                backdrop_path: post.movie.backdropPath,
-                genre_ids: post.movie.genre_ids,
-                vote_average: post.movie.vote_average,
-              })}
+              onClick={() => handleViewMovieDetails(post.movie)}
             >
               <InformationCircleIcon className="w-4 h-4" />
             </button>
@@ -907,6 +967,20 @@ export default function MyProfile({ user, onLogout }) {
     fetchMyPosts(1);
   }, [user]);
 
+  // Auto-load more posts if a filter leaves us with too few posts
+  useEffect(() => {
+    const currentFiltered = posts.filter((post) => {
+      if (postFilter === "posts") return post.type !== "movie_activity";
+      if (postFilter === "activity") return post.type === "movie_activity";
+      return true;
+    });
+
+    if (currentFiltered.length < 5 && postsHasMore && !postsLoading) {
+      handleLoadMorePosts();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [postFilter, posts.length, postsHasMore, postsLoading]);
+
   // If browsing as guest, show a simple login prompt instead of profile content
   if (!user?.uid || user?.isGuest) {
     return (
@@ -1012,17 +1086,19 @@ export default function MyProfile({ user, onLogout }) {
             <div className="flex gap-2">
               <button
                 onClick={() => setIsEditingProfile(true)}
-                className="flex items-center gap-1.5 px-4 py-2 bg-violet-50 text-violet-700 hover:bg-violet-100 rounded-xl text-sm font-semibold border border-violet-200 transition-all"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-4 sm:py-2 bg-violet-50 text-violet-700 hover:bg-violet-100 rounded-xl text-xs sm:text-sm font-semibold border border-violet-200 transition-all"
               >
                 <PencilIcon className="w-4 h-4" />
+                <PencilIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span>Edit Profile</span>
               </button>
               {onLogout && (
                 <button
                   onClick={onLogout}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-xl text-sm font-semibold transition-all"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-4 sm:py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-xl text-xs sm:text-sm font-semibold transition-all"
                 >
                   <PowerIcon className="w-4 h-4" />
+                  <PowerIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span>Log out</span>
                 </button>
               )}
@@ -1087,7 +1163,7 @@ export default function MyProfile({ user, onLogout }) {
               <p className="text-xs text-slate-500">Following</p>
             </button>
             <div className="text-center">
-              <p className="text-xl font-bold text-slate-900">{posts.length}</p>
+              <p className="text-xl font-bold text-slate-900">{profile?.posts?.length || 0}</p>
               <p className="text-xs text-slate-500">Posts</p>
             </div>
           </div>
@@ -1197,16 +1273,7 @@ export default function MyProfile({ user, onLogout }) {
                     <XMarkIcon className="w-4 h-4" />
                   </button>
                   <button 
-                    onClick={() => setSelectedPostMovie({
-                      id: film.tmdbId || film.id,
-                      title: film.title,
-                      poster_path: film.posterPath || film.poster_path,
-                      release_date: film.releaseDate || film.release_date,
-                      overview: film.overview,
-                      backdrop_path: film.backdropPath || film.backdrop_path,
-                      genre_ids: film.genre_ids,
-                      vote_average: film.vote_average,
-                    })}
+                    onClick={() => handleViewMovieDetails(film)}
                     className="absolute top-2 left-2 w-8 h-8 bg-black bg-opacity-60 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-opacity-80"
                   >
                     <InformationCircleIcon className="w-4 h-4" />
@@ -1228,7 +1295,7 @@ export default function MyProfile({ user, onLogout }) {
       {/* Posts */}
       <div className="bg-white rounded-xl shadow-sm p-6">
         <h2 className="text-xl font-bold text-gray-900 mb-4">
-          My Posts ({posts.length})
+          My Posts ({profile?.posts?.length || 0})
         </h2>
 
         {/* Post Filter Tabs */}
@@ -1241,7 +1308,7 @@ export default function MyProfile({ user, onLogout }) {
                 : "bg-slate-50 text-slate-600 hover:bg-slate-100"
             }`}
           >
-            All ({posts.length})
+            All ({profile?.posts?.length || 0})
           </button>
           <button
             onClick={() => setPostFilter("posts")}
@@ -1251,7 +1318,7 @@ export default function MyProfile({ user, onLogout }) {
                 : "bg-slate-50 text-slate-600 hover:bg-slate-100"
             }`}
           >
-            Thoughts ({posts.filter(p => p.type !== 'movie_activity').length})
+            Thoughts ({profile?.posts?.filter(p => p.type !== 'movie_activity').length || 0})
           </button>
           <button
             onClick={() => setPostFilter("activity")}
@@ -1261,7 +1328,7 @@ export default function MyProfile({ user, onLogout }) {
                 : "bg-slate-50 text-slate-600 hover:bg-slate-100"
             }`}
           >
-            Movie Activity ({posts.filter(p => p.type === 'movie_activity').length})
+            Movie Activity ({profile?.posts?.filter(p => p.type === 'movie_activity').length || 0})
           </button>
         </div>
 
@@ -1282,36 +1349,30 @@ export default function MyProfile({ user, onLogout }) {
             return true;
           });
 
-          if (filteredPosts.length === 0) {
-            return (
-              <div className="text-center py-12 text-gray-500">
-                <ChatBubbleLeftIcon className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                <p className="text-lg font-medium">No matching posts</p>
-                <p className="text-sm mt-1">
-                  {postFilter === "posts" ? "No movie thoughts shared yet." : "No movie watchlist or watched activity yet."}
-                </p>
-              </div>
-            );
-          }
-
           return (
             <>
-              <div className="columns-1 sm:columns-2 gap-6">
-                {filteredPosts.map((post) => (
-                  <div key={post._id} className="break-inside-avoid mb-6">
-                    {renderPost(post)}
-                  </div>
-                ))}
-              </div>
+              {filteredPosts.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <ChatBubbleLeftIcon className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                  <p className="text-lg font-medium">No matching posts</p>
+                  <p className="text-sm mt-1">
+                    {postFilter === "posts" ? "No movie thoughts shared yet." : "No movie watchlist or watched activity yet."}
+                  </p>
+                </div>
+              ) : (
+                <div className="columns-1 sm:columns-2 gap-6">
+                  {filteredPosts.map((post) => (
+                    <div key={post._id} className="break-inside-avoid mb-6">
+                      {renderPost(post)}
+                    </div>
+                  ))}
+                </div>
+              )}
               {postsHasMore && (
                 <div className="text-center mt-6">
                   <button
-                    onClick={() => {
-                      const next = postsPage + 1;
-                      setPostsPage(next);
-                      fetchMyPosts(next);
-                    }}
-                    className="px-6 py-2 bg-white border border-gray-200 rounded-lg text-purple-600 font-medium hover:bg-gray-50"
+                    onClick={handleLoadMorePosts}
+                    className="px-6 py-2 bg-white border border-gray-200 rounded-lg text-purple-600 font-medium hover:bg-gray-50 transition-colors"
                     disabled={postsLoading}
                   >
                     {postsLoading ? "Loading..." : "Load More Posts"}
