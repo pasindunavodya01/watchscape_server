@@ -1088,7 +1088,6 @@ export default function MyProfile({ user, onLogout }) {
                 onClick={() => setIsEditingProfile(true)}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-4 sm:py-2 bg-violet-50 text-violet-700 hover:bg-violet-100 rounded-xl text-xs sm:text-sm font-semibold border border-violet-200 transition-all"
               >
-                <PencilIcon className="w-4 h-4" />
                 <PencilIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span>Edit Profile</span>
               </button>
@@ -1097,7 +1096,6 @@ export default function MyProfile({ user, onLogout }) {
                   onClick={onLogout}
                   className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-4 sm:py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-xl text-xs sm:text-sm font-semibold transition-all"
                 >
-                  <PowerIcon className="w-4 h-4" />
                   <PowerIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span>Log out</span>
                 </button>
