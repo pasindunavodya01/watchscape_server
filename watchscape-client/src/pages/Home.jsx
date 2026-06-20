@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import ProfileLink from "../components/ProfileLink";
 import {
@@ -625,6 +625,7 @@ export default function Home({ user, onMovieChange }) {
   const [postsLoading, setPostsLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [feedMode, setFeedMode] = useState("following"); // "following" | "discover"
 
   // people search
   const [showPeopleSearch, setShowPeopleSearch] = useState(false);
@@ -651,10 +652,16 @@ export default function Home({ user, onMovieChange }) {
   }, [selectedMovie]);
 
   // ── fetch posts ──
-  const fetchPosts = async (pageNum = 1) => {
+  const fetchPosts = useCallback(async (pageNum = 1, mode = feedMode) => {
     if (pageNum === 1) setPostsLoading(true);
     try {
-      const res = await fetch(`${API}/api/posts?page=${pageNum}&limit=10`);
+      let url;
+      if (mode === "following" && user?.uid && !user?.isGuest) {
+        url = `${API}/api/posts/feed?page=${pageNum}&limit=10&userId=${user.uid}`;
+      } else {
+        url = `${API}/api/posts?page=${pageNum}&limit=10`;
+      }
+      const res = await fetch(url);
       const data = await res.json();
       if (pageNum === 1) setPosts(data);
       else setPosts((prev) => [...prev, ...data]);
@@ -665,9 +672,9 @@ export default function Home({ user, onMovieChange }) {
     } finally {
       setPostsLoading(false);
     }
-  };
+  }, [feedMode, user]);
 
-  useEffect(() => { fetchPosts(1); }, []);
+  useEffect(() => { fetchPosts(1); }, [feedMode, user?.uid]);
 
   useEffect(() => {
     let mounted = true;
@@ -900,16 +907,44 @@ export default function Home({ user, onMovieChange }) {
       <div className="flex items-center justify-between pb-2 border-b border-slate-200/60">
         <div>
           <h1 className="text-xl font-bold text-slate-800 tracking-tight">Home Feed</h1>
-          <p className="text-xs text-slate-400">See what your friends are watching</p>
+          <p className="text-xs text-slate-400">
+            {feedMode === "following" ? "Posts from people you follow" : "Discover posts from everyone"}
+          </p>
         </div>
-        <button
-          onClick={() => setShowPeopleSearch(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all text-xs font-semibold text-violet-600 shadow-sm"
-          title="Search People"
-        >
-          <UserPlusIcon className="w-3.5 h-3.5" />
-          <span>Find People</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {user && !user.isGuest && (
+            <div className="flex bg-slate-100 rounded-xl p-0.5">
+              <button
+                onClick={() => { setFeedMode("following"); setPage(1); }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  feedMode === "following"
+                    ? "bg-violet-600 text-white shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                Following
+              </button>
+              <button
+                onClick={() => { setFeedMode("discover"); setPage(1); }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  feedMode === "discover"
+                    ? "bg-violet-600 text-white shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                Discover
+              </button>
+            </div>
+          )}
+          <button
+            onClick={() => setShowPeopleSearch(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all text-xs font-semibold text-violet-600 shadow-sm"
+            title="Search People"
+          >
+            <UserPlusIcon className="w-3.5 h-3.5" />
+            <span>Find People</span>
+          </button>
+        </div>
       </div>
 
       {/* ── Composer ── */}
@@ -1146,10 +1181,36 @@ export default function Home({ user, onMovieChange }) {
         ) : posts.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
             <div className="w-16 h-16 bg-violet-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <ChatBubbleLeftIcon className="w-8 h-8 text-violet-300" />
+              {feedMode === "following" ? (
+                <UserPlusIcon className="w-8 h-8 text-violet-300" />
+              ) : (
+                <ChatBubbleLeftIcon className="w-8 h-8 text-violet-300" />
+              )}
             </div>
-            <p className="text-lg font-semibold text-slate-700">No posts yet</p>
-            <p className="text-slate-400 text-sm mt-1">Start sharing your movie thoughts!</p>
+            <p className="text-lg font-semibold text-slate-700">
+              {feedMode === "following" ? "No posts from your circle yet" : "No posts yet"}
+            </p>
+            <p className="text-slate-400 text-sm mt-1">
+              {feedMode === "following"
+                ? "Follow people to see their posts here, or switch to Discover!"
+                : "Start sharing your movie thoughts!"}
+            </p>
+            {feedMode === "following" && (
+              <div className="flex justify-center gap-3 mt-4">
+                <button
+                  onClick={() => setShowPeopleSearch(true)}
+                  className="px-4 py-2 bg-violet-600 text-white rounded-xl text-sm font-semibold hover:bg-violet-500 transition-colors flex items-center gap-1.5"
+                >
+                  <UserPlusIcon className="w-4 h-4" /> Find People
+                </button>
+                <button
+                  onClick={() => { setFeedMode("discover"); setPage(1); }}
+                  className="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors"
+                >
+                  Discover
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <>

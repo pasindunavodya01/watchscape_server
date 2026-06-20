@@ -85,6 +85,93 @@ router.post("/movie-activity", async (req, res) => {
   }
 });
 
+// GET FOLLOWING-ONLY FEED
+router.get("/feed", async (req, res) => {
+  try {
+    const { page = 1, limit = 10, userId } = req.query;
+    if (!userId) return res.status(400).json({ message: "userId is required for feed" });
+
+    const pageNum = parseInt(page, 10) || 1;
+    const lim = parseInt(limit, 10) || 10;
+    const skip = (pageNum - 1) * lim;
+
+    // Look up who this user follows
+    const currentUser = await User.findOne({ uid: userId }).lean();
+    const followingList = currentUser?.following || [];
+
+    // Show posts from people I follow + my own posts
+    const feedUserIds = [...followingList, userId];
+
+    const posts = await Post.find({ userId: { $in: feedUserIds } })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(lim)
+      .lean();
+
+    const detailedPosts = await Promise.all(
+      posts.map(async (post) => {
+        if (!post.userName && post.username) post.userName = post.username;
+
+        try {
+          const author = await User.findOne({ uid: post.userId }).lean();
+          if (author) {
+            if (!post.userName) post.userName = author.username || author.name || author.email;
+            post.userProfilePic = author.profilePic;
+          }
+        } catch (e) { /* ignore */ }
+
+        const enrichMovie = async (movieObj) => {
+          if (!movieObj?.tmdbId) return movieObj;
+          try {
+            const tmdbRes = await axios.get(
+              `https://api.themoviedb.org/3/movie/${movieObj.tmdbId}`,
+              { params: { api_key: process.env.TMDB_API_KEY, language: "en-US" } }
+            );
+            return {
+              ...movieObj,
+              posterPath: tmdbRes.data.poster_path,
+              backdropPath: tmdbRes.data.backdrop_path,
+              overview: movieObj.overview || tmdbRes.data.overview,
+              releaseDate: movieObj.releaseDate || tmdbRes.data.release_date,
+              genre_ids: tmdbRes.data.genres?.map(g => g.id) || [],
+              vote_average: tmdbRes.data.vote_average,
+              tmdbDetails: tmdbRes.data,
+            };
+          } catch (err) {
+            console.log("TMDB fetch error:", err.message);
+            return movieObj;
+          }
+        };
+
+        if (post.movie) post.movie = await enrichMovie(post.movie);
+        if (post.type === 'movie_activity' && post.movieActivity?.movie) {
+          post.movieActivity.movie = await enrichMovie(post.movieActivity.movie);
+        }
+
+        post.comments = post.comments || [];
+        for (const comment of post.comments) {
+          try {
+            const user = await User.findOne({ uid: comment.userId }).lean();
+            if (!comment.userName) {
+              comment.userName = user ? user.username || user.name || user.email : comment.userId;
+            }
+            comment.userProfilePic = user ? user.profilePic : null;
+          } catch (error) {
+            if (!comment.userName) comment.userName = comment.userId;
+          }
+        }
+        post.comments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        return post;
+      })
+    );
+
+    res.json(detailedPosts);
+  } catch (err) {
+    console.error("Feed error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // GET ALL POSTS
 // GET ALL POSTS WITH FULL MOVIE DETAILS
 router.get("/", async (req, res) => {
