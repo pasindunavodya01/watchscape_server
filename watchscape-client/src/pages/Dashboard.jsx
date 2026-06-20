@@ -56,7 +56,7 @@ export default function Dashboard({ user, onLogout }) {
   }, []);
 
   return (
-    <div className="h-screen flex flex-col bg-slate-950">
+    <div className="h-screen-dvh flex flex-col bg-slate-950">
       {/* Fixed top navbar */}
       <Navbar
         user={user}
@@ -66,12 +66,12 @@ export default function Dashboard({ user, onLogout }) {
       />
 
       {/* Main layout row */}
-      <div className="flex flex-grow pt-16 min-h-[calc(100vh-64px)]">
+      <div className="flex flex-grow pt-16" style={{ minHeight: 'calc(100dvh - 64px)' }}>
         {/* Desktop sidebar */}
         <Sidebar
           user={user}
           onLogout={onLogout}
-          className="hidden md:flex fixed top-16 left-0 w-60 h-[calc(100vh-64px)]"
+          className="hidden md:flex fixed top-16 left-0 w-60" style={{ height: 'calc(100dvh - 64px)' }}
         />
 
         {/* Mobile sidebar overlay */}
@@ -82,7 +82,7 @@ export default function Dashboard({ user, onLogout }) {
               onLogout={onLogout}
               overlay
               onClose={() => setSidebarOpen(false)}
-              className="fixed top-16 left-0 w-64 h-[calc(100vh-64px)] z-50 animate-fade-in-left"
+              className="fixed top-16 left-0 w-64 z-50 animate-fade-in-left" style={{ height: 'calc(100dvh - 64px)' }}
             />
             <div
               className="fixed inset-0 bg-black/50 z-40 animate-fade-in"
@@ -92,7 +92,7 @@ export default function Dashboard({ user, onLogout }) {
         )}
 
         {/* Main content */}
-        <main className="flex-grow min-h-[calc(100vh-64px)] overflow-auto md:ml-60 lg:mr-72 bg-slate-50 pb-24 md:pb-0">
+        <main className="flex-grow overflow-auto md:ml-60 lg:mr-72 bg-slate-50 pb-28 md:pb-0" style={{ minHeight: 'calc(100dvh - 64px)' }}>
           <Routes>
             <Route index element={<Home user={user} onMovieChange={refreshCounts} />} />
             <Route path="search"         element={<Search user={user} onMovieChange={refreshCounts} />} />
@@ -109,7 +109,7 @@ export default function Dashboard({ user, onLogout }) {
         <Rightbar
           counts={counts}
           user={user}
-          className="hidden lg:flex fixed top-16 right-0 w-72 h-[calc(100vh-64px)]"
+          className="hidden lg:flex fixed top-16 right-0 w-72" style={{ height: 'calc(100dvh - 64px)' }}
         />
 
         {/* Mobile rightbar overlay */}
@@ -121,7 +121,7 @@ export default function Dashboard({ user, onLogout }) {
               onClose={() => setRightbarOpen(false)}
               user={user}
               onLogout={onLogout}
-              className="fixed top-16 right-0 w-72 h-[calc(100vh-64px)] z-50 animate-slide-in-right overflow-y-auto"
+              className="fixed top-16 right-0 w-72 z-50 animate-slide-in-right overflow-y-auto" style={{ height: 'calc(100dvh - 64px)' }}
             />
             <div
               className="fixed inset-0 bg-black/50 z-40 animate-fade-in"
@@ -131,7 +131,7 @@ export default function Dashboard({ user, onLogout }) {
         )}
 
         {/* Mobile bottom nav */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 flex justify-around items-center h-20 z-50 safe-area-bottom pb-2">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-lg border-t border-slate-800 flex justify-around items-center z-50" style={{ paddingBottom: 'env(safe-area-inset-bottom, 8px)', height: 'calc(64px + env(safe-area-inset-bottom, 8px))' }}>
           {mobileNav.map(({ to, icon: Icon, iconA: IconA, label, end }) => (
             <NavLink
               key={to}
