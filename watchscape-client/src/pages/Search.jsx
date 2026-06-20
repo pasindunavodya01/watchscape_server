@@ -6,6 +6,7 @@ import {
   MagnifyingGlassIcon, XMarkIcon, FireIcon, FilmIcon,
   BookmarkIcon, EyeIcon, StarIcon, InformationCircleIcon
 } from "@heroicons/react/24/outline";
+import useBodyScrollLock from "../hooks/useBodyScrollLock";
 
 const genreMap = {
   28:"Action",12:"Adventure",16:"Animation",35:"Comedy",80:"Crime",
@@ -203,6 +204,8 @@ export default function Search({ user, onMovieChange }) {
   const [loading, setLoading] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
+
+  useBodyScrollLock(!!selectedMovie);
 
   const fetchPopular = async () => {
     setLoading(true);

@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import ProfileLink from "../components/ProfileLink";
+import ConfirmDialog from "../components/ConfirmDialog";
+import useBodyScrollLock from "../hooks/useBodyScrollLock";
 import {
   UserIcon,
   FilmIcon,
@@ -176,6 +178,9 @@ export default function MyProfile({ user, onLogout }) {
     website: "",
     custom: []
   });
+  const [confirmDeletePostId, setConfirmDeletePostId] = useState(null);
+
+  useBodyScrollLock(!!selectedPostMovie || !!showFullProfilePic);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -212,7 +217,7 @@ export default function MyProfile({ user, onLogout }) {
       }
     } catch (error) {
       console.error("Upload error:", error);
-      alert("Failed to upload image");
+      toast.error("Failed to upload image");
     } finally {
       setUploadingImage(false);
     }
@@ -398,7 +403,7 @@ export default function MyProfile({ user, onLogout }) {
     }
   };
 
-  // Delete post
+  // Delete post (called from confirmation dialog)
   const deletePost = async (postId) => {
     try {
       const res = await fetch(`${API}/api/posts/${postId}`, { method: "DELETE" });
@@ -409,6 +414,7 @@ export default function MyProfile({ user, onLogout }) {
         posts: prev.posts?.filter((p) => p._id !== postId)
       } : prev);
       toast.success('Post deleted');
+      setConfirmDeletePostId(null);
     } catch (err) {
       console.error(err);
       toast.error("Failed to delete post");
@@ -425,10 +431,10 @@ export default function MyProfile({ user, onLogout }) {
       });
       if (!res.ok) throw new Error("Failed to edit post");
       setPosts((prev) => prev.map((p) => (p._id === postId ? { ...p, text: newText } : p)));
-      alert("Post updated successfully!");
+      toast.success("Post updated!");
     } catch (err) {
       console.error(err);
-      alert("Failed to edit post");
+      toast.error("Failed to edit post");
     }
   };
 
@@ -576,14 +582,18 @@ export default function MyProfile({ user, onLogout }) {
         }),
       });
       if (res.ok) {
-        alert(`Movie added to your ${status}!`);
+        toast.success(`Added to ${status}! 🎬`);
       } else {
         const errData = await res.json();
-        alert(errData.message === 'Movie already in this list' ? `Movie is already in your ${status}!` : (errData.message || "Failed to add movie"));
+        if (errData.message === 'Movie already in this list') {
+          toast.success(`Already in your ${status}`);
+        } else {
+          toast.error(errData.message || "Failed to add movie");
+        }
       }
     } catch (error) {
       console.error(error);
-      alert("Error adding movie");
+      toast.error("Error adding movie");
     }
   };
 
@@ -603,7 +613,7 @@ export default function MyProfile({ user, onLogout }) {
       setIsEditingProfile(false);
     } catch (error) {
       console.error(error);
-      alert("Failed to update profile");
+      toast.error("Failed to update profile");
     }
   };
 
@@ -780,7 +790,7 @@ export default function MyProfile({ user, onLogout }) {
                     placeholder="Add a comment..."
                     value={commentText}
                     onChange={(e) => setCommentTexts(prev => ({ ...prev, [post._id]: e.target.value }))}
-                    onKeyPress={(e) => handleCommentKeyPress(e, post._id)}
+                    onKeyDown={(e) => handleCommentKeyPress(e, post._id)}
                     className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                   />
                   <button
@@ -890,7 +900,7 @@ export default function MyProfile({ user, onLogout }) {
                   placeholder="Add a comment..."
                   value={commentText}
                   onChange={(e) => setCommentTexts(prev => ({ ...prev, [post._id]: e.target.value }))}
-                  onKeyPress={(e) => handleCommentKeyPress(e, post._id)}
+                  onKeyDown={(e) => handleCommentKeyPress(e, post._id)}
                   className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                 />
                 <button
@@ -948,8 +958,8 @@ export default function MyProfile({ user, onLogout }) {
                 Edit
               </button>
               <button
-                onClick={() => deletePost(post._id)}
-                className="flex items-center gap-1 text-xs text-red-600 hover:text-red-700 transition-colors"
+                onClick={() => setConfirmDeletePostId(post._id)}
+                className="flex items-center gap-1 text-xs text-red-600 hover:text-red-700 transition-colors press-scale"
               >
                 <TrashIcon className="w-3 h-3" />
                 Delete
@@ -1638,6 +1648,16 @@ export default function MyProfile({ user, onLogout }) {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmDeletePostId}
+        title="Delete this post?"
+        message="This post will be permanently deleted. This action cannot be undone."
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={() => deletePost(confirmDeletePostId)}
+        onCancel={() => setConfirmDeletePostId(null)}
+      />
     </div>
   );
 }

@@ -6,6 +6,8 @@
 @layer base {
   * {
     box-sizing: border-box;
+    /* Remove iOS tap highlight on all elements */
+    -webkit-tap-highlight-color: transparent;
   }
 
   html {
@@ -25,10 +27,33 @@
     overflow: hidden;
   }
 
+  /* Lock body scroll when modal is open */
+  body.modal-open {
+    overflow: hidden !important;
+    position: fixed;
+    width: 100%;
+    touch-action: none;
+  }
+
   #root {
     height: 100%;
     height: 100dvh;
     overflow: hidden;
+  }
+
+  /* Prevent text selection on interactive elements */
+  button, a, [role="button"], nav, .no-select {
+    -webkit-user-select: none;
+    user-select: none;
+    /* Prevent double-tap zoom on touch devices */
+    touch-action: manipulation;
+  }
+
+  /* Ensure inputs/textareas remain selectable */
+  input, textarea, [contenteditable="true"] {
+    -webkit-user-select: auto;
+    user-select: auto;
+    touch-action: auto;
   }
 
   /* Custom scrollbar */
@@ -224,4 +249,25 @@
     min-height: 100vh;
     min-height: 100dvh;
   }
+
+  /* ── Touch feedback: press-scale ────────────────────────── */
+  /* Gives instant visual tap feedback on mobile */
+  .press-scale {
+    transition: transform 0.1s ease;
+  }
+  .press-scale:active {
+    transform: scale(0.96);
+  }
+
+  /* Like button pop animation */
+  .like-pop {
+    animation: likePop 0.35s ease-in-out;
+  }
+}
+
+@keyframes likePop {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.35); }
+  60%  { transform: scale(0.9); }
+  100% { transform: scale(1); }
 }

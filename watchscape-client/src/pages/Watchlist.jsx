@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from 'react-router-dom';
 import { API } from "../config";
 import toast from 'react-hot-toast';
+import ConfirmDialog from "../components/ConfirmDialog";
+import useBodyScrollLock from "../hooks/useBodyScrollLock";
 import {
   BookmarkIcon, FilmIcon, EyeIcon, TrashIcon,
   StarIcon, XMarkIcon, InformationCircleIcon
@@ -89,6 +91,11 @@ export default function Watchlist({ user, onMovieChange }) {
   const limit = 12;
   const [hasMore, setHasMore] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState(null);
+  const [removingIds, setRemovingIds] = useState({});
+  const [markingIds, setMarkingIds] = useState({});
+  const [confirmRemove, setConfirmRemove] = useState(null); // movie._id to confirm
+
+  useBodyScrollLock(!!selectedMovie);
 
   const fetchMovies = async (pageNum = 1) => {
     if (!user?.uid || user?.isGuest) { setMovies([]); setLoading(false); return; }
@@ -110,6 +117,8 @@ export default function Watchlist({ user, onMovieChange }) {
   const loadMore = () => { const next = page + 1; setPage(next); fetchMovies(next); };
 
   const removeMovie = async (id, closeModal = false) => {
+    if (removingIds[id]) return; // double-tap guard
+    setRemovingIds(prev => ({ ...prev, [id]: true }));
     const movieToRemove = movies.find(m => m._id === id);
     try {
       const res = await fetch(`${API}/api/movies/${id}`, { method: "DELETE" });
@@ -127,11 +136,15 @@ export default function Watchlist({ user, onMovieChange }) {
         onMovieChange?.();
         toast.success('Removed from watchlist');
         if (closeModal) setSelectedMovie(null);
+        setConfirmRemove(null);
       } else { toast.error("Failed to remove movie"); }
     } catch { toast.error("Error removing movie"); }
+    finally { setRemovingIds(prev => ({ ...prev, [id]: false })); }
   };
 
   const markAsWatched = async (movie) => {
+    if (markingIds[movie._id]) return; // double-tap guard
+    setMarkingIds(prev => ({ ...prev, [movie._id]: true }));
     const loadingToast = toast.loading('Marking as watched...');
     try {
       const res = await fetch(`${API}/api/posts/movie-activity`, {
@@ -158,6 +171,7 @@ export default function Watchlist({ user, onMovieChange }) {
         toast.error("Failed to mark as watched");
       }
     } catch { toast.dismiss(loadingToast); toast.error("Error updating movie"); }
+    finally { setMarkingIds(prev => ({ ...prev, [movie._id]: false })); }
   };
 
   return (
@@ -242,10 +256,10 @@ export default function Watchlist({ user, onMovieChange }) {
                     <h3 className="font-semibold text-slate-800 text-sm line-clamp-2 leading-snug mb-1">{movie.title}</h3>
                     {year && <p className="text-xs text-slate-400 mb-3">{year}</p>}
                     <div className="space-y-1.5">
-                      <button onClick={() => markAsWatched(movie)} className="w-full flex items-center justify-center gap-1.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition-colors">
-                        <EyeIcon className="w-3.5 h-3.5" /> Watched
+                      <button onClick={() => markAsWatched(movie)} disabled={markingIds[movie._id]} className="w-full flex items-center justify-center gap-1.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition-colors press-scale disabled:opacity-50">
+                        <EyeIcon className="w-3.5 h-3.5" /> {markingIds[movie._id] ? 'Moving...' : 'Watched'}
                       </button>
-                      <button onClick={() => removeMovie(movie._id)} className="w-full flex items-center justify-center gap-1.5 py-1.5 bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 text-xs font-semibold rounded-lg transition-colors">
+                      <button onClick={() => setConfirmRemove(movie._id)} disabled={removingIds[movie._id]} className="w-full flex items-center justify-center gap-1.5 py-1.5 bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 text-xs font-semibold rounded-lg transition-colors press-scale disabled:opacity-50">
                         <TrashIcon className="w-3.5 h-3.5" /> Remove
                       </button>
                     </div>
@@ -269,9 +283,20 @@ export default function Watchlist({ user, onMovieChange }) {
           movie={selectedMovie}
           onClose={() => setSelectedMovie(null)}
           onMarkWatched={() => markAsWatched(selectedMovie)}
-          onRemove={() => removeMovie(selectedMovie._id, true)}
+          onRemove={() => setConfirmRemove(selectedMovie._id)}
         />
       )}
+
+      <ConfirmDialog
+        open={!!confirmRemove}
+        title="Remove from watchlist?"
+        message="This movie will be removed from your watchlist."
+        confirmLabel="Remove"
+        variant="danger"
+        loading={removingIds[confirmRemove]}
+        onConfirm={() => removeMovie(confirmRemove, !!selectedMovie)}
+        onCancel={() => setConfirmRemove(null)}
+      />
     </div>
   );
 }

@@ -205,7 +205,7 @@ export default function PostDetail({ user }) {
                 placeholder="Write a comment..."
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyDown={handleKeyPress}
                 className="w-full p-3 border border-slate-200 rounded-xl resize-none text-sm focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400 outline-none bg-slate-50 text-slate-800 placeholder-slate-400"
                 rows={2}
               />

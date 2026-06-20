@@ -131,28 +131,29 @@ export default function Dashboard({ user, onLogout }) {
         )}
 
         {/* Mobile bottom nav */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-lg border-t border-slate-800 flex justify-around items-center z-50" style={{ paddingBottom: 'env(safe-area-inset-bottom, 8px)', height: 'calc(64px + env(safe-area-inset-bottom, 8px))' }}>
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-lg border-t border-slate-800 flex justify-around items-stretch z-50 no-select" style={{ paddingBottom: 'env(safe-area-inset-bottom, 8px)', height: 'calc(60px + env(safe-area-inset-bottom, 8px))' }}>
           {mobileNav.map(({ to, icon: Icon, iconA: IconA, label, end }) => (
             <NavLink
               key={to}
               to={to}
               end={end}
               className={({ isActive }) =>
-                `flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors ${
-                  isActive ? 'text-violet-400' : 'text-slate-500 hover:text-slate-300'
+                `relative flex flex-col items-center justify-center flex-1 min-w-[56px] min-h-[44px] gap-0.5 transition-all duration-150 press-scale ${
+                  isActive ? 'text-violet-400' : 'text-slate-500 active:text-slate-300'
                 }`
               }
             >
               {({ isActive }) => (
                 <>
-                  {isActive
-                    ? <IconA className="w-5 h-5" />
-                    : <Icon className="w-5 h-5" />
-                  }
-                  <span className="text-[10px] font-medium">{label}</span>
-                  {/* Active dot */}
+                  <div className={`p-1.5 rounded-xl transition-colors ${isActive ? 'bg-violet-500/10' : ''}`}>
+                    {isActive
+                      ? <IconA className="w-5 h-5" />
+                      : <Icon className="w-5 h-5" />
+                    }
+                  </div>
+                  <span className="text-[10px] font-medium leading-none">{label}</span>
                   {isActive && (
-                    <span className="absolute bottom-0 w-6 h-0.5 bg-violet-500 rounded-full" />
+                    <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-violet-500 rounded-full" />
                   )}
                 </>
               )}

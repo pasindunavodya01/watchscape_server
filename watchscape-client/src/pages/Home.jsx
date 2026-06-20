@@ -20,6 +20,7 @@ import {
 import { HeartIcon as HeartSolid } from "@heroicons/react/24/solid";
 import { API } from "../config";
 import toast from "react-hot-toast";
+import useBodyScrollLock from "../hooks/useBodyScrollLock";
 
 const genreMap = {
   28:"Action",12:"Adventure",16:"Animation",35:"Comedy",80:"Crime",
@@ -645,6 +646,8 @@ export default function Home({ user, onMovieChange }) {
   const [globalMovieResults, setGlobalMovieResults] = useState([]);
   const [globalMovieLoading, setGlobalMovieLoading] = useState(false);
   const [activeModalMovie, setActiveModalMovie] = useState(null);
+
+  useBodyScrollLock(!!activeModalMovie || !!showPeopleSearch);
 
   const postMoviePreviewUrl = useMemo(() => {
     const path = selectedMovie?.poster_path || selectedMovie?.posterPath;

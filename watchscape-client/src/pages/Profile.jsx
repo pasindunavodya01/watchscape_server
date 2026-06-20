@@ -18,6 +18,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartSolid } from "@heroicons/react/24/solid";
 import { API } from "../config";
+import toast from 'react-hot-toast';
 
 // Genre mapping for TMDB
 const genreMap = {
@@ -394,14 +395,18 @@ export default function Profile({ user }) {
         }),
       });
       if (res.ok) {
-        alert(`Movie added to your ${status}!`);
+        toast.success(`Added to ${status}! 🎬`);
       } else {
         const errData = await res.json();
-        alert(errData.message === 'Movie already in this list' ? `Movie is already in your ${status}!` : (errData.message || "Failed to add movie"));
+        if (errData.message === 'Movie already in this list') {
+          toast.success(`Already in your ${status}`);
+        } else {
+          toast.error(errData.message || "Failed to add movie");
+        }
       }
     } catch (error) {
       console.error(error);
-      alert("Error adding movie");
+      toast.error("Error adding movie");
     }
   };
 
@@ -649,7 +654,7 @@ export default function Profile({ user }) {
                     placeholder="Add a comment..."
                     value={commentText}
                     onChange={(e) => setCommentTexts(prev => ({ ...prev, [post._id]: e.target.value }))}
-                    onKeyPress={(e) => handleCommentKeyPress(e, post._id)}
+                    onKeyDown={(e) => handleCommentKeyPress(e, post._id)}
                     className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                   />
                   <button
@@ -746,7 +751,7 @@ export default function Profile({ user }) {
                   placeholder="Add a comment..."
                   value={commentText}
                   onChange={(e) => setCommentTexts(prev => ({ ...prev, [post._id]: e.target.value }))}
-                  onKeyPress={(e) => handleCommentKeyPress(e, post._id)}
+                  onKeyDown={(e) => handleCommentKeyPress(e, post._id)}
                   className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                 />
                 <button
