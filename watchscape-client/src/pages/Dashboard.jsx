@@ -67,12 +67,12 @@ export default function Dashboard({ user, onLogout }) {
         onOpenNotifications={() => { setRightbarOpen(false); setSidebarOpen(false); }}
       />
 
-      <div className="flex flex-grow pt-16 md:min-h-0 md:overflow-hidden">
+      <div className="flex flex-grow pt-below-header md:min-h-0 md:overflow-hidden">
         {/* Desktop sidebar */}
         <Sidebar
           user={user}
           onLogout={onLogout}
-          className="hidden md:flex fixed top-16 left-0 w-60 h-below-nav"
+          className="hidden md:flex fixed top-below-header left-0 w-60 h-below-nav"
         />
 
         {/* Mobile sidebar overlay */}
@@ -110,7 +110,7 @@ export default function Dashboard({ user, onLogout }) {
         <Rightbar
           counts={counts}
           user={user}
-          className="hidden lg:flex fixed top-16 right-0 w-72 h-below-nav"
+          className="hidden lg:flex fixed top-below-header right-0 w-72 h-below-nav"
         />
 
         {/* Mobile rightbar overlay */}

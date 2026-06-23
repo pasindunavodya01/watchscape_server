@@ -4,6 +4,13 @@
 
 /* ─── Base ─────────────────────────────────────────────────────────── */
 @layer base {
+  :root {
+    --nav-bar-height: 4rem;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --header-total-height: calc(var(--nav-bar-height) + var(--safe-top));
+  }
+
   * {
     box-sizing: border-box;
     /* Remove iOS tap highlight on all elements */
@@ -229,11 +236,26 @@
 
   /* Safe area insets for notched / gesture-bar devices */
   .safe-area-bottom {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-bottom: var(--safe-bottom);
   }
 
   .safe-area-top {
-    padding-top: env(safe-area-inset-top, 0px);
+    padding-top: var(--safe-top);
+  }
+
+  /* App header — accounts for iPhone notch / Dynamic Island in standalone PWA */
+  .app-header {
+    box-sizing: border-box;
+    padding-top: var(--safe-top);
+    height: var(--header-total-height);
+  }
+
+  .pt-below-header {
+    padding-top: var(--header-total-height);
+  }
+
+  .top-below-header {
+    top: var(--header-total-height);
   }
 
   /* Dynamic viewport height helpers */
@@ -257,11 +279,11 @@
   }
 
   .h-below-nav {
-    height: calc(var(--app-vh, 100svh) - 4rem);
+    height: calc(var(--app-vh, 100svh) - var(--header-total-height));
   }
 
   .pb-mobile-nav {
-    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(var(--nav-bar-height) + var(--safe-bottom));
   }
 
   .mobile-bottom-nav {
@@ -270,14 +292,14 @@
     right: 0;
     bottom: 0;
     z-index: 50;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-bottom: var(--safe-bottom);
     transform: translateY(var(--app-vh-offset, 0px));
   }
 
   .mobile-overlay-panel {
     position: fixed;
-    top: 4rem;
-    height: calc(var(--app-vh, 100svh) - 4rem);
+    top: var(--header-total-height);
+    height: calc(var(--app-vh, 100svh) - var(--header-total-height));
     transform: translateY(var(--app-vh-offset, 0px));
   }
 
