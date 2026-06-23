@@ -32,7 +32,7 @@ export default function Navbar({ user, onToggleSidebar, onToggleRightbar, onOpen
 
   return (
     <header
-      className={`fixed top-0 left-0 w-full h-16 z-50 flex items-center px-4 transition-all duration-300 ${
+      className={`mobile-chrome-aware fixed top-0 left-0 w-full h-16 z-50 flex items-center px-4 transition-all duration-300 ${
         scrolled
           ? 'bg-slate-900/95 backdrop-blur-md shadow-dark border-b border-slate-800/80'
           : 'bg-slate-900 border-b border-slate-800'

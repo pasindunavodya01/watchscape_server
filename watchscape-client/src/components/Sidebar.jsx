@@ -39,7 +39,7 @@ export default function Sidebar({ user, onLogout, className = "", overlay = fals
     <aside className={`${className} bg-slate-900 border-r border-slate-800 flex flex-col min-h-0 overflow-hidden`}>
       {/* Mobile close button */}
       {overlay && (
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
+        <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b border-slate-800">
           <div className="flex items-center gap-2">
             <svg className="w-5 h-5 text-violet-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
               <rect x="2" y="6" width="20" height="13" rx="2" />

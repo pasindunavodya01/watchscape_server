@@ -247,6 +247,62 @@
     min-height: 100dvh;
   }
 
+  /* Visible viewport (tracks mobile URL bar show/hide via JS) */
+  .h-app-vh {
+    height: var(--app-vh, 100svh);
+  }
+
+  .min-h-app-vh {
+    min-height: var(--app-vh, 100svh);
+  }
+
+  .h-below-nav {
+    height: calc(var(--app-vh, 100svh) - 4rem);
+  }
+
+  .pb-mobile-nav {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .mobile-bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    transform: translateY(var(--app-vh-offset, 0px));
+  }
+
+  .mobile-overlay-panel {
+    position: fixed;
+    top: 4rem;
+    height: calc(var(--app-vh, 100svh) - 4rem);
+    transform: translateY(var(--app-vh-offset, 0px));
+  }
+
+  .mobile-overlay-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--app-vh, 100svh);
+    transform: translateY(var(--app-vh-offset, 0px));
+  }
+
+  .mobile-chrome-aware {
+    transform: translateY(var(--app-vh-offset, 0px));
+  }
+
+  @media (min-width: 768px) {
+    .mobile-chrome-aware,
+    .mobile-bottom-nav,
+    .mobile-overlay-panel,
+    .mobile-overlay-backdrop {
+      transform: none;
+    }
+  }
+
   /* ── Touch feedback: press-scale ────────────────────────── */
   /* Gives instant visual tap feedback on mobile */
   .press-scale {

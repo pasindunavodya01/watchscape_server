@@ -17,6 +17,24 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <script>
+      (function () {
+        function setAppVh() {
+          var vv = window.visualViewport;
+          var h = vv ? vv.height : window.innerHeight;
+          var top = vv ? vv.offsetTop : 0;
+          document.documentElement.style.setProperty('--app-vh', h + 'px');
+          document.documentElement.style.setProperty('--app-vh-offset', top + 'px');
+        }
+        setAppVh();
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener('resize', setAppVh);
+          window.visualViewport.addEventListener('scroll', setAppVh);
+        }
+        window.addEventListener('resize', setAppVh);
+        window.addEventListener('orientationchange', setAppVh);
+      })();
+    </script>
+    <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker

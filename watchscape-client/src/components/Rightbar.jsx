@@ -82,10 +82,10 @@ export default function Rightbar({
   };
 
   return (
-    <aside className={`${className} bg-slate-900 border-l border-slate-800 flex flex-col overflow-y-auto`}>
+    <aside className={`${className} bg-slate-900 border-l border-slate-800 flex flex-col min-h-0 overflow-hidden`}>
       {/* Close button (mobile) */}
       {overlay && (
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
+        <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b border-slate-800">
           <span className="text-white font-semibold text-sm">Menu</span>
           <button onClick={onClose} className="text-slate-500 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors">
             <XMarkIcon className="h-5 w-5" />
@@ -93,7 +93,7 @@ export default function Rightbar({
         </div>
       )}
 
-      <div className="flex-1 p-4 space-y-5">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 space-y-5">
         {/* Greeting */}
         {user && !user.isGuest && (
           <div className="animate-fade-in">
@@ -202,7 +202,7 @@ export default function Rightbar({
 
       {/* Mobile logout */}
       {overlay && onLogout && user && !user.isGuest && (
-        <div className="p-4 border-t border-slate-800">
+        <div className="flex-shrink-0 p-4 border-t border-slate-800">
           <button
             onClick={onLogout}
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-all duration-200"

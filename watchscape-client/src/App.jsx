@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import useVisualViewport from './hooks/useVisualViewport';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from './firebase';
@@ -49,6 +50,8 @@ function LoadingScreen() {
 }
 
 export default function App() {
+  useVisualViewport();
+
   const [user, setUser] = useState(null);
   const [guestUser, setGuestUser] = useState(null);
   const [loading, setLoading] = useState(true);
