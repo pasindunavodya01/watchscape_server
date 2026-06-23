@@ -56,7 +56,7 @@ export default function Dashboard({ user, onLogout }) {
   }, []);
 
   return (
-    <div className="h-screen-dvh flex flex-col bg-slate-950">
+    <div className="h-screen-dvh flex flex-col bg-slate-950 overflow-hidden">
       {/* Fixed top navbar */}
       <Navbar
         user={user}

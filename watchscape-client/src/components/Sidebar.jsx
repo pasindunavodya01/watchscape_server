@@ -36,7 +36,7 @@ export default function Sidebar({ user, onLogout, className = "", overlay = fals
   };
 
   return (
-    <aside className={`${className} bg-slate-900 border-r border-slate-800 flex flex-col overflow-hidden`}>
+    <aside className={`${className} bg-slate-900 border-r border-slate-800 flex flex-col min-h-0 overflow-hidden`}>
       {/* Mobile close button */}
       {overlay && (
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
@@ -58,7 +58,7 @@ export default function Sidebar({ user, onLogout, className = "", overlay = fals
       )}
 
       {/* Nav items */}
-      <nav className="flex-1 px-3 py-5 space-y-0.5">
+      <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-5 space-y-0.5">
         {menuItems.map(({ name, to, icon: Icon, iconActive: IconActive, end }) => (
           <NavLink
             key={name}
