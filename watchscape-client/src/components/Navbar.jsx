@@ -8,7 +8,6 @@ export default function Navbar({ user, onToggleSidebar, onToggleRightbar, onOpen
   const navigate = useNavigate();
   const location = useLocation();
   const [profilePic, setProfilePic] = useState(user?.photoURL || null);
-  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     if (user?.uid && !user?.isGuest) {
@@ -19,25 +18,13 @@ export default function Navbar({ user, onToggleSidebar, onToggleRightbar, onOpen
     }
   }, [user]);
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 4);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
   const initials = (() => {
     const name = user?.displayName || user?.name || user?.email || '';
     return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || 'U';
   })();
 
   return (
-    <header
-      className={`mobile-chrome-aware app-header fixed top-0 left-0 w-full z-50 flex items-center px-4 transition-all duration-300 ${
-        scrolled
-          ? 'bg-slate-900/95 backdrop-blur-md shadow-dark border-b border-slate-800/80'
-          : 'bg-slate-900 border-b border-slate-800'
-      }`}
-    >
+    <header className="app-header fixed top-0 left-0 w-full z-50 flex items-center px-4 bg-slate-900 border-b border-slate-800">
       {/* Left: brand */}
       <div className="flex items-center gap-3 flex-1">
         {/* Brand */}

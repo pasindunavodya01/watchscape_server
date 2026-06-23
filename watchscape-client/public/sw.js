@@ -1,4 +1,4 @@
-const CACHE_NAME = 'watchscape-mqqovxa0';
+const CACHE_NAME = 'watchscape-mqqpn8ip';
 
 const PRECACHE_URLS = [
   '/manifest.json',

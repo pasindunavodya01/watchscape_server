@@ -59,7 +59,7 @@ export default function Dashboard({ user, onLogout }) {
   }, []);
 
   return (
-    <div className="flex flex-col bg-slate-950 min-h-app-vh md:h-screen-dvh md:overflow-hidden">
+    <div className="h-screen-dvh flex flex-col bg-slate-950 overflow-hidden">
       <Navbar
         user={user}
         onToggleSidebar={() => setSidebarOpen(prev => !prev)}
@@ -67,15 +67,13 @@ export default function Dashboard({ user, onLogout }) {
         onOpenNotifications={() => { setRightbarOpen(false); setSidebarOpen(false); }}
       />
 
-      <div className="flex flex-grow pt-below-header md:min-h-0 md:overflow-hidden">
-        {/* Desktop sidebar */}
+      <div className="flex flex-1 min-h-0 pt-below-header">
         <Sidebar
           user={user}
           onLogout={onLogout}
           className="hidden md:flex fixed top-below-header left-0 w-60 h-below-nav"
         />
 
-        {/* Mobile sidebar overlay */}
         {sidebarOpen && (
           <>
             <Sidebar
@@ -83,17 +81,16 @@ export default function Dashboard({ user, onLogout }) {
               onLogout={onLogout}
               overlay
               onClose={() => setSidebarOpen(false)}
-              className="mobile-overlay-panel left-0 w-64 z-50 animate-fade-in-left"
+              className="mobile-overlay-panel left-0 w-64 animate-fade-in-left"
             />
             <div
-              className="mobile-overlay-backdrop bg-black/50 z-40 animate-fade-in"
+              className="mobile-overlay-backdrop bg-black/50 animate-fade-in"
               onClick={() => setSidebarOpen(false)}
             />
           </>
         )}
 
-        {/* Main: document scroll on mobile, inner scroll on desktop */}
-        <main className="flex-grow bg-slate-50 md:overflow-auto md:ml-60 lg:mr-72 pb-mobile-nav md:pb-0 md:min-h-0 md:h-below-nav">
+        <main className="app-main-scroll flex-1 min-h-0 bg-slate-50 md:ml-60 lg:mr-72 pb-mobile-nav md:pb-0">
           <Routes>
             <Route index element={<Home user={user} onMovieChange={refreshCounts} />} />
             <Route path="search"         element={<Search user={user} onMovieChange={refreshCounts} />} />
@@ -106,14 +103,12 @@ export default function Dashboard({ user, onLogout }) {
           <Outlet />
         </main>
 
-        {/* Desktop rightbar */}
         <Rightbar
           counts={counts}
           user={user}
           className="hidden lg:flex fixed top-below-header right-0 w-72 h-below-nav"
         />
 
-        {/* Mobile rightbar overlay */}
         {rightbarOpen && (
           <>
             <Rightbar
@@ -122,35 +117,31 @@ export default function Dashboard({ user, onLogout }) {
               onClose={() => setRightbarOpen(false)}
               user={user}
               onLogout={onLogout}
-              className="mobile-overlay-panel right-0 w-72 z-50 animate-slide-in-right"
+              className="mobile-overlay-panel right-0 w-72 animate-slide-in-right"
             />
             <div
-              className="mobile-overlay-backdrop bg-black/50 z-40 animate-fade-in"
+              className="mobile-overlay-backdrop bg-black/50 animate-fade-in"
               onClick={() => setRightbarOpen(false)}
             />
           </>
         )}
 
-        {/* Mobile bottom nav — pinned to visible viewport bottom */}
-        <nav className="md:hidden mobile-bottom-nav bg-slate-900/95 backdrop-blur-lg border-t border-slate-800 flex justify-around items-stretch no-select h-16">
+        <nav className="md:hidden mobile-bottom-nav bg-slate-900 border-t border-slate-800 flex justify-around items-stretch no-select">
           {mobileNav.map(({ to, icon: Icon, iconA: IconA, label, end }) => (
             <NavLink
               key={to}
               to={to}
               end={end}
               className={({ isActive }) =>
-                `relative flex flex-col items-center justify-center flex-1 min-w-[56px] min-h-[44px] gap-0.5 transition-all duration-150 press-scale ${
+                `relative flex flex-col items-center justify-center flex-1 min-w-[56px] min-h-[44px] gap-0.5 press-scale ${
                   isActive ? 'text-violet-400' : 'text-slate-500 active:text-slate-300'
                 }`
               }
             >
               {({ isActive }) => (
                 <>
-                  <div className={`p-1.5 rounded-xl transition-colors ${isActive ? 'bg-violet-500/10' : ''}`}>
-                    {isActive
-                      ? <IconA className="w-5 h-5" />
-                      : <Icon className="w-5 h-5" />
-                    }
+                  <div className={`p-1.5 rounded-xl ${isActive ? 'bg-violet-500/10' : ''}`}>
+                    {isActive ? <IconA className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
                   </div>
                   <span className="text-[10px] font-medium leading-none">{label}</span>
                   {isActive && (

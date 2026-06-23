@@ -65,7 +65,7 @@ export default function Landing({ startGuest }) {
   };
 
   return (
-    <div className="relative min-h-app-vh bg-slate-950 overflow-x-hidden flex flex-col safe-area-top">
+    <div className="relative min-h-screen-dvh bg-slate-950 overflow-x-hidden flex flex-col safe-area-top">
       {/* ── Ambient glow blobs ───────────────────────────── */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -left-40 w-96 h-96 bg-violet-700/30 rounded-full blur-3xl animate-float" />
