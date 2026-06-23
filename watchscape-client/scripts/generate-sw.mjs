@@ -1,4 +1,11 @@
-const CACHE_NAME = 'watchscape-mqqo82ot';
+import { writeFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const version = Date.now().toString(36);
+
+const sw = `const CACHE_NAME = 'watchscape-${version}';
 
 const PRECACHE_URLS = [
   '/manifest.json',
@@ -73,3 +80,7 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+`;
+
+writeFileSync(join(__dirname, "..", "public", "sw.js"), sw, "utf8");
+console.log(`Generated service worker (cache: watchscape-${version})`);
