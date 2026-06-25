@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from './firebase';
 import { Toaster } from 'react-hot-toast';
+import AddToHomeScreenPrompt from './components/AddToHomeScreen';
 
 import Landing from './pages/Landing';
 import Login from './pages/Login';
@@ -97,6 +98,7 @@ export default function App() {
           },
         }}
       />
+      <AddToHomeScreenPrompt />
       <Router>
         <Routes>
           {/* Public routes */}
