@@ -43,7 +43,7 @@ export default function AddToHomeScreenPrompt() {
   );
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[92%] max-w-md z-[100] animate-fade-in-up">
+    <div className="fixed bottom-4 left-4 right-4 mx-auto max-w-md z-[100] animate-fade-in-up">
       <div className="bg-slate-800 text-white rounded-xl shadow-2xl p-4 flex items-start gap-3 border border-slate-700">
         <div className="w-10 h-10 bg-violet-600 rounded-lg flex items-center justify-center flex-shrink-0">
           <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
