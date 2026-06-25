@@ -16,6 +16,24 @@ const genreMap = {
   10770:"TV Movie",53:"Thriller",10752:"War",37:"Western"
 };
 
+const getGenreNames = (movie) => {
+  if (!movie) return [];
+  if (Array.isArray(movie.genreNames)) return movie.genreNames.slice(0, 3);
+  if (Array.isArray(movie.genres)) {
+    return movie.genres
+      .map((g) => (typeof g === "string" ? g : g?.name || genreMap[g?.id]))
+      .filter(Boolean)
+      .slice(0, 3);
+  }
+  if (Array.isArray(movie.genre_ids)) {
+    return movie.genre_ids.map((id) => genreMap[id]).filter(Boolean).slice(0, 3);
+  }
+  if (Array.isArray(movie.genreIds)) {
+    return movie.genreIds.map((id) => genreMap[id]).filter(Boolean).slice(0, 3);
+  }
+  return [];
+};
+
 function SkeletonCard() {
   return (
     <div className="rounded-xl overflow-hidden bg-white border border-slate-200 animate-pulse">
@@ -35,17 +53,18 @@ function MovieModal({ movie, onClose, onMarkWatched, onRemove }) {
   const posterPath = movie.posterPath;
   const backdropPath = movie.backdropPath;
   const rating = movie.vote_average;
+  const genreNames = getGenreNames(movie);
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center p-4 z-50 animate-fade-in" onClick={onClose}>
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-dark-lg flex flex-col" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[90dvh] overflow-hidden shadow-dark-lg flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="relative h-40 sm:h-48 bg-slate-950 flex-shrink-0">
           {backdropPath
             ? <img src={`https://image.tmdb.org/t/p/w780${backdropPath}`} alt={movie.title} className="w-full h-full object-cover" />
             : <div className="h-full bg-gradient-to-br from-violet-900 to-slate-900" />
           }
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
-          <button onClick={onClose} className="absolute top-3 right-3 w-9 h-9 bg-black/40 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-black/60 transition-all">
+          <button onClick={onClose} className="absolute z-20 top-3 right-3 w-9 h-9 bg-black/50 backdrop-blur-sm text-white rounded-full border border-white/20 flex items-center justify-center hover:bg-black/70 transition-all">
             <XMarkIcon className="w-5 h-5" />
           </button>
           {rating > 0 && (
@@ -55,7 +74,7 @@ function MovieModal({ movie, onClose, onMarkWatched, onRemove }) {
             </div>
           )}
         </div>
-        <div className="p-5">
+        <div className="flex-1 overflow-y-auto p-5">
           <div className="flex gap-4">
             {posterPath
               ? <img src={`https://image.tmdb.org/t/p/w300${posterPath}`} alt={movie.title} className="w-20 sm:w-28 aspect-[2/3] object-contain bg-slate-800 rounded-xl shadow-dark flex-shrink-0 relative z-10 -mt-12 sm:-mt-16 ring-2 ring-slate-800" />
@@ -64,6 +83,15 @@ function MovieModal({ movie, onClose, onMarkWatched, onRemove }) {
             <div className="flex-1 min-w-0 pt-2">
               <h2 className="text-xl font-bold text-white leading-tight mb-1">{movie.title}</h2>
               {movie.releaseDate && <p className="text-slate-400 text-sm">{new Date(movie.releaseDate).getFullYear()}</p>}
+              {genreNames.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {genreNames.map((name) => (
+                    <span key={name} className="px-2 py-0.5 bg-violet-600/20 text-violet-300 text-xs rounded-full border border-violet-600/30">
+                      {name}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
           {movie.overview && <p className="mt-4 text-slate-400 text-sm leading-relaxed">{movie.overview}</p>}

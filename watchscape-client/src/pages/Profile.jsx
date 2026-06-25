@@ -28,6 +28,20 @@ const genreMap = {
   53: "Thriller", 10752: "War", 37: "Western"
 };
 
+const getGenreNames = (movie) => {
+  if (!movie) return [];
+  if (Array.isArray(movie.genreNames)) return movie.genreNames.slice(0, 3);
+  if (Array.isArray(movie.genres)) {
+    return movie.genres
+      .map((g) => (typeof g === "string" ? g : g?.name || genreMap[g?.id]))
+      .filter(Boolean)
+      .slice(0, 3);
+  }
+  const ids = movie.genre_ids || movie.genreIds;
+  if (Array.isArray(ids)) return ids.map((id) => genreMap[id]).filter(Boolean).slice(0, 3);
+  return [];
+};
+
 const ensureAbsoluteUrl = (url) => {
   if (!url) return "";
   return url.startsWith("http://") || url.startsWith("https://") ? url : `https://${url}`;
@@ -40,7 +54,7 @@ function MovieModal({ movie, onClose, onAdd }) {
   const backdropPath = movie.backdrop_path || movie.backdropPath;
   const releaseDate = movie.release_date || movie.releaseDate;
   const rating = movie.vote_average;
-  const genreIds = movie.genre_ids;
+  const genreNames = getGenreNames(movie);
 
   return (
     <div
@@ -48,7 +62,7 @@ function MovieModal({ movie, onClose, onAdd }) {
       onClick={onClose}
     >
       <div
-        className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-dark-lg flex flex-col"
+        className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[90dvh] overflow-hidden shadow-dark-lg flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Backdrop */}
@@ -61,7 +75,7 @@ function MovieModal({ movie, onClose, onAdd }) {
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
           <button
             onClick={onClose}
-            className="absolute top-3 right-3 w-9 h-9 bg-black/40 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-black/60 transition-all"
+            className="absolute z-20 top-3 right-3 w-9 h-9 bg-black/50 backdrop-blur-sm text-white rounded-full border border-white/20 flex items-center justify-center hover:bg-black/70 transition-all"
           >
             <XMarkIcon className="w-5 h-5" />
           </button>
@@ -74,7 +88,7 @@ function MovieModal({ movie, onClose, onAdd }) {
         </div>
 
         {/* Content */}
-        <div className="p-4 sm:p-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           <div className="flex gap-4">
             {posterPath ? (
               <img
@@ -90,11 +104,11 @@ function MovieModal({ movie, onClose, onAdd }) {
             <div className="flex-1 min-w-0 pt-2">
               <h2 className="text-xl font-bold text-white leading-tight mb-1">{movie.title}</h2>
               {releaseDate && <p className="text-slate-400 text-sm">{new Date(releaseDate).getFullYear()}</p>}
-              {genreIds && genreIds.length > 0 && (
+              {genreNames.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-2">
-                  {genreIds.slice(0, 3).map((id) => genreMap[id] && (
-                    <span key={id} className="px-2 py-0.5 bg-violet-600/20 text-violet-300 text-xs rounded-full border border-violet-600/30">
-                      {genreMap[id]}
+                  {genreNames.map((name) => (
+                    <span key={name} className="px-2 py-0.5 bg-violet-600/20 text-violet-300 text-xs rounded-full border border-violet-600/30">
+                      {name}
                     </span>
                   ))}
                 </div>
