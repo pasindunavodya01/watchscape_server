@@ -76,8 +76,6 @@ export default function Signup() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [name, setName] = useState("");
-  const [country, setCountry] = useState("");
-  const [age, setAge] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -89,8 +87,6 @@ export default function Signup() {
   const validate = () => {
     const errs = {};
     if (!name.trim()) errs.name = 'Full name is required.';
-    if (!country.trim()) errs.country = 'Country is required.';
-    if (!age || isNaN(age) || age < 1) errs.age = 'Enter a valid age.';
     if (!email.trim()) errs.email = 'Email is required.';
     else if (!/\S+@\S+\.\S+/.test(email)) errs.email = 'Enter a valid email.';
     if (!password) errs.password = 'Password is required.';
@@ -111,7 +107,7 @@ export default function Signup() {
       await fetch(`${API}/api/users`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ uid: user.uid, email, name, country, age }),
+        body: JSON.stringify({ uid: user.uid, email, name }),
       });
       toast.success('Account created! Welcome to Watchscape 🎬');
       const dest = location.state?.from || '/dashboard';
@@ -183,35 +179,6 @@ export default function Signup() {
                 className={inputClass(errors.name)}
               />
               {errors.name && <p className="mt-1 text-xs text-rose-400">{errors.name}</p>}
-            </div>
-
-            {/* Country + Age */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Country</label>
-                <input
-                  id="signup-country"
-                  type="text"
-                  placeholder="e.g. Sri Lanka"
-                  value={country}
-                  onChange={(e) => { setCountry(e.target.value); setErrors(p => ({ ...p, country: '' })); }}
-                  className={inputClass(errors.country)}
-                />
-                {errors.country && <p className="mt-1 text-xs text-rose-400">{errors.country}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Age</label>
-                <input
-                  id="signup-age"
-                  type="number"
-                  placeholder="25"
-                  value={age}
-                  onChange={(e) => { setAge(e.target.value); setErrors(p => ({ ...p, age: '' })); }}
-                  className={inputClass(errors.age)}
-                  min="1"
-                />
-                {errors.age && <p className="mt-1 text-xs text-rose-400">{errors.age}</p>}
-              </div>
             </div>
 
             {/* Email */}

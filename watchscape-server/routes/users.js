@@ -18,10 +18,12 @@ const router = express.Router();
 // REGISTER / SAVE USER (no changes)
 router.post("/", async (req, res) => {
   try {
-    const { uid, email, name, country, age } = req.body;
+    const { uid, email, name } = req.body;
     const userExists = await User.findOne({ uid });
     if (userExists) return res.status(400).json({ message: "User already exists" });
-    const newUser = new User({ uid, email, name, country, age });
+    const country = "Sri Lanka";
+    const age = 24;
+    const newUser = new User({ uid, email, name, country, age, });
     await newUser.save();
     res.status(201).json({ message: "User saved" });
   } catch (err) {
