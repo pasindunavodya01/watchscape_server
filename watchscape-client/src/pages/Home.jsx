@@ -907,19 +907,19 @@ export default function Home({ user, onMovieChange }) {
   return (
     <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 space-y-4">
       {/* ── Feed Header with Search People ── */}
-      <div className="flex items-center justify-between pb-2 border-b border-slate-200/60">
-        <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-slate-200/60">
+        <div className="min-w-0">
           <h1 className="text-xl font-bold text-slate-800 tracking-tight">Home Feed</h1>
           <p className="text-xs text-slate-400">
             {feedMode === "following" ? "Posts from people you follow" : "Discover posts from everyone"}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {user && !user.isGuest && (
             <div className="flex bg-slate-100 rounded-xl p-0.5">
               <button
                 onClick={() => { setFeedMode("following"); setPage(1); }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   feedMode === "following"
                     ? "bg-violet-600 text-white shadow-sm"
                     : "text-slate-500 hover:text-slate-700"
@@ -929,7 +929,7 @@ export default function Home({ user, onMovieChange }) {
               </button>
               <button
                 onClick={() => { setFeedMode("discover"); setPage(1); }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   feedMode === "discover"
                     ? "bg-violet-600 text-white shadow-sm"
                     : "text-slate-500 hover:text-slate-700"
@@ -941,10 +941,10 @@ export default function Home({ user, onMovieChange }) {
           )}
           <button
             onClick={() => setShowPeopleSearch(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all text-xs font-semibold text-violet-600 shadow-sm"
+            className="flex items-center justify-center gap-1.5 min-h-[36px] px-3 py-1.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors text-xs font-semibold text-violet-600 shadow-sm whitespace-nowrap"
             title="Search People"
           >
-            <UserPlusIcon className="w-3.5 h-3.5" />
+            <UserPlusIcon className="w-4 h-4 shrink-0" />
             <span>Find People</span>
           </button>
         </div>

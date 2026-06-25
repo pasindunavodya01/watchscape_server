@@ -42,20 +42,22 @@ export default function Navbar({ user, onToggleSidebar, onToggleRightbar, onOpen
       </div>
 
       {/* Right section */}
-      <div className="flex items-center gap-2">
-        {/* Guest login button */}
+      <div className="flex items-center gap-1.5 sm:gap-2">
+        {/* Guest login */}
         {(!user?.uid || user?.isGuest) && (
           <button
             onClick={() => navigate('/login', { state: { from: location.pathname } })}
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold rounded-lg transition-all duration-200 hover:shadow-brand"
+            className="inline-flex items-center justify-center gap-1.5 min-h-[36px] px-3 py-1.5 bg-violet-600 hover:bg-violet-500 active:bg-violet-700 text-white text-xs sm:text-sm font-semibold rounded-lg transition-colors shrink-0"
           >
-            <ArrowRightOnRectangleIcon className="w-4 h-4" />
-            Log in
+            <ArrowRightOnRectangleIcon className="w-4 h-4 shrink-0" />
+            <span className="whitespace-nowrap">Log in</span>
           </button>
         )}
 
-        {/* Notification bell */}
-        <NotificationBadge user={user} onOpenNotifications={onOpenNotifications} />
+        {/* Notification bell — signed-in users only */}
+        {user && !user.isGuest && (
+          <NotificationBadge user={user} onOpenNotifications={onOpenNotifications} />
+        )}
 
         {/* User name (desktop) */}
         {user && !user.isGuest && (
@@ -85,18 +87,7 @@ export default function Navbar({ user, onToggleSidebar, onToggleRightbar, onOpen
           </div>
         )}
 
-        {/* Mobile: guest login icon */}
-        {(!user?.uid || user?.isGuest) && (
-          <button
-            onClick={() => navigate('/login', { state: { from: location.pathname } })}
-            className="sm:hidden text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors"
-            aria-label="Login"
-          >
-            <ArrowRightOnRectangleIcon className="h-5 w-5" />
-          </button>
-        )}
-
-        {/* Mobile: three-dots toggle for rightbar */}
+        {/* Mobile: menu toggle */}
         <button
           className="lg:hidden text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors"
           onClick={onToggleRightbar}

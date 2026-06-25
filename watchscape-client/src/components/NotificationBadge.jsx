@@ -43,13 +43,13 @@ export default function NotificationBadge({ user, onOpenNotifications }) {
   return (
     <button
       onClick={handleClick}
-      className="relative flex items-center justify-center p-2 rounded-full hover:bg-gray-100 transition-colors"
+      className="relative flex items-center justify-center p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
       title="Notifications"
     >
       {unreadCount > 0 ? (
-        <BellSolid className="w-6 h-6 text-purple-700" />
+        <BellSolid className="w-5 h-5 text-violet-400" />
       ) : (
-        <BellIcon className="w-6 h-6 text-gray-600" />
+        <BellIcon className="w-5 h-5" />
       )}
 
       {unreadCount > 0 && (
